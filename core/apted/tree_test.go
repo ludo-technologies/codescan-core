@@ -104,10 +104,10 @@ func TestSizeWithDepthLimit(t *testing.T) {
 		limit    int
 		expected int
 	}{
-		{0, 1},  // depth 0: treat as leaf
-		{1, 2},  // A + B (B treated as leaf)
-		{2, 3},  // A + B + C (C treated as leaf)
-		{3, 4},  // A + B + C + D
+		{0, 1}, // depth 0: treat as leaf
+		{1, 2}, // A + B (B treated as leaf)
+		{2, 3}, // A + B + C (C treated as leaf)
+		{3, 4}, // A + B + C + D
 		{100, 4},
 	}
 

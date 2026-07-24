@@ -43,11 +43,11 @@ const (
 
 // Clone detection parameters.
 const (
-	DefaultCloneMinLines             = 10
-	DefaultCloneMinNodes             = 20
-	DefaultCloneMaxEditDistance       = 50.0
-	DefaultCloneSimilarityThreshold  = 0.65
-	DefaultCloneGroupingThreshold    = 0.65
+	DefaultCloneMinLines            = 10
+	DefaultCloneMinNodes            = 20
+	DefaultCloneMaxEditDistance     = 50.0
+	DefaultCloneSimilarityThreshold = 0.65
+	DefaultCloneGroupingThreshold   = 0.65
 )
 
 // LSH (Locality-Sensitive Hashing) parameters.
