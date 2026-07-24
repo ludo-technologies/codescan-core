@@ -135,8 +135,8 @@ func TestComputeCBO_SelfReferenceExcluded(t *testing.T) {
 			Name:     "Node",
 			FilePath: "node.py",
 			Dependencies: []ClassDependency{
-				{ClassName: "Node", Kind: DepTypeHint},       // self-ref
-				{ClassName: "Node", Kind: DepInstantiation},  // self-ref
+				{ClassName: "Node", Kind: DepTypeHint},      // self-ref
+				{ClassName: "Node", Kind: DepInstantiation}, // self-ref
 				{ClassName: "Other", Kind: DepInheritance},
 			},
 		},
@@ -236,10 +236,10 @@ func TestAssessRisk_BoundaryValues(t *testing.T) {
 		expected domain.RiskLevel
 	}{
 		{0, domain.RiskLevelLow},
-		{3, domain.RiskLevelLow},      // exactly at low threshold
-		{4, domain.RiskLevelMedium},   // one above low threshold
-		{7, domain.RiskLevelMedium},   // exactly at medium threshold
-		{8, domain.RiskLevelHigh},     // one above medium threshold
+		{3, domain.RiskLevelLow},    // exactly at low threshold
+		{4, domain.RiskLevelMedium}, // one above low threshold
+		{7, domain.RiskLevelMedium}, // exactly at medium threshold
+		{8, domain.RiskLevelHigh},   // one above medium threshold
 		{100, domain.RiskLevelHigh},
 	}
 
@@ -260,7 +260,7 @@ func TestMatchesPattern(t *testing.T) {
 		{"TestHelper", []string{"Test*"}, true},
 		{"MockRepo", []string{"Mock*"}, true},
 		{"Service", []string{"Test*", "Mock*"}, false},
-		{"myclass", []string{"MyClass"}, true},   // case-insensitive exact
+		{"myclass", []string{"MyClass"}, true}, // case-insensitive exact
 		{"MyClass", []string{"MyClass"}, true},
 		{"FooBar", []string{"Foo*"}, true},
 		{"FooBar", []string{"*Bar"}, true},

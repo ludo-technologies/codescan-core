@@ -6,14 +6,14 @@ import "fmt"
 type EdgeType int
 
 const (
-	EdgeNormal   EdgeType = iota // Normal sequential flow
-	EdgeCondTrue                 // Conditional true branch
-	EdgeCondFalse                // Conditional false branch
-	EdgeException                // Exception flow
-	EdgeLoop                     // Loop back edge
-	EdgeBreak                    // Break statement flow
-	EdgeContinue                 // Continue statement flow
-	EdgeReturn                   // Return statement flow
+	EdgeNormal    EdgeType = iota // Normal sequential flow
+	EdgeCondTrue                  // Conditional true branch
+	EdgeCondFalse                 // Conditional false branch
+	EdgeException                 // Exception flow
+	EdgeLoop                      // Loop back edge
+	EdgeBreak                     // Break statement flow
+	EdgeContinue                  // Continue statement flow
+	EdgeReturn                    // Return statement flow
 )
 
 // String returns string representation of EdgeType.
@@ -51,7 +51,7 @@ type Edge struct {
 
 // BasicBlock represents a basic block in the control flow graph.
 type BasicBlock struct {
-	ID   string
+	ID    string
 	Label string
 
 	// Statements contains the AST nodes in this block.
@@ -136,8 +136,8 @@ func (bb *BasicBlock) String() string {
 
 // CFG represents a control flow graph.
 type CFG struct {
-	Entry *BasicBlock
-	Exit  *BasicBlock
+	Entry  *BasicBlock
+	Exit   *BasicBlock
 	Blocks map[string]*BasicBlock
 	Name   string
 

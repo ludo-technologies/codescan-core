@@ -4,12 +4,12 @@ import "math"
 
 // CouplingMetrics holds Robert Martin's package coupling metrics for a node.
 type CouplingMetrics struct {
-	NodeID      string
-	Ca          int     // Afferent coupling (incoming edges)
-	Ce          int     // Efferent coupling (outgoing edges)
-	Instability float64 // Ce / (Ca + Ce), 0 = maximally stable
+	NodeID       string
+	Ca           int     // Afferent coupling (incoming edges)
+	Ce           int     // Efferent coupling (outgoing edges)
+	Instability  float64 // Ce / (Ca + Ce), 0 = maximally stable
 	Abstractness float64 // Provided by language-specific callback
-	Distance    float64 // |Abstractness + Instability - 1|
+	Distance     float64 // |Abstractness + Instability - 1|
 }
 
 // CouplingConfig configures coupling metric computation.
@@ -47,12 +47,12 @@ func ComputeCouplingMetrics(g DirectedGraph, config CouplingConfig) (map[string]
 		distance := math.Abs(abstractness + instability - 1.0)
 
 		result[nodeID] = &CouplingMetrics{
-			NodeID:      nodeID,
-			Ca:          ca,
-			Ce:          ce,
-			Instability: instability,
+			NodeID:       nodeID,
+			Ca:           ca,
+			Ce:           ce,
+			Instability:  instability,
 			Abstractness: abstractness,
-			Distance:    distance,
+			Distance:     distance,
 		}
 	}
 
