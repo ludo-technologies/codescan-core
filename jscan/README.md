@@ -48,10 +48,10 @@ jscan ships Agent Skills that teach AI coding agents when and how to run each an
 ### Agent Skills (Recommended)
 
 ```bash
-uvx add-skills ludo-technologies/polyscan
+npx skills add ludo-technologies/polyscan
 ```
 
-This installs the Skills into your project. They work with Claude Code, Cursor, Codex, Gemini CLI, and [many other agents](https://github.com/ludo-technologies/add-skills) (add `--agent cursor` etc. to target one, `--global` for all projects).
+This installs the Skills into your project. They work with Claude Code, Cursor, Codex, Gemini CLI, and [70+ other agents](https://github.com/vercel-labs/skills) (add `--agent cursor` etc. to target one, `--global` for all projects).
 
 Then just ask your agent:
 

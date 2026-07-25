@@ -48,13 +48,13 @@ The analyzers ship Agent Skills that teach AI coding agents when and how to run 
 
 ```bash
 # jscan Skills (from this monorepo)
-uvx add-skills ludo-technologies/polyscan
+npx skills add ludo-technologies/polyscan
 
 # pyscn Skills
-uvx add-skills ludo-technologies/pyscn
+npx skills add ludo-technologies/pyscn
 ```
 
-They work with Claude Code, Cursor, Codex, Gemini CLI, and [many other agents](https://github.com/ludo-technologies/add-skills).
+They work with Claude Code, Cursor, Codex, Gemini CLI, and [70+ other agents](https://github.com/vercel-labs/skills) (add `--agent cursor` etc. to target one, `--global` for all projects).
 
 **Claude Code plugin marketplace:**
 
