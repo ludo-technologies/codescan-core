@@ -77,11 +77,12 @@ func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.Complexi
 	}
 
 	// Filter and sort results
+	functionsParsed := len(allFunctions)
 	filteredFunctions := s.filterFunctions(allFunctions, req)
 	sortedFunctions := s.sortFunctions(filteredFunctions, req.SortBy)
 
 	// Generate summary
-	summary := s.generateSummary(sortedFunctions, filesProcessed, req)
+	summary := s.generateSummary(sortedFunctions, filesProcessed, req, functionsParsed)
 
 	return &domain.ComplexityResponse{
 		Functions:   sortedFunctions,
@@ -219,11 +220,13 @@ func (s *ComplexityServiceImpl) sortFunctions(functions []domain.FunctionComplex
 	return sorted
 }
 
-// generateSummary generates a summary of the complexity analysis
-func (s *ComplexityServiceImpl) generateSummary(functions []domain.FunctionComplexity, filesProcessed int, req domain.ComplexityRequest) domain.ComplexitySummary {
+// generateSummary generates a summary of the complexity analysis.
+// functionsParsed is the pre-filter function count (all functions parsed before min_complexity filtering).
+func (s *ComplexityServiceImpl) generateSummary(functions []domain.FunctionComplexity, filesProcessed int, req domain.ComplexityRequest, functionsParsed int) domain.ComplexitySummary {
 	summary := domain.ComplexitySummary{
-		FilesAnalyzed:  filesProcessed,
-		TotalFunctions: len(functions),
+		FilesAnalyzed:   filesProcessed,
+		TotalFunctions:  len(functions),
+		FunctionsParsed: functionsParsed,
 	}
 
 	if len(functions) == 0 {

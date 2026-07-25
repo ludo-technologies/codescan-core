@@ -108,7 +108,10 @@ type AnalyzeSummary struct {
 	ArchCompliance            float64 `json:"arch_compliance" yaml:"arch_compliance"`
 
 	// Key metrics
-	TotalFunctions        int     `json:"total_functions" yaml:"total_functions"`
+	// TotalFunctions is the post-filter count (functions included after min_complexity filtering).
+	TotalFunctions int `json:"total_functions" yaml:"total_functions"`
+	// FunctionsParsed is the pre-filter count of all functions parsed before min_complexity filtering.
+	FunctionsParsed       int     `json:"functions_parsed" yaml:"functions_parsed"`
 	AverageComplexity     float64 `json:"average_complexity" yaml:"average_complexity"`
 	HighComplexityCount   int     `json:"high_complexity_count" yaml:"high_complexity_count"`
 	MediumComplexityCount int     `json:"medium_complexity_count" yaml:"medium_complexity_count"`

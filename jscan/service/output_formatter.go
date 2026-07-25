@@ -202,6 +202,7 @@ func BuildAnalyzeSummary(
 	if complexityResponse != nil {
 		summary.ComplexityEnabled = true
 		summary.TotalFunctions = complexityResponse.Summary.TotalFunctions
+		summary.FunctionsParsed = complexityResponse.Summary.FunctionsParsed
 		summary.AverageComplexity = complexityResponse.Summary.AverageComplexity
 		summary.HighComplexityCount = complexityResponse.Summary.HighRiskFunctions
 		summary.MediumComplexityCount = complexityResponse.Summary.MediumRiskFunctions
@@ -412,6 +413,15 @@ func calculateDuplicationPercentage(response *domain.CloneResponse) float64 {
 }
 
 // writeComplexityText writes complexity response as plain text
+// formatFunctionCoverage renders the post-filter function count, disclosing the
+// pre-filter parsed count when min_complexity filtering dropped functions.
+func formatFunctionCoverage(reported, parsed int) string {
+	if parsed > 0 && parsed != reported {
+		return fmt.Sprintf("%d reported / %d parsed", reported, parsed)
+	}
+	return fmt.Sprintf("%d", reported)
+}
+
 func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityResponse, writer io.Writer) error {
 	fmt.Fprintf(writer, "\n=== Complexity Analysis ===\n\n")
 	fmt.Fprintf(writer, "Generated: %s\n", response.GeneratedAt)
@@ -420,7 +430,7 @@ func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityRes
 	// Summary
 	fmt.Fprintf(writer, "Summary:\n")
 	fmt.Fprintf(writer, "  Files analyzed: %d\n", response.Summary.FilesAnalyzed)
-	fmt.Fprintf(writer, "  Total functions: %d\n", response.Summary.TotalFunctions)
+	fmt.Fprintf(writer, "  Total functions: %s\n", formatFunctionCoverage(response.Summary.TotalFunctions, response.Summary.FunctionsParsed))
 	fmt.Fprintf(writer, "  Average complexity: %.2f\n", response.Summary.AverageComplexity)
 	fmt.Fprintf(writer, "  Max complexity: %d\n", response.Summary.MaxComplexity)
 	fmt.Fprintf(writer, "  Min complexity: %d\n", response.Summary.MinComplexity)
