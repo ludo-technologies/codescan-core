@@ -29,4 +29,4 @@ Run a pyscn → jscan sync. The single source of truth for policy, file mapping,
    - Add a "Sync history" row: date, new pyscn SHA, summary of what was ported and skipped.
    - Update the baseline SHA (and its date) to the `origin/main` HEAD you synced against.
 
-8. **Commit** the jscan changes and the SYNC.md update on a branch (e.g. `sync/pyscn-<shortsha>`), one commit per logical port plus one for SYNC.md, following the repo's commit-message style. Do not push or open a PR unless asked.
+8. **Commit, push, and open a PR**: commit the jscan changes and the SYNC.md update on a branch (e.g. `sync/pyscn-<shortsha>`), one commit per logical port plus one for SYNC.md, following the repo's commit-message style. Push the branch and open a PR against `main` with `gh pr create`. The PR body should include: a summary of what was ported, the full triage table (commit → verdict → reason), and how the ports were verified (tests + E2E). If the run found anything that belongs in `core/` or a reference-only design-direction change worth flagging, file or link issues and mention them in the PR body.
