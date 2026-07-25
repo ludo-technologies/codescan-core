@@ -2,7 +2,7 @@
 
 # polyscan
 
-**Code quality analyzers for vibe coders — in every language.**
+**Code quality analyzers for AI Agent**
 
 Building with Cursor, Claude, or ChatGPT? polyscan performs structural analysis to keep your codebase maintainable: one command scores your whole codebase and shows what to fix first.
 
@@ -13,15 +13,25 @@ Building with Cursor, Claude, or ChatGPT? polyscan performs structural analysis 
 
 </div>
 
-## Pick Your Language
+## Quick Start
+No installation needed — the quick-start commands below run the full analysis directly.
 
-| Language | Analyzer | Quick start |
-|----------|----------|-------------|
-| JavaScript / TypeScript | [**jscan**](jscan/) | `npx jscan analyze src/` |
-| Python | [**pyscn**](https://github.com/ludo-technologies/pyscn) | `uvx pyscn@latest analyze .` |
-| Go | **goscan** | planned |
+### JavaScript / TypeScript
+```
+npx jscan analyze src/
+```
 
-No installation needed — the quick-start commands above run the full analysis directly.
+See: [**jscan**](jscan/)
+
+### Python
+```
+uvx pyscn@latest analyze .
+```
+
+See: [**pyscn**](https://github.com/ludo-technologies/pyscn)
+
+### Others
+We are also planning to support other languages (C++, Go, Rust and etc...)
 
 ## What You Get
 
@@ -44,10 +54,10 @@ The analyzers ship Agent Skills that teach AI coding agents when and how to run 
 npx skills add ludo-technologies/polyscan
 
 # pyscn Skills
-npx skills add ludo-technologies/pyscn
+uvx add-skills ludo-technologies/pyscn
 ```
 
-They work with Claude Code, Cursor, Codex, Gemini CLI, and [70+ other agents](https://github.com/vercel-labs/skills) (add `--agent cursor` etc. to target one, `--global` for all projects).
+They work with Claude Code, Cursor, Codex, Gemini CLI, and other agents.
 
 Then just ask your agent:
 
