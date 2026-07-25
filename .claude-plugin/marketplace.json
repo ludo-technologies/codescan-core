@@ -1,0 +1,16 @@
+{
+  "name": "polyscan-marketplace",
+  "owner": {
+    "name": "Ludo Technologies"
+  },
+  "metadata": {
+    "description": "Code quality analysis tools from the polyscan monorepo"
+  },
+  "plugins": [
+    {
+      "name": "jscan",
+      "source": "./jscan/.claude-plugin/jscan",
+      "description": "JavaScript/TypeScript code quality analysis with complexity, dead code, clone detection, and coupling metrics"
+    }
+  ]
+}
