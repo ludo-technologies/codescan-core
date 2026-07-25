@@ -2,7 +2,7 @@
 
 # polyscan
 
-**Code quality analyzers for AI Agent**
+**Code quality analyzers for AI agents**
 
 Building with Cursor, Claude, or ChatGPT? polyscan performs structural analysis to keep your codebase maintainable: one command scores your whole codebase and shows what to fix first.
 
@@ -31,7 +31,7 @@ uvx pyscn@latest analyze .
 See: [**pyscn**](https://github.com/ludo-technologies/pyscn)
 
 ### Others
-We are also planning to support other languages (C++, Go, Rust and etc...)
+We are also planning to support other languages (C++, Go, Rust, and more).
 
 ## What You Get
 
