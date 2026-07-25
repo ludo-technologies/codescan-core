@@ -48,7 +48,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## Architecture Notes
 
-polyscan core is a shared library used by [pyscn](https://github.com/ludo-technologies/pyscn) and [jscan](https://github.com/ludo-technologies/jscan). Key constraints:
+polyscan core is a shared library used by [pyscn](https://github.com/ludo-technologies/pyscn) and [jscan](jscan/) (in this monorepo). Key constraints:
 
 - **No language-specific dependencies.** Language-specific behavior is injected via interfaces (`StatementClassifier`, `CostModel`, `ComplexityContributor`, etc.)
 - **No external dependencies.** The module has zero third-party dependencies by design

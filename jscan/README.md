@@ -48,7 +48,7 @@ jscan ships Agent Skills that teach AI coding agents when and how to run each an
 ### Agent Skills (Recommended)
 
 ```bash
-uvx add-skills ludo-technologies/jscan
+uvx add-skills ludo-technologies/polyscan
 ```
 
 This installs the Skills into your project. They work with Claude Code, Cursor, Codex, Gemini CLI, and [many other agents](https://github.com/ludo-technologies/add-skills) (add `--agent cursor` etc. to target one, `--global` for all projects).
@@ -64,8 +64,8 @@ Then just ask your agent:
 ### Claude Code Plugin (Optional)
 
 ```bash
-claude plugin marketplace add ludo-technologies/jscan
-claude plugin install jscan@jscan-marketplace
+claude plugin marketplace add ludo-technologies/polyscan
+claude plugin install jscan@polyscan-marketplace
 ```
 
 The plugin installs the same Agent Skills through Claude Code's plugin system.
@@ -84,7 +84,7 @@ npm install -g jscan
 
 ```bash
 git clone https://github.com/ludo-technologies/polyscan.git
-cd jscan
+cd polyscan/jscan
 go build -o jscan ./cmd/jscan
 ```
 

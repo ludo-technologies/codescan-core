@@ -1,6 +1,6 @@
 # polyscan core
 
-Shared Go module that provides language-agnostic code analysis algorithms for the polyscan family of analyzers: [pyscn](https://github.com/ludo-technologies/pyscn) (Python) and [jscan](https://github.com/ludo-technologies/jscan) (JavaScript/TypeScript).
+Shared Go module that provides language-agnostic code analysis algorithms for the polyscan family of analyzers: [pyscn](https://github.com/ludo-technologies/pyscn) (Python) and [jscan](https://github.com/ludo-technologies/polyscan/tree/main/jscan) (JavaScript/TypeScript, in this monorepo).
 
 ## Packages
 
