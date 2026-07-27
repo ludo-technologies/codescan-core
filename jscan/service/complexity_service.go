@@ -226,7 +226,8 @@ func (s *ComplexityServiceImpl) sortFunctions(functions []domain.FunctionComplex
 }
 
 // generateSummary generates a summary of the complexity analysis.
-// functionsParsed is the pre-filter function count (all functions parsed before min_complexity filtering).
+// functionsParsed is the reportable function count from filterFunctions: functions that
+// survived report_unchanged, counted before the min/max complexity filters.
 func (s *ComplexityServiceImpl) generateSummary(functions []domain.FunctionComplexity, filesProcessed int, req domain.ComplexityRequest, functionsParsed int) domain.ComplexitySummary {
 	summary := domain.ComplexitySummary{
 		FilesAnalyzed:   filesProcessed,

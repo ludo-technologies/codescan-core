@@ -110,7 +110,8 @@ type AnalyzeSummary struct {
 	// Key metrics
 	// TotalFunctions is the post-filter count (functions included after min_complexity filtering).
 	TotalFunctions int `json:"total_functions" yaml:"total_functions"`
-	// FunctionsParsed is the pre-filter count of all functions parsed before min_complexity filtering.
+	// FunctionsParsed is the count of reportable functions: parsed functions that survived
+	// report_unchanged, counted before the min/max complexity filters.
 	FunctionsParsed       int     `json:"functions_parsed" yaml:"functions_parsed"`
 	AverageComplexity     float64 `json:"average_complexity" yaml:"average_complexity"`
 	HighComplexityCount   int     `json:"high_complexity_count" yaml:"high_complexity_count"`
