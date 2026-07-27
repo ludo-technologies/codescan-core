@@ -223,7 +223,7 @@ func TestComplexityService_filterFunctions(t *testing.T) {
 		MaxComplexity: 10,
 	}
 
-	filtered := service.filterFunctions(functions, req)
+	filtered, functionsParsed := service.filterFunctions(functions, req)
 
 	// Should filter:
 	// - simple (complexity 1 < min 3)
@@ -234,6 +234,11 @@ func TestComplexityService_filterFunctions(t *testing.T) {
 
 	if len(filtered) > 0 && filtered[0].Name != "medium" {
 		t.Errorf("Filtered function should be 'medium', got '%s'", filtered[0].Name)
+	}
+
+	// 'simple' is dropped by ReportUnchanged, so it is not part of the parsed count
+	if functionsParsed != 2 {
+		t.Errorf("FunctionsParsed should be 2, got %d", functionsParsed)
 	}
 }
 
@@ -250,10 +255,14 @@ func TestComplexityService_filterFunctions_ReportUnchanged(t *testing.T) {
 
 	req := domain.ComplexityRequest{}
 
-	filtered := service.filterFunctions(functions, req)
+	filtered, functionsParsed := service.filterFunctions(functions, req)
 
 	if len(filtered) != 1 {
 		t.Errorf("Should include unchanged function when ReportUnchanged is true")
+	}
+
+	if functionsParsed != 1 {
+		t.Errorf("FunctionsParsed should be 1, got %d", functionsParsed)
 	}
 }
 

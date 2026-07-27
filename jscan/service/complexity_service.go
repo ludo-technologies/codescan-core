@@ -77,8 +77,7 @@ func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.Complexi
 	}
 
 	// Filter and sort results
-	functionsParsed := len(allFunctions)
-	filteredFunctions := s.filterFunctions(allFunctions, req)
+	filteredFunctions, functionsParsed := s.filterFunctions(allFunctions, req)
 	sortedFunctions := s.sortFunctions(filteredFunctions, req.SortBy)
 
 	// Generate summary
@@ -165,11 +164,22 @@ func (s *ComplexityServiceImpl) analyzeFile(ctx context.Context, filePath string
 	return functions, warnings, errors
 }
 
-// filterFunctions filters functions based on request criteria
-func (s *ComplexityServiceImpl) filterFunctions(functions []domain.FunctionComplexity, req domain.ComplexityRequest) []domain.FunctionComplexity {
+// filterFunctions returns the visible functions plus the count of functions that
+// reached the complexity filters. report_unchanged is part of the reporting
+// contract rather than a complexity filter, so functions it drops are excluded
+// from the parsed count as well.
+func (s *ComplexityServiceImpl) filterFunctions(functions []domain.FunctionComplexity, req domain.ComplexityRequest) ([]domain.FunctionComplexity, int) {
 	var filtered []domain.FunctionComplexity
+	functionsParsed := 0
 
 	for _, fn := range functions {
+		// Skip unchanged (complexity = 1) if requested
+		if !s.config.ReportUnchanged && fn.Metrics.Complexity == 1 {
+			continue
+		}
+
+		functionsParsed++
+
 		// Filter by minimum complexity
 		if req.MinComplexity > 0 && fn.Metrics.Complexity < req.MinComplexity {
 			continue
@@ -180,15 +190,10 @@ func (s *ComplexityServiceImpl) filterFunctions(functions []domain.FunctionCompl
 			continue
 		}
 
-		// Skip unchanged (complexity = 1) if requested
-		if !s.config.ReportUnchanged && fn.Metrics.Complexity == 1 {
-			continue
-		}
-
 		filtered = append(filtered, fn)
 	}
 
-	return filtered
+	return filtered, functionsParsed
 }
 
 // sortFunctions sorts functions based on the specified criteria
