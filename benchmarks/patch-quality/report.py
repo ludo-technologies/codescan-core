@@ -19,12 +19,20 @@ column is the one to read before concluding anything.
 
 import argparse
 import glob
+import gzip
 import json
 import math
 import os
 import statistics as st
 import sys
 from collections import defaultdict
+
+
+def open_records(path):
+    """Result sets are committed gzipped; accept either form."""
+    opener = gzip.open if path.endswith(".gz") else open
+    with opener(path, "rt") as fh:
+        return [json.loads(line) for line in fh if line.strip()]
 
 
 def regressed(rec):
@@ -63,7 +71,7 @@ def main():
     labels, scaffolds = load_config(args.config)
     labels["gold"] = "human (gold patch)"
 
-    records = [json.loads(l) for l in open(args.jsonl) if l.strip()]
+    records = open_records(args.jsonl)
 
     resolved, cost = {}, {}
     for path in glob.glob(os.path.join(args.data, "results_*.json")):

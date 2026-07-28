@@ -49,6 +49,16 @@ python3 report.py results/django.jsonl --resolved-only
 `clone_repos.py` with no `--repo` clones all twelve repositories, which is
 several GB. Start with django; it is 231 of the 500 instances.
 
+A django result set is committed, so the report can be reproduced without
+running anything:
+
+```bash
+python3 report.py results/django.jsonl.gz --resolved-only
+```
+
+Result sets are committed gzipped (2.5 MB of JSONL compresses to about 100 KB);
+`report.py` reads either form.
+
 ## Read the correctness gate column first
 
 `--resolved-only` restricts each model to the instances it actually solved. This
@@ -167,7 +177,7 @@ analyzer.py       analyzer adapters
 harness.py        before/after measurement
 report.py         pairing, McNemar, scaffold grouping
 config/           which submissions to score
-results/          committed result sets
+results/          committed result sets, gzipped JSONL
 ```
 
 `data/` and `repos/` are gitignored; they are ~400 MB for django alone and fully
