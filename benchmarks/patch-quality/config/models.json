@@ -1,0 +1,109 @@
+{
+  "_comment": [
+    "Submissions to score. `split` selects where the data lives:",
+    "  bash-only : resolved status comes from per_instance_details.json",
+    "  verified  : resolved status comes from results/results.json",
+    "Patches always come from the swe-bench-submissions S3 bucket; the GitHub",
+    "repo stopped publishing them. See README, 'Where the data comes from'.",
+    "",
+    "`scaffold` groups submissions that share an agent harness. Only models",
+    "within one scaffold group are directly comparable to each other -- across",
+    "groups the agent, the retry policy and the prompt all differ too."
+  ],
+
+  "submissions": [
+    {
+      "id": "20250802_mini-v1.0.0_claude-4-opus-20250514",
+      "label": "claude-4-opus",
+      "split": "bash-only",
+      "scaffold": "mini-swe-agent-v1.0.0"
+    },
+    {
+      "id": "20250726_mini-v1.0.0_claude-sonnet-4-20250514",
+      "label": "claude-sonnet-4",
+      "split": "bash-only",
+      "scaffold": "mini-swe-agent-v1.0.0"
+    },
+    {
+      "id": "20250726_mini-v1.0.0_gemini-2.5-pro",
+      "label": "gemini-2.5-pro",
+      "split": "bash-only",
+      "scaffold": "mini-swe-agent-v1.0.0"
+    },
+    {
+      "id": "20250726_mini-v1.0.0_o3-2025-04-16",
+      "label": "o3",
+      "split": "bash-only",
+      "scaffold": "mini-swe-agent-v1.0.0"
+    },
+    {
+      "id": "20250726_mini-v1.0.0_o4-mini-2025-04-16",
+      "label": "o4-mini",
+      "split": "bash-only",
+      "scaffold": "mini-swe-agent-v1.0.0"
+    },
+    {
+      "id": "20250802_mini-v1.0.0_qwen3-coder-480b-a35b-instruct",
+      "label": "qwen3-coder-480b",
+      "split": "bash-only",
+      "scaffold": "mini-swe-agent-v1.0.0"
+    },
+    {
+      "id": "20250803_mini-v1.0.0_qwen2-5-coder-32b-instruct",
+      "label": "qwen2.5-coder-32b",
+      "split": "bash-only",
+      "scaffold": "mini-swe-agent-v1.0.0"
+    },
+
+    {
+      "id": "20251127_openhands_claude-opus-4-5",
+      "label": "claude-opus-4.5",
+      "split": "verified",
+      "scaffold": "OpenHands"
+    },
+    {
+      "id": "20250807_openhands_gpt5",
+      "label": "gpt-5",
+      "split": "verified",
+      "scaffold": "OpenHands"
+    },
+    {
+      "id": "20250716_openhands_kimi_k2",
+      "label": "kimi-k2",
+      "split": "verified",
+      "scaffold": "OpenHands"
+    },
+    {
+      "id": "20250520_openhands_devstral_small",
+      "label": "devstral-small",
+      "split": "verified",
+      "scaffold": "OpenHands"
+    },
+    {
+      "id": "20250930_zai_glm4-6",
+      "label": "glm-4.6",
+      "split": "verified",
+      "scaffold": "zai"
+    },
+    {
+      "id": "20250806_SWE-Exp_DeepSeek-V3",
+      "label": "deepseek-v3",
+      "split": "verified",
+      "scaffold": "SWE-Exp"
+    },
+    {
+      "id": "20250516_cortexa_o3",
+      "label": "Nemotron-CORTEXA",
+      "split": "verified",
+      "scaffold": "NVIDIA-CORTEXA",
+      "note": "An ensemble over o3, o3-mini, o1, gpt-4.1, gpt-4o, claude-3-7-sonnet, deepseek-v3, Qwen2.5-72B and Llama-3.x, with 2+ attempts. Not a single model, despite the directory name."
+    }
+  ],
+
+  "excluded": [
+    {
+      "id": "20250726_mini-v1.0.0_gemini-2.0-flash",
+      "reason": "patches exist in S3 but the submission has no per_instance_details.json, so there is no correctness gate for it"
+    }
+  ]
+}
