@@ -60,6 +60,12 @@ def clone_one(repo, dest_root):
     if proc.returncode != 0:
         return repo, f"clone failed: {proc.stderr.strip()[:160]}"
 
+    # The harness checks out thousands of commits in here. Git's background
+    # maintenance takes the index lock while it does, and a checkout that loses
+    # that race costs a whole instance.
+    run("git", "-C", dest, "config", "gc.auto", "0")
+    run("git", "-C", dest, "config", "maintenance.auto", "false")
+
     count = run("git", "-C", dest, "rev-list", "--count", "HEAD").stdout.strip()
     return repo, f"cloned, {count} commits"
 
