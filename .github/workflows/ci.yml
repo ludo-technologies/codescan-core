@@ -77,4 +77,4 @@ jobs:
       - run: ruff check .
       - run: python3 -m unittest discover -s tests -v
       # The committed result set has to stay readable by the current report.py.
-      - run: python3 report.py results/django.jsonl.gz --resolved-only
+      - run: python3 report.py results/*.jsonl.gz --resolved-only
