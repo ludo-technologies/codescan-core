@@ -252,7 +252,8 @@ ANALYZERS = {"python": PyscnAnalyzer}
 def get_analyzer(language, binary=None):
     try:
         cls = ANALYZERS[language]
-    except KeyError:
+    except KeyError as exc:
         raise AnalyzerError(
-            f"no analyzer for {language!r}; available: {sorted(ANALYZERS)}")
+            f"no analyzer for {language!r}; available: {sorted(ANALYZERS)}"
+        ) from exc
     return cls(binary=binary)

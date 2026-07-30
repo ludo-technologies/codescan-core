@@ -77,7 +77,8 @@ def main():
     if not os.path.exists(instances_path):
         sys.exit(f"{instances_path} not found; run fetch_data.py first")
 
-    meta = json.load(open(instances_path))
+    with open(instances_path) as fh:
+        meta = json.load(fh)
     counts = {}
     for m in meta.values():
         counts[m["repo"]] = counts.get(m["repo"], 0) + 1
