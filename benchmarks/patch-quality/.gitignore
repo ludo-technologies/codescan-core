@@ -1,0 +1,11 @@
+# Downloaded inputs and clones. Both are large and fully reproducible from
+# fetch_data.py and clone_repos.py, so they are never committed.
+data/
+repos/
+
+# Raw run output. Only the gzipped form is committed; report.py reads either.
+results/*.jsonl
+
+# Analyzer scratch output, if a run is started from this directory.
+.pyscn/
+__pycache__/
