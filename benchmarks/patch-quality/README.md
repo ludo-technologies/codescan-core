@@ -34,10 +34,16 @@ them would make each score depend on which files a patch happened to touch.
 The headline metric is the **regression rate**: the share of patches that made
 any measured metric worse. The human patch on the same issue is the baseline.
 
+"Worse" is judged **per function**, comparing each function against itself. The
+maximum complexity over a set of files is nearly useless for this: django's
+`sql/query.py` holds a 21-branch method, so nothing a patch does to a 4-branch
+method next to it moves the file's maximum at all. Measured that way the
+benchmark saw about a quarter of the complexity increases it should have.
+
 ## Quick start
 
 ```bash
-pip install nothing            # stdlib only
+# No dependencies. pyscn is the only thing you need on PATH.
 export PYSCN_BIN=/path/to/pyscn   # or just have pyscn on PATH
 
 python3 fetch_data.py                      # ~100 MB
@@ -56,37 +62,58 @@ running anything:
 python3 report.py results/django.jsonl.gz --resolved-only
 ```
 
-Result sets are committed gzipped (2.5 MB of JSONL compresses to about 100 KB);
-`report.py` reads either form.
+Result sets are committed gzipped (a few MB of JSONL compresses to about
+100 KB); `report.py` reads either form. Each one starts with a metadata record
+naming the analyzer build that produced it, so a committed number can be tied to
+a specific pyscn version.
+
+The correctness gate travels inside the result set: the harness stamps every
+record with that model's resolved status. `data/` is gitignored, so reading the
+gate from there instead meant `--resolved-only` silently gated every model down
+to zero instances and printed an empty table from a fresh clone.
 
 ## Read the correctness gate column first
 
-`--resolved-only` restricts each model to the instances it actually solved. This
-is not a refinement, it changes the conclusion.
+`--resolved-only` restricts each model to the instances it actually solved, and
+it changes the answer. Over django, 8 of 14 models look worse than the human
+patch at p<0.05 without the gate; 3 do with it.
 
-Without the gate, regression rate correlates strongly with model capability
-(r = -0.91 across a seven-model controlled set). With it, that correlation
-disappears (r = +0.03). The apparent relationship was never strong models
-writing cleaner code; it was weak models producing patches that break or delete
-things, which scores as a large quality *improvement* for reasons the next
-section explains.
+Most of that gap is survivorship. A patch that fails its tests is often failing
+because it broke or gutted something, and broken code has less measurable
+complexity than working code, so ungated numbers credit failure as
+simplification. The outcome columns catch the blatant cases — `broke_syntax`,
+`not_a_diff`, `destructive` — but nothing short of running the tests catches a
+patch that is syntactically fine and semantically wrong.
 
-## Three traps
+What the gate does *not* buy is a clean read on capability. Among the seven
+models in the controlled scaffold group, resolve rate and regression rate
+correlate at r = +0.87 once gated. Do not read that as "stronger models write
+messier code": a model that solves more instances is being measured on harder
+ones, and harder issues take larger patches. Instance difficulty is not
+controlled for here, which is exactly why the report pairs each model against
+the human on *the same* instances instead of comparing rates across models.
+
+## Four traps
 
 Each of these silently turns a bad patch into an apparent improvement. They are
 handled in the harness, and they are the reason this is not a fifty-line script.
 
-### 1. New files are asymmetric
+### 1. Created and deleted files are asymmetric
 
 Agents leave scratch files behind: `check_url_parts.py`, `final_verification.py`,
 `reproduce_bug.py`. Those files do not exist at `base_commit`, so they have no
 "before" measurement, but they do get measured "after". Every delta inflates.
 
-The harness measures only files that existed at `base_commit`, and counts new
-files separately. That count turns out to be interesting on its own: it varies
-from 0 to over 5 scratch files per solved issue, tracks the agent scaffold rather
-than the model, and two submissions of the same model under different scaffolds
-land at opposite ends of the range.
+Deletion is the same problem pointing the other way, and it is easier to miss. A
+file the patch removes *does* have a "before" measurement and has no "after", so
+leaving it in the measured set books its entire complexity as an improvement.
+Renames are a delete plus a create.
+
+The harness measures only paths that exist on both sides, and counts created and
+deleted files separately. The created-file count turns out to be interesting on
+its own: it varies from 0 to over 5 scratch files per solved issue, tracks the
+agent scaffold rather than the model, and two submissions of the same model under
+different scaffolds land at opposite ends of the range.
 
 ### 2. A file that does not parse scores perfectly
 
@@ -95,13 +122,22 @@ nothing to flag. A patch that introduces a syntax error looks like the best
 refactor in the run.
 
 This is real, not hypothetical. One submission corrupted
-`django/db/models/sql/query.py` with `return 0 objs`; it went from 128 functions
-and 391 total complexity to zero and zero, and ranked as the single largest
-quality improvement in the run.
+`django/db/models/sql/query.py` with `return 0 objs`; the file went from 105
+functions and 425 total complexity to zero and zero, and ranked as the single
+largest quality improvement in the run. Across django, 71 of 3407 records
+are patches that broke a file they touched; `o4-mini` and `qwen2.5-coder-32b`
+account for 47 of them.
 
-The harness reads `complexity.Errors` from the analyzer report and records the
-patch as `broke_syntax` instead of as a delta. Note that pyscn's own health score
-does not do this — an unparseable file scores Grade A and `pyscn check` exits 0
+The harness records the patch as `broke_syntax` instead of as a delta. It gets
+there two ways, on purpose. pyscn reports unparseable files in
+`complexity.Errors`, but matching that is matching on message text, which is not
+an interface — if the wording ever changes, the defence fails silently and in the
+worst direction. So the harness also parses every measured file itself with
+`ast`. Neither source is trusted alone, and both are applied differentially: a
+file that already failed to parse *before* the patch is not blamed on the patch.
+
+Note that pyscn's own health score does not do this — an unparseable file scores
+Grade A and `pyscn check` exits 0
 ([pyscn#690](https://github.com/ludo-technologies/pyscn/issues/690)).
 
 ### 3. Mass deletion passes the syntax check
@@ -112,8 +148,31 @@ instance, and the result was still valid Python. Parsing cannot catch this.
 Every such case in the django run was `unresolved` — the tests caught what the
 parser could not. That is the strongest argument for the correctness gate: it is
 the only defence against a patch that is syntactically fine and semantically
-destructive. The harness also flags them with a `destructive` field so they can
-be counted rather than silently dropped.
+destructive. The harness flags them with a `destructive` field, and the report
+excludes flagged pairs from the paired comparison rather than averaging them in:
+a gutted file is not evidence of clean code, and counting it as a
+*non*-regression would drag the model's rate down.
+
+### 4. The analyzer's own defaults decide what gets measured
+
+`pyscn --min-complexity` defaults to 5, and it filters the reported function
+list rather than just a display threshold. Left at the default, django's
+`sql/query.py` reports 29 functions summing to 277 complexity when the file
+actually holds 105 summing to 425 — 72% of functions invisible.
+
+Worse, the threshold makes the measurement non-monotonic in both directions. A
+function simplified from 6 to 4 drops out of the report and reads as a *deleted
+function*, which also feeds the `destructive` heuristic. A function that grows
+from 3 to 8 appears from nowhere with no "before" value to compare against, so
+the regression goes uncounted. The harness pins `--min-complexity 1`.
+
+The general problem outlives that one flag: absence of metrics for a file is
+ambiguous between "has no functions" and "the analyzer declined to look". A
+silently skipped file contributes zeros to both sides, so the delta stays honest,
+but the file and line counts quietly include code nobody measured. The analyzer
+adapter cross-checks its own parse against the report and returns the difference
+as `skipped_files`; if everything a patch touched was skipped, the outcome is
+`all_files_skipped` rather than an analyzer error.
 
 ## Where the data comes from
 
@@ -150,21 +209,29 @@ instance.
 
 ## Interpreting the output
 
-Effect sizes are small and event counts are low. Over django, a typical model
-regresses 7–16 of ~130 solved instances against 2–7 for the human. Ratios built
-on that many events move a lot with one or two instances.
+Effect sizes are small. Over django, a typical model raises some measured metric
+on 29–58 of its 110–168 gated instances, against 19–43 for the human patch on
+those same instances. The two sides move together, because most of what drives a
+regression is the issue rather than who fixed it — which is the reason for
+pairing.
 
 The report pairs each model against the human on the same instances and runs a
-two-sided exact McNemar test on the discordant pairs. On django alone, 3 of 13
-models reach p<0.05 and none survive Bonferroni correction. The honest reading is
-that models trend slightly worse than human patches but the difference is not
-resolvable at this sample size — which is the argument for running more than one
-repository.
+two-sided exact McNemar test on the discordant pairs. On django alone, 3 of 14
+models reach p<0.05 and 2 survive Bonferroni correction across 14 comparisons:
+`gpt-5` (p=0.001) and `devstral-small` (p=0.000), both OpenHands. They sit at
+opposite ends of that group's resolve rate, so this is not a capability ordering.
+
+Every other model, including the whole controlled scaffold group, is
+indistinguishable from the human baseline at this sample size. Read the result as
+"two submissions are measurably messier than the maintainer's own patch, and
+eleven are not", and note that one repository out of twelve is a thin basis for
+either half of that.
 
 ## Adding an analyzer
 
-`analyzer.py` exposes one interface: `run(repo_root, rel_files)` returning
-per-file metrics and a list of files that failed to parse. Adding jscan for
+`analyzer.py` exposes one interface: `run(repo_root, rel_files)` returning an
+`Analysis` of per-file metrics, files that failed to parse, and files the
+analyzer skipped. Adding jscan for
 JavaScript and TypeScript means implementing that against SWE-bench Multilingual;
 nothing in the harness is Python-specific.
 
@@ -178,6 +245,11 @@ harness.py        before/after measurement
 report.py         pairing, McNemar, scaffold grouping
 config/           which submissions to score
 results/          committed result sets, gzipped JSONL
+tests/            unit tests for the parsing and statistics (stdlib unittest)
+```
+
+```bash
+python3 -m unittest discover -s tests
 ```
 
 `data/` and `repos/` are gitignored; they are ~400 MB for django alone and fully

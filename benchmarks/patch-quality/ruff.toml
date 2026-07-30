@@ -1,0 +1,15 @@
+# The benchmark ships no dependencies, so ruff is the only dev tool and its
+# ruleset is pinned here rather than inherited from whatever version CI installs.
+line-length = 88
+target-version = "py39"
+
+[lint]
+select = ["E", "F", "W", "B", "UP", "C4", "SIM"]
+ignore = [
+    "E501",   # long lines are wrapped by hand where it reads better
+    "SIM108", # ternaries are not always clearer than an if
+]
+
+[lint.per-file-ignores]
+# The test module puts sys.path ahead of its imports on purpose.
+"tests/*" = ["E402"]

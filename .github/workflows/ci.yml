@@ -13,6 +13,7 @@ jobs:
       pull-requests: read
     outputs:
       jscan: ${{ steps.filter.outputs.jscan }}
+      benchmarks: ${{ steps.filter.outputs.benchmarks }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -22,6 +23,9 @@ jobs:
             jscan:
               - 'jscan/**'
               - 'core/**'
+              - '.github/workflows/ci.yml'
+            benchmarks:
+              - 'benchmarks/**'
               - '.github/workflows/ci.yml'
 
   core:
@@ -54,3 +58,23 @@ jobs:
       - run: go build ./...
       - run: go vet ./...
       - run: go test -race ./...
+
+  benchmarks:
+    needs: changes
+    if: ${{ needs.changes.outputs.benchmarks == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: benchmarks/patch-quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      # The benchmark is stdlib-only by design; ruff is the one dev tool, and
+      # it is pinned so a new release cannot fail an unrelated PR.
+      - run: pip install ruff==0.14.2
+      - run: ruff check .
+      - run: python3 -m unittest discover -s tests -v
+      # The committed result set has to stay readable by the current report.py.
+      - run: python3 report.py results/django.jsonl.gz --resolved-only

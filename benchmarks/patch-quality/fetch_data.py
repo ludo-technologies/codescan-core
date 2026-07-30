@@ -48,8 +48,9 @@ def get(url, timeout=300):
 def fetch_instances(out_dir):
     dest = os.path.join(out_dir, "instances.json")
     if os.path.exists(dest):
-        print(f"instances.json already present, skipping")
-        return json.load(open(dest))
+        print("instances.json already present, skipping")
+        with open(dest) as fh:
+            return json.load(fh)
 
     rows = []
     for offset in range(0, 500, 100):
@@ -93,13 +94,15 @@ def fetch_one(sub, out_dir):
             with open(results_path, "w") as fh:
                 json.dump(payload, fh)
     except urllib.error.HTTPError as exc:
-        return sid, f"HTTP {exc.code} on {exc.url}"
+        return sid, False, f"HTTP {exc.code} on {exc.url}"
     except (urllib.error.URLError, OSError, ValueError) as exc:
-        return sid, str(exc)[:160]
+        return sid, False, f"{type(exc).__name__}: {str(exc)[:160]}"
 
-    n_preds = sum(1 for _ in open(preds_path))
-    n_resolved = len(json.load(open(results_path))["resolved"])
-    return sid, f"{n_preds} patches, {n_resolved} resolved"
+    with open(preds_path) as fh:
+        n_preds = sum(1 for _ in fh)
+    with open(results_path) as fh:
+        n_resolved = len(json.load(fh)["resolved"])
+    return sid, True, f"{n_preds} patches, {n_resolved} resolved"
 
 
 def main():
@@ -110,19 +113,23 @@ def main():
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
-    config = json.load(open(args.config))
+    with open(args.config) as fh:
+        config = json.load(fh)
     submissions = config["submissions"]
 
     meta = fetch_instances(args.out)
     print(f"{len(meta)} instances\n")
 
+    # Success is what fetch_one reports, not what its message happens to look
+    # like. Sniffing for "HTTP" or "Errno" in the text missed every JSON decode
+    # failure, so a partial fetch exited 0 and the harness ran on it.
     failures = []
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         futures = [pool.submit(fetch_one, s, args.out) for s in submissions]
         for future in concurrent.futures.as_completed(futures):
-            sid, status = future.result()
-            print(f"{sid[:52]:52} {status}")
-            if "HTTP" in status or "Errno" in status:
+            sid, ok, status = future.result()
+            print(f"{sid[:52]:52} {'' if ok else 'FAILED '}{status}")
+            if not ok:
                 failures.append(sid)
 
     if failures:
