@@ -9,3 +9,4 @@ results/*.jsonl
 # Analyzer scratch output, if a run is started from this directory.
 .pyscn/
 __pycache__/
+logs/

@@ -56,6 +56,37 @@ def open_records(path):
     return meta, records
 
 
+def open_all(paths):
+    """Several result sets as one pool.
+
+    One repository is a single codebase with a single set of conventions, so the
+    interesting comparison spans all twelve. Instance ids are globally unique
+    across SWE-bench, so records from different repositories pool without
+    colliding -- but only if every set was produced by the same analyzer build,
+    which is checked here rather than discovered later in the numbers.
+    """
+    metas, records = [], []
+    for path in paths:
+        meta, recs = open_records(path)
+        if not recs:
+            sys.exit(f"{path} contains no measurement records")
+        metas.append((path, meta))
+        records += recs
+
+    analyzers = {m.get("analyzer") for _, m in metas if m.get("analyzer")}
+    if len(analyzers) > 1:
+        sys.exit("result sets were produced by different analyzer builds, so "
+                 "their metrics are not comparable:\n"
+                 + "\n".join(f"  {p}: {m.get('analyzer', '?')}"
+                             for p, m in metas))
+
+    merged = dict(metas[0][1]) if metas else {}
+    merged["repo"] = ", ".join(
+        sorted({m.get("repo", "?") for _, m in metas if m.get("repo")}))
+    merged["n_instances"] = sum(m.get("n_instances", 0) for _, m in metas)
+    return merged, records
+
+
 def regressed(rec):
     """Did this patch make some measured metric worse?
 
@@ -122,12 +153,14 @@ STATUSES = (
     ("no_measurable_files", "no-files"),
     ("not_a_diff", "not-diff"),
     ("error", "error"),
+    ("instance_failed", "git-fail"),
 )
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("jsonl")
+    ap.add_argument("jsonl", nargs="+",
+                    help="one or more result sets; several are pooled")
     ap.add_argument("--data", default="data",
                     help="optional; only used for resolve rate and cost")
     ap.add_argument("--config", default="config/models.json")
@@ -138,9 +171,7 @@ def main():
     labels, scaffolds = load_config(args.config)
     labels["gold"] = "human (gold patch)"
 
-    meta, records = open_records(args.jsonl)
-    if not records:
-        sys.exit(f"{args.jsonl} contains no measurement records")
+    meta, records = open_all(args.jsonl)
     resolved, resolve_totals, cost = load_resolved(records, args.data)
 
     if args.resolved_only and not resolved:
@@ -248,11 +279,32 @@ def main():
                   f"{r['model_reg']:6} {r['human_reg']:6} {r['p']:7.3f}{mark} "
                   f"{r['sum_cc']:6.2f} {r['junk']:6.2f} {money:>6}")
 
-    total = sum(len(v) for v in groups.values())
-    signif = sum(1 for v in groups.values() for r in v if r["p"] < 0.05)
+    rows = [r for v in groups.values() for r in v]
+    total = len(rows)
+    signif = sum(1 for r in rows if r["p"] < 0.05)
     bonferroni = 0.05 / total if total else 0
-    survives = sum(1 for v in groups.values() for r in v
-                   if r["p"] < bonferroni)
+    survives = sum(1 for r in rows if r["p"] < bonferroni)
+
+    # Each model's own test is underpowered: it asks ~100 paired instances to
+    # resolve a few points of difference, so most land at p>0.05 whatever the
+    # truth is. Whether every model lands on the *same side* of the human is a
+    # separate question, and a much better powered one. Reporting only the
+    # per-model tests reads their inconclusiveness as evidence of no effect.
+    worse = sum(1 for r in rows if r["model_reg"] > r["human_reg"])
+    better = sum(1 for r in rows if r["model_reg"] < r["human_reg"])
+    print(f"\n{worse} of {total} models regress more often than the human "
+          f"patch, {better} less often;")
+    print(f"sign test across models p = {mcnemar_exact(worse, better):.2e}.")
+
+    b_tot = sum(r["b"] for r in rows)
+    c_tot = sum(r["c"] for r in rows)
+    if c_tot:
+        print(f"Pooled over every model, {b_tot + c_tot} instances split the "
+              f"two sides: {b_tot} where only the\nmodel regressed against "
+              f"{c_tot} where only the human did ({b_tot / c_tot:.2f}x). "
+              "Descriptive only --\nevery model shares one human baseline, so "
+              "these pairs are not independent.")
+
     print(f"\n{signif} of {total} models differ from the human patch at p<0.05; "
           f"{survives} survive Bonferroni correction (alpha={bonferroni:.4f}).")
     print("'worse' and 'human' count instances where that side's patch raised a "

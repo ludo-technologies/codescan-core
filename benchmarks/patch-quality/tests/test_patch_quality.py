@@ -395,6 +395,114 @@ class TestOpenRecords(unittest.TestCase):
                          report.open_records(packed))
 
 
+class TestGitRetry(unittest.TestCase):
+    """Lock contention costs an instance, so it has to be retried, not raised."""
+
+    def test_lock_errors_are_retryable(self):
+        for msg in ["fatal: Unable to create '.git/index.lock': File exists.",
+                    "fatal: cannot lock ref 'HEAD'",
+                    "Another git process seems to be running"]:
+            self.assertTrue(harness._retryable(msg), msg)
+
+    def test_real_failures_are_not_retried(self):
+        for msg in ["fatal: reference is not a tree: deadbeef",
+                    "error: pathspec 'nope' did not match any file"]:
+            self.assertFalse(harness._retryable(msg), msg)
+
+    def test_git_retries_then_succeeds(self):
+        calls = []
+
+        class Proc:
+            def __init__(self, rc, err):
+                self.returncode, self.stderr, self.stdout = rc, err, ""
+
+        def fake_run(argv, **kw):
+            calls.append(argv)
+            if len(calls) < 3:
+                return Proc(128, "fatal: Unable to create index.lock: File exists.")
+            return Proc(0, "")
+
+        orig_run, orig_sleep = harness.subprocess.run, harness.time.sleep
+        harness.subprocess.run = fake_run
+        harness.time.sleep = lambda _: None
+        try:
+            proc = harness.git("/repo", "checkout", "-f", "abc")
+        finally:
+            harness.subprocess.run, harness.time.sleep = orig_run, orig_sleep
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(len(calls), 3)
+
+    def test_non_retryable_failure_raises_immediately(self):
+        calls = []
+
+        class Proc:
+            returncode, stdout = 128, ""
+            stderr = "fatal: reference is not a tree: deadbeef"
+
+        def fake_run(argv, **kw):
+            calls.append(argv)
+            return Proc()
+
+        orig = harness.subprocess.run
+        harness.subprocess.run = fake_run
+        try:
+            with self.assertRaises(RuntimeError):
+                harness.git("/repo", "checkout", "-f", "deadbeef")
+        finally:
+            harness.subprocess.run = orig
+        self.assertEqual(len(calls), 1)
+
+
+class TestOpenAll(unittest.TestCase):
+    """Pooling result sets across repositories."""
+
+    def _write(self, meta, records):
+        import json
+        import tempfile
+        fd, path = tempfile.mkstemp(suffix=".jsonl")
+        with os.fdopen(fd, "w") as fh:
+            fh.write(json.dumps(dict(meta, record_type="meta")) + "\n")
+            for r in records:
+                fh.write(json.dumps(r) + "\n")
+        self.addCleanup(os.unlink, path)
+        return path
+
+    @staticmethod
+    def _rec(iid):
+        return {"instance_id": iid, "source": "gold", "status": "ok"}
+
+    def test_records_pool_and_meta_merges(self):
+        a = self._write({"analyzer": "pyscn v1.0.0", "repo": "django/django",
+                         "n_instances": 231}, [self._rec("d-1")])
+        b = self._write({"analyzer": "pyscn v1.0.0", "repo": "sympy/sympy",
+                         "n_instances": 75}, [self._rec("s-1")])
+        meta, records = report.open_all([a, b])
+        self.assertEqual(len(records), 2)
+        self.assertEqual(meta["n_instances"], 306)
+        self.assertEqual(meta["repo"], "django/django, sympy/sympy")
+
+    def test_mismatched_analyzer_builds_are_refused(self):
+        """Pooling metrics from two analyzer versions would silently mix
+        measurement regimes, which is what --min-complexity already taught us."""
+        a = self._write({"analyzer": "pyscn v1.0.0"}, [self._rec("d-1")])
+        b = self._write({"analyzer": "pyscn v1.1.0"}, [self._rec("s-1")])
+        with self.assertRaises(SystemExit) as ctx:
+            report.open_all([a, b])
+        self.assertIn("different analyzer builds", str(ctx.exception))
+
+    def test_single_path_still_works(self):
+        a = self._write({"analyzer": "pyscn v1.0.0", "repo": "django/django"},
+                        [self._rec("d-1")])
+        meta, records = report.open_all([a])
+        self.assertEqual(len(records), 1)
+        self.assertEqual(meta["repo"], "django/django")
+
+    def test_empty_result_set_is_refused(self):
+        a = self._write({"analyzer": "pyscn v1.0.0"}, [])
+        with self.assertRaises(SystemExit):
+            report.open_all([a])
+
+
 class TestLoadResolved(unittest.TestCase):
 
     def test_gate_comes_from_the_records(self):

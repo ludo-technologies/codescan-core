@@ -25,6 +25,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 from analyzer import AnalyzerError, get_analyzer
 
@@ -40,9 +41,29 @@ SCHEMA_VERSION = 2
 
 # ---------------------------------------------------------------------- git
 
+# Checking out thousands of commits in one repository provokes git's own
+# background maintenance, which takes the index lock. A checkout that loses that
+# race used to drop the whole instance -- every source, silently, into a stderr
+# line the runner was free to discard. Over sphinx that cost 7 of 44 instances.
+GIT_RETRIES = 5
+GIT_RETRY_WAIT = 1.5
+_RETRYABLE = ("index.lock", "unable to create", "cannot lock ref",
+              "another git process")
+
+
+def _retryable(stderr):
+    low = stderr.lower()
+    return any(marker in low for marker in _RETRYABLE)
+
+
 def git(repo, *args, check=True):
-    proc = subprocess.run(["git", "-C", repo, *args],
-                          capture_output=True, text=True)
+    for attempt in range(GIT_RETRIES):
+        proc = subprocess.run(["git", "-C", repo, *args],
+                              capture_output=True, text=True)
+        if proc.returncode == 0 or not _retryable(proc.stderr):
+            break
+        if attempt + 1 < GIT_RETRIES:
+            time.sleep(GIT_RETRY_WAIT * (attempt + 1))
     if check and proc.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)}: {proc.stderr.strip()[:300]}")
     return proc
@@ -420,8 +441,13 @@ def main():
                 recs = evaluate(analyzer, repo_path, m["base_commit"],
                                 sources, iid)
             except RuntimeError as exc:
+                # Land it in the data, not only in stderr. A run that quietly
+                # drops instances into a log looks identical to a complete one
+                # once the log is gone.
                 print(f"    skipped: {exc}", file=sys.stderr)
-                continue
+                recs = [{"instance_id": iid, "source": name,
+                         "status": "instance_failed", "error": str(exc)[:300]}
+                        for name, _ in sources]
 
             for r in recs:
                 r["repo"] = args.repo
