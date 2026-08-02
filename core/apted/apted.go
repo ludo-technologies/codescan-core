@@ -25,6 +25,8 @@ type APTEDAnalyzer struct {
 
 	td        []float64
 	fd        []float64
+	delBuf    []float64
+	insBuf    []float64
 	nodesBuf1 []*TreeNode
 	nodesBuf2 []*TreeNode
 }
@@ -61,6 +63,35 @@ func scratchFloats(buf *[]float64, n int) []float64 {
 	}
 	*buf = (*buf)[:n]
 	return *buf
+}
+
+// minCost returns the smaller of two edit costs. Edit costs are finite and
+// non-negative, so a plain comparison agrees with math.Min without its NaN and
+// signed-zero handling — which the innermost DP loops cannot afford.
+func minCost(a, b float64) float64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// nodeEditCosts precomputes the per-node delete and insert costs for the two
+// node sequences. A node's cost depends only on the node itself, so computing
+// them once per comparison keeps the O(n*m) inner loops free of cost-model
+// calls — which dominate the profile when a language cost model classifies
+// nodes by inspecting their labels.
+func (a *APTEDAnalyzer) nodeEditCosts(nodes1, nodes2 []*TreeNode) (deleteCosts, insertCosts []float64) {
+	deleteCosts = scratchFloats(&a.delBuf, len(nodes1))
+	for i, node := range nodes1 {
+		deleteCosts[i] = a.costModel.Delete(node)
+	}
+
+	insertCosts = scratchFloats(&a.insBuf, len(nodes2))
+	for j, node := range nodes2 {
+		insertCosts[j] = a.costModel.Insert(node)
+	}
+
+	return deleteCosts, insertCosts
 }
 
 // ComputeDistance computes the tree edit distance between two trees.
@@ -763,14 +794,13 @@ func (a *APTEDAnalyzer) aptedOptimized(tree1, tree2 *TreeNode, keyRoots1, keyRoo
 	stride := size2 + 1
 
 	td := scratchFloats(&a.td, (size1+1)*stride)
-	for i := range td {
-		td[i] = 0
-	}
+	clear(td)
 	fd := scratchFloats(&a.fd, (size1+1)*stride)
+	deleteCosts, insertCosts := a.nodeEditCosts(nodes1, nodes2)
 
 	for _, i := range keyRoots1 {
 		for _, j := range keyRoots2 {
-			a.computeForestDistanceOptimized(nodes1, nodes2, i, j, td, fd, stride, maxDistance)
+			a.computeForestDistanceOptimized(nodes1, nodes2, i, j, td, fd, deleteCosts, insertCosts, stride, maxDistance)
 			if td[size1*stride+size2] > maxDistance {
 				return td[size1*stride+size2]
 			}
@@ -787,14 +817,13 @@ func (a *APTEDAnalyzer) apted(tree1, tree2 *TreeNode, keyRoots1, keyRoots2 []int
 	stride := size2 + 1
 
 	td := scratchFloats(&a.td, (size1+1)*stride)
-	for i := range td {
-		td[i] = 0
-	}
+	clear(td)
 	fd := scratchFloats(&a.fd, (size1+1)*stride)
+	deleteCosts, insertCosts := a.nodeEditCosts(nodes1, nodes2)
 
 	for _, i := range keyRoots1 {
 		for _, j := range keyRoots2 {
-			a.computeForestDistance(nodes1, nodes2, i, j, td, fd, stride)
+			a.computeForestDistance(nodes1, nodes2, i, j, td, fd, deleteCosts, insertCosts, stride)
 		}
 	}
 	return td[size1*stride+size2]
@@ -809,7 +838,7 @@ func zeroForestRegion(fd []float64, stride, lmlI, i, lmlJ, j int) {
 func (a *APTEDAnalyzer) computeForestDistanceOptimized(
 	nodes1, nodes2 []*TreeNode,
 	i, j int,
-	td, fd []float64,
+	td, fd, deleteCosts, insertCosts []float64,
 	stride int,
 	maxDistance float64,
 ) {
@@ -822,31 +851,34 @@ func (a *APTEDAnalyzer) computeForestDistanceOptimized(
 	zeroForestRegion(fd, stride, lmlI, i, lmlJ, j)
 
 	for x := lmlI; x <= i; x++ {
-		fd[(x+1)*stride+lmlJ] = fd[x*stride+lmlJ] + a.costModel.Delete(nodes1[x])
+		fd[(x+1)*stride+lmlJ] = fd[x*stride+lmlJ] + deleteCosts[x]
 		if fd[(x+1)*stride+lmlJ] > maxDistance {
 			return
 		}
 	}
 	for y := lmlJ; y <= j; y++ {
-		fd[lmlI*stride+y+1] = fd[lmlI*stride+y] + a.costModel.Insert(nodes2[y])
+		fd[lmlI*stride+y+1] = fd[lmlI*stride+y] + insertCosts[y]
 		if fd[lmlI*stride+y+1] > maxDistance {
 			return
 		}
 	}
 
 	for x := lmlI; x <= i; x++ {
+		node1 := nodes1[x]
+		deleteCost := deleteCosts[x]
+		node1OnPath := node1.LeftMostLeaf == lmlI
 		for y := lmlJ; y <= j; y++ {
-			node1, node2 := nodes1[x], nodes2[y]
-			deleteCost := fd[x*stride+y+1] + a.costModel.Delete(node1)
-			insertCost := fd[(x+1)*stride+y] + a.costModel.Insert(node2)
+			node2 := nodes2[y]
+			deleteOption := fd[x*stride+y+1] + deleteCost
+			insertOption := fd[(x+1)*stride+y] + insertCosts[y]
 			var distance float64
-			if node1.LeftMostLeaf == lmlI && node2.LeftMostLeaf == lmlJ {
+			if node1OnPath && node2.LeftMostLeaf == lmlJ {
 				renameCost := fd[x*stride+y] + a.costModel.Rename(node1, node2)
-				distance = math.Min(deleteCost, math.Min(insertCost, renameCost))
+				distance = minCost(deleteOption, minCost(insertOption, renameCost))
 				td[(x+1)*stride+y+1] = distance
 			} else {
 				subtreeCost := fd[node1.LeftMostLeaf*stride+node2.LeftMostLeaf] + td[(x+1)*stride+y+1]
-				distance = math.Min(deleteCost, math.Min(insertCost, subtreeCost))
+				distance = minCost(deleteOption, minCost(insertOption, subtreeCost))
 			}
 			fd[(x+1)*stride+y+1] = distance
 			if distance > maxDistance {
@@ -856,7 +888,7 @@ func (a *APTEDAnalyzer) computeForestDistanceOptimized(
 	}
 }
 
-func (a *APTEDAnalyzer) computeForestDistance(nodes1, nodes2 []*TreeNode, i, j int, td, fd []float64, stride int) {
+func (a *APTEDAnalyzer) computeForestDistance(nodes1, nodes2 []*TreeNode, i, j int, td, fd, deleteCosts, insertCosts []float64, stride int) {
 	if i < 0 || i >= len(nodes1) || j < 0 || j >= len(nodes2) {
 		return
 	}
@@ -866,25 +898,28 @@ func (a *APTEDAnalyzer) computeForestDistance(nodes1, nodes2 []*TreeNode, i, j i
 	zeroForestRegion(fd, stride, lmlI, i, lmlJ, j)
 
 	for x := lmlI; x <= i; x++ {
-		fd[(x+1)*stride+lmlJ] = fd[x*stride+lmlJ] + a.costModel.Delete(nodes1[x])
+		fd[(x+1)*stride+lmlJ] = fd[x*stride+lmlJ] + deleteCosts[x]
 	}
 	for y := lmlJ; y <= j; y++ {
-		fd[lmlI*stride+y+1] = fd[lmlI*stride+y] + a.costModel.Insert(nodes2[y])
+		fd[lmlI*stride+y+1] = fd[lmlI*stride+y] + insertCosts[y]
 	}
 
 	for x := lmlI; x <= i; x++ {
+		node1 := nodes1[x]
+		deleteCost := deleteCosts[x]
+		node1OnPath := node1.LeftMostLeaf == lmlI
 		for y := lmlJ; y <= j; y++ {
-			node1, node2 := nodes1[x], nodes2[y]
-			deleteCost := fd[x*stride+y+1] + a.costModel.Delete(node1)
-			insertCost := fd[(x+1)*stride+y] + a.costModel.Insert(node2)
-			if node1.LeftMostLeaf == lmlI && node2.LeftMostLeaf == lmlJ {
+			node2 := nodes2[y]
+			deleteOption := fd[x*stride+y+1] + deleteCost
+			insertOption := fd[(x+1)*stride+y] + insertCosts[y]
+			if node1OnPath && node2.LeftMostLeaf == lmlJ {
 				renameCost := fd[x*stride+y] + a.costModel.Rename(node1, node2)
-				distance := math.Min(deleteCost, math.Min(insertCost, renameCost))
+				distance := minCost(deleteOption, minCost(insertOption, renameCost))
 				fd[(x+1)*stride+y+1] = distance
 				td[(x+1)*stride+y+1] = distance
 			} else {
 				subtreeCost := fd[node1.LeftMostLeaf*stride+node2.LeftMostLeaf] + td[(x+1)*stride+y+1]
-				fd[(x+1)*stride+y+1] = math.Min(deleteCost, math.Min(insertCost, subtreeCost))
+				fd[(x+1)*stride+y+1] = minCost(deleteOption, minCost(insertOption, subtreeCost))
 			}
 		}
 	}

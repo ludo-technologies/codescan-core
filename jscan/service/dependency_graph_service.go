@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	coregraph "github.com/ludo-technologies/polyscan/core/graph"
 	"github.com/ludo-technologies/polyscan/jscan/domain"
 	"github.com/ludo-technologies/polyscan/jscan/internal/analyzer"
 	"github.com/ludo-technologies/polyscan/jscan/internal/parser"
@@ -130,36 +131,44 @@ func (s *DependencyGraphServiceImpl) Analyze(ctx context.Context, req domain.Dep
 
 // parseFiles parses all input files and returns their ASTs
 func (s *DependencyGraphServiceImpl) parseFiles(ctx context.Context, paths []string) (map[string]*parser.Node, []string, []string) {
-	asts := make(map[string]*parser.Node)
+	asts := make(map[string]*parser.Node, len(paths))
 	var warnings []string
 	var errors []string
 
-	p := parser.NewParser()
-	defer p.Close()
+	results := analyzeFilesConcurrently(ctx, paths, nil,
+		func(_ context.Context, filePath string) fileAnalysis[*parser.Node] {
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return fileAnalysis[*parser.Node]{
+					errors: []string{fmt.Sprintf("Failed to read %s: %v", filePath, err)},
+				}
+			}
 
-	for _, filePath := range paths {
-		// Check context cancellation
-		select {
-		case <-ctx.Done():
-			return asts, warnings, append(errors, fmt.Sprintf("Parsing cancelled: %v", ctx.Err()))
-		default:
+			// Each call builds its own parser: tree-sitter parsers are not safe
+			// for concurrent use.
+			p := parser.NewParser()
+			defer p.Close()
+
+			ast, err := p.ParseString(string(content))
+			if err != nil {
+				return fileAnalysis[*parser.Node]{
+					warnings: []string{fmt.Sprintf("Failed to parse %s: %v", filePath, err)},
+				}
+			}
+
+			return fileAnalysis[*parser.Node]{value: ast}
+		})
+
+	for index, result := range results {
+		warnings = append(warnings, result.warnings...)
+		errors = append(errors, result.errors...)
+		if result.value != nil {
+			asts[paths[index]] = result.value
 		}
+	}
 
-		// Read file
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("Failed to read %s: %v", filePath, err))
-			continue
-		}
-
-		// Parse file
-		ast, err := p.ParseString(string(content))
-		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("Failed to parse %s: %v", filePath, err))
-			continue
-		}
-
-		asts[filePath] = ast
+	if ctx.Err() != nil {
+		errors = append(errors, fmt.Sprintf("Parsing cancelled: %v", ctx.Err()))
 	}
 
 	return asts, warnings, errors
@@ -219,73 +228,52 @@ func (s *DependencyGraphServiceImpl) buildAnalysisResult(
 	}
 }
 
-// findLongestChains finds the longest dependency chains in the graph
+// maxReportedChains caps how many dependency chains the report carries.
+const maxReportedChains = 5
+
+// findLongestChains finds the longest dependency chains in the graph, one per
+// entry-point module. Chains come from core/graph's condensation-based finder,
+// which is linear in the graph size — an exhaustive simple-path search would be
+// exponential on the cyclic import graphs real projects produce.
 func (s *DependencyGraphServiceImpl) findLongestChains(graph *domain.DependencyGraph, maxDepth int) []domain.DependencyPath {
 	if maxDepth == 0 {
 		return nil
 	}
 
-	var chains []domain.DependencyPath
-	visited := make(map[string]bool)
+	finder := coregraph.NewChainFinder(graph)
 
-	// Find chains starting from entry points
-	for nodeID, node := range graph.Nodes {
-		if node.IsEntryPoint {
-			chain := s.findLongestChainFrom(nodeID, graph, visited)
-			if len(chain) > 1 {
-				chains = append(chains, domain.DependencyPath{
-					From:   chain[0],
-					To:     chain[len(chain)-1],
-					Path:   chain,
-					Length: len(chain) - 1,
-				})
-			}
+	var chains []domain.DependencyPath
+	for _, nodeID := range graph.NodeIDs() {
+		node := graph.GetNode(nodeID)
+		if node == nil || !node.IsEntryPoint {
+			continue
+		}
+
+		chain := finder.LongestChainFrom(nodeID)
+		if len(chain) > 1 {
+			chains = append(chains, domain.DependencyPath{
+				From:   chain[0],
+				To:     chain[len(chain)-1],
+				Path:   chain,
+				Length: len(chain) - 1,
+			})
 		}
 	}
 
-	// Sort by length (descending)
+	// Sort by length (descending), then by starting module so equal-length
+	// chains keep a stable order across runs.
 	sort.Slice(chains, func(i, j int) bool {
-		return chains[i].Length > chains[j].Length
+		if chains[i].Length != chains[j].Length {
+			return chains[i].Length > chains[j].Length
+		}
+		return chains[i].From < chains[j].From
 	})
 
-	// Return top 5 chains
-	if len(chains) > 5 {
-		chains = chains[:5]
+	if len(chains) > maxReportedChains {
+		chains = chains[:maxReportedChains]
 	}
 
 	return chains
-}
-
-// findLongestChainFrom finds the longest chain starting from a node
-func (s *DependencyGraphServiceImpl) findLongestChainFrom(nodeID string, graph *domain.DependencyGraph, globalVisited map[string]bool) []string {
-	visited := make(map[string]bool)
-	var longestPath []string
-
-	var dfs func(current string, path []string)
-	dfs = func(current string, path []string) {
-		if visited[current] {
-			return
-		}
-		visited[current] = true
-		path = append(path, current)
-
-		if len(path) > len(longestPath) {
-			longestPath = make([]string, len(path))
-			copy(longestPath, path)
-		}
-
-		edges := graph.GetOutgoingEdges(current)
-		for _, edge := range edges {
-			if graph.GetNode(edge.To) != nil && !visited[edge.To] {
-				dfs(edge.To, path)
-			}
-		}
-
-		visited[current] = false
-	}
-
-	dfs(nodeID, nil)
-	return longestPath
 }
 
 // AnalyzeSingleFile analyzes a single file and returns its dependency information

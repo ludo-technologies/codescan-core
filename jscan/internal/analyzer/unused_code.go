@@ -231,7 +231,8 @@ func DetectUnusedExports(allModuleInfos map[string]*domain.ModuleInfo, graph *Im
 
 	var findings []*DeadCodeFinding
 
-	for filePath, info := range allModuleInfos {
+	for _, filePath := range sortedModulePaths(allModuleInfos) {
+		info := allModuleInfos[filePath]
 		// Skip entry-point files whose exports are meant to be public
 		if isEntryPointFile(filePath) {
 			continue
@@ -490,7 +491,8 @@ func DetectUnusedExportedFunctions(allModuleInfos map[string]*domain.ModuleInfo,
 
 	var findings []*DeadCodeFinding
 
-	for filePath, info := range allModuleInfos {
+	for _, filePath := range sortedModulePaths(allModuleInfos) {
+		info := allModuleInfos[filePath]
 		if isEntryPointFile(filePath) {
 			continue
 		}
@@ -679,4 +681,15 @@ func resolveAliasImportPaths(source string, idx *suffixIndex) []string {
 	}
 	sort.Strings(result)
 	return result
+}
+
+// sortedModulePaths returns the analyzed module paths in a fixed order, so
+// findings collected across modules do not depend on Go's map iteration order.
+func sortedModulePaths(allModuleInfos map[string]*domain.ModuleInfo) []string {
+	paths := make([]string, 0, len(allModuleInfos))
+	for filePath := range allModuleInfos {
+		paths = append(paths, filePath)
+	}
+	sort.Strings(paths)
+	return paths
 }

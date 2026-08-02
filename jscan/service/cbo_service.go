@@ -58,26 +58,25 @@ func (s *CBOServiceImpl) Analyze(ctx context.Context, req domain.CBORequest) (*d
 
 	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
 
-	for _, filePath := range req.Paths {
-		// Check context cancellation
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("CBO analysis cancelled: %w", ctx.Err())
-		default:
-		}
+	results := analyzeFilesConcurrently(ctx, req.Paths, nil,
+		func(ctx context.Context, filePath string) fileAnalysis[*domain.ClassCoupling] {
+			classCoupling, fileWarnings, fileErrors := s.analyzeFile(ctx, cboAnalyzer, filePath)
+			return fileAnalysis[*domain.ClassCoupling]{value: classCoupling, warnings: fileWarnings, errors: fileErrors}
+		})
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("CBO analysis cancelled: %w", ctx.Err())
+	}
 
-		// Analyze single file
-		classCoupling, fileWarnings, fileErrors := s.analyzeFile(ctx, cboAnalyzer, filePath)
-
-		if len(fileErrors) > 0 {
-			errors = append(errors, fileErrors...)
+	for _, result := range results {
+		if len(result.errors) > 0 {
+			errors = append(errors, result.errors...)
 			continue
 		}
 
-		if classCoupling != nil {
-			allClasses = append(allClasses, *classCoupling)
+		if result.value != nil {
+			allClasses = append(allClasses, *result.value)
 		}
-		warnings = append(warnings, fileWarnings...)
+		warnings = append(warnings, result.warnings...)
 		filesProcessed++
 	}
 

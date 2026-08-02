@@ -3,6 +3,7 @@ package analyzer
 import (
 	"context"
 	"regexp"
+	"sort"
 	"testing"
 
 	coreclone "github.com/ludo-technologies/polyscan/core/clone"
@@ -495,5 +496,41 @@ func TestHelperFunctions(t *testing.T) {
 	}
 	if maxInt(5, 3) != 5 {
 		t.Error("maxInt(5, 3) should be 5")
+	}
+}
+
+// TestWeakestFirstPairsKeepsStrongest pins the bounded top-N behaviour the
+// batching path relies on: once at capacity, only stronger pairs get in, and
+// they displace the weakest retained pair.
+func TestWeakestFirstPairsKeepsStrongest(t *testing.T) {
+	const limit = 3
+
+	similarities := []float64{0.50, 0.95, 0.60, 0.99, 0.10, 0.70}
+	top := &weakestFirstPairs{}
+	for i, similarity := range similarities {
+		top.push(&domain.ClonePair{ID: i, Similarity: similarity}, limit)
+		if top.Len() > limit {
+			t.Fatalf("heap grew to %d, want at most %d", top.Len(), limit)
+		}
+	}
+
+	retained := make([]float64, 0, top.Len())
+	for _, pair := range top.pairs {
+		retained = append(retained, pair.Similarity)
+	}
+	sort.Float64s(retained)
+
+	want := []float64{0.70, 0.95, 0.99}
+	if len(retained) != len(want) {
+		t.Fatalf("retained %v, want %v", retained, want)
+	}
+	for i := range want {
+		if retained[i] != want[i] {
+			t.Fatalf("retained %v, want %v", retained, want)
+		}
+	}
+
+	if weakest := top.weakest().Similarity; weakest != 0.70 {
+		t.Errorf("weakest() = %v, want 0.70", weakest)
 	}
 }

@@ -33,6 +33,44 @@ func NewCloneServiceWithDefaults() *CloneServiceImpl {
 	}
 }
 
+// extractedFragments is one file's clone-detection input plus the size counters
+// the statistics block reports.
+type extractedFragments struct {
+	fragments []*analyzer.CodeFragment
+	lines     int
+	nodes     int
+}
+
+// extractFileFragments reads, parses, and extracts clone fragments from one
+// file. Fragment extraction only reads the detector's configuration, so this is
+// safe to run for several files at once.
+func extractFileFragments(detector *analyzer.CloneDetector, filePath string) fileAnalysis[*extractedFragments] {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fileAnalysis[*extractedFragments]{
+			errors: []string{fmt.Sprintf("[%s] Failed to read file: %v", filePath, err)},
+		}
+	}
+
+	ast, err := parser.ParseForLanguage(filePath, content)
+	if err != nil {
+		return fileAnalysis[*extractedFragments]{
+			errors: []string{fmt.Sprintf("[%s] Failed to parse: %v", filePath, err)},
+		}
+	}
+
+	extracted := &extractedFragments{
+		// Source content is carried along for Type-1 textual gating.
+		fragments: detector.ExtractFragmentsWithSource(ast.Body, filePath, content),
+		lines:     countLines(content),
+	}
+	for _, node := range ast.Body {
+		extracted.nodes += countASTNodes(node)
+	}
+
+	return fileAnalysis[*extractedFragments]{value: extracted}
+}
+
 // DetectClones performs clone detection on the given request
 func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRequest) (*domain.CloneResponse, error) {
 	startTime := time.Now()
@@ -88,37 +126,24 @@ func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRe
 	nodesAnalyzed := 0
 	var errors []string
 
-	for _, filePath := range req.Paths {
-		// Check context cancellation
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("clone detection cancelled: %w", ctx.Err())
-		default:
-		}
+	results := analyzeFilesConcurrently(ctx, req.Paths, nil,
+		func(_ context.Context, filePath string) fileAnalysis[*extractedFragments] {
+			return extractFileFragments(detector, filePath)
+		})
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("clone detection cancelled: %w", ctx.Err())
+	}
 
-		// Read file
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("[%s] Failed to read file: %v", filePath, err))
+	for _, result := range results {
+		errors = append(errors, result.errors...)
+		if result.value == nil {
 			continue
 		}
 
-		// Parse file
-		ast, err := parser.ParseForLanguage(filePath, content)
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("[%s] Failed to parse: %v", filePath, err))
-			continue
-		}
-
-		// Extract fragments from the AST with source content for Type-1 textual gating
-		fragments := detector.ExtractFragmentsWithSource(ast.Body, filePath, content)
-		allFragments = append(allFragments, fragments...)
-
+		allFragments = append(allFragments, result.value.fragments...)
 		filesAnalyzed++
-		linesAnalyzed += countLines(content)
-		for _, node := range ast.Body {
-			nodesAnalyzed += countASTNodes(node)
-		}
+		linesAnalyzed += result.value.lines
+		nodesAnalyzed += result.value.nodes
 	}
 
 	if len(allFragments) == 0 {

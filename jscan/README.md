@@ -171,7 +171,7 @@ Create a `jscan.config.json` or `.jscanrc.json` in your project root:
 
 ## Documentation
 
-📚 **[Development Guide](docs/DEVELOPMENT.md)** • **[Architecture](docs/ARCHITECTURE.md)** • **[Testing](docs/TESTING.md)** • **[Contributing](CONTRIBUTING.md)**
+📚 **[Development Guide](docs/DEVELOPMENT.md)** • **[Architecture](docs/ARCHITECTURE.md)** • **[Testing](docs/TESTING.md)** • **[Performance](../docs/performance.md)** • **[Contributing](CONTRIBUTING.md)**
 
 ## Enterprise Support
 

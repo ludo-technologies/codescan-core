@@ -95,7 +95,7 @@ Each module is tagged with a directory prefix, e.g. `core/v0.2.1`, `jscan/v0.9.1
 
 ## Documentation
 
-📖 **[pyscn documentation site](https://docs.codescan.dev/)** • **[jscan README](jscan/README.md)** • **[core README](core/README.md)**
+📖 **[pyscn documentation site](https://docs.codescan.dev/)** • **[jscan README](jscan/README.md)** • **[core README](core/README.md)** • **[Performance](docs/performance.md)**
 
 For contributors: **[Contributing](CONTRIBUTING.md)** • **[Code of Conduct](CODE_OF_CONDUCT.md)** • **[Security](SECURITY.md)**
 

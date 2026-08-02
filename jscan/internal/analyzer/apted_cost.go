@@ -44,6 +44,110 @@ func NewJavaScriptCostModelWithConfig(ignoreLiterals, ignoreIdentifiers bool) *J
 	}
 }
 
+// nodeCategory classifies a node label into the cost tiers this model prices.
+// Labels are looked up rather than prefix-scanned because APTED evaluates the
+// cost model once per node per comparison, across millions of comparisons.
+type nodeCategory int
+
+const (
+	categoryOther nodeCategory = iota
+	categoryStructural
+	categoryControlFlow
+	categoryExpression
+	categoryLiteral
+	categoryIdentifier
+)
+
+// Cost multipliers per category. Structural and control-flow nodes carry the
+// shape of the program, so editing them is priced above the default; expression
+// nodes below it. Literals and identifiers are only discounted when the caller
+// asked for them to be ignored.
+const (
+	structuralMultiplier        = 1.5
+	controlFlowMultiplier       = 1.3
+	expressionMultiplier        = 0.8
+	ignoredLiteralMultiplier    = 0.1
+	ignoredIdentifierMultiplier = 0.2
+	defaultMultiplier           = 1.0
+)
+
+// Label similarity tiers, from identical base type down to no relation.
+const (
+	sameBaseTypeSimilarity = 0.8
+	relatedTypeSimilarity  = 0.5
+	sameCategorySimilarity = 0.3
+	unrelatedSimilarity    = 0.0
+)
+
+// nodeCategories maps a node label's base type to its category. Categories are
+// disjoint and looked up in the order the cost tiers are defined.
+var nodeCategories = buildNodeCategories()
+
+func buildNodeCategories() map[string]nodeCategory {
+	categories := map[string]nodeCategory{}
+	add := func(category nodeCategory, labels ...string) {
+		for _, label := range labels {
+			categories[label] = category
+		}
+	}
+
+	add(categoryStructural,
+		"FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression",
+		"AsyncFunctionDeclaration", "GeneratorFunctionDeclaration",
+		"ClassDeclaration", "ClassExpression", "MethodDefinition",
+		"Program", "Module")
+	add(categoryControlFlow,
+		"IfStatement", "SwitchStatement", "SwitchCase",
+		"ForStatement", "ForInStatement", "ForOfStatement",
+		"WhileStatement", "DoWhileStatement",
+		"TryStatement", "CatchClause", "FinallyClause",
+		"BreakStatement", "ContinueStatement", "ReturnStatement", "ThrowStatement")
+	add(categoryExpression,
+		"BinaryExpression", "UnaryExpression", "LogicalExpression",
+		"ConditionalExpression", "CallExpression", "MemberExpression",
+		"AssignmentExpression", "UpdateExpression", "NewExpression",
+		"ArrayExpression", "ObjectExpression", "SequenceExpression",
+		"AwaitExpression", "YieldExpression", "SpreadElement",
+		"TemplateLiteral")
+	add(categoryLiteral,
+		"StringLiteral", "NumberLiteral", "BooleanLiteral",
+		"NullLiteral", "RegExpLiteral")
+
+	return categories
+}
+
+// parenthesizedCategories maps the base types that are only meaningful when the
+// label carries a parenthesized detail, as produced by TreeConverter.getNodeLabel
+// (for example "Function(name)" or "Identifier(name)").
+var parenthesizedCategories = map[string]nodeCategory{
+	"Function":   categoryStructural,
+	"Class":      categoryStructural,
+	"Literal":    categoryLiteral,
+	"Identifier": categoryIdentifier,
+}
+
+// splitLabel separates a label's base node type from its parenthesized detail.
+func splitLabel(label string) (baseType string, hasDetail bool) {
+	if idx := strings.Index(label, "("); idx >= 0 {
+		return label[:idx], true
+	}
+	return label, false
+}
+
+// categoryOf classifies a full node label.
+func categoryOf(label string) nodeCategory {
+	baseType, hasDetail := splitLabel(label)
+	if category, ok := nodeCategories[baseType]; ok {
+		return category
+	}
+	if hasDetail {
+		if category, ok := parenthesizedCategories[baseType]; ok {
+			return category
+		}
+	}
+	return categoryOther
+}
+
 // Insert returns the cost of inserting a node
 func (c *JavaScriptCostModel) Insert(node *apted.TreeNode) float64 {
 	if node == nil {
@@ -91,114 +195,37 @@ func (c *JavaScriptCostModel) Rename(node1, node2 *apted.TreeNode) float64 {
 
 // getNodeTypeMultiplier returns a cost multiplier based on the node type
 func (c *JavaScriptCostModel) getNodeTypeMultiplier(label string) float64 {
-	// Structural nodes are more expensive to modify
-	if c.isStructuralNode(label) {
-		return 1.5
-	}
-
-	// Control flow nodes are expensive
-	if c.isControlFlowNode(label) {
-		return 1.3
-	}
-
-	// Expression nodes are less expensive
-	if c.isExpressionNode(label) {
-		return 0.8
-	}
-
-	// Literals and identifiers can be very cheap if configured to ignore
-	if c.isLiteralNode(label) && c.IgnoreLiterals {
-		return 0.1
-	}
-
-	if c.isIdentifierNode(label) && c.IgnoreIdentifiers {
-		return 0.2
-	}
-
-	return 1.0 // Default multiplier
-}
-
-// isStructuralNode checks if a node represents a structural element
-func (c *JavaScriptCostModel) isStructuralNode(label string) bool {
-	structuralNodes := []string{
-		"FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression",
-		"AsyncFunctionDeclaration", "GeneratorFunctionDeclaration",
-		"ClassDeclaration", "ClassExpression", "MethodDefinition",
-		"Program", "Module",
-	}
-
-	for _, nodeType := range structuralNodes {
-		if strings.HasPrefix(label, nodeType) || strings.HasPrefix(label, "Function(") || strings.HasPrefix(label, "Class(") {
-			return true
+	switch categoryOf(label) {
+	case categoryStructural:
+		return structuralMultiplier
+	case categoryControlFlow:
+		return controlFlowMultiplier
+	case categoryExpression:
+		return expressionMultiplier
+	case categoryLiteral:
+		if c.IgnoreLiterals {
+			return ignoredLiteralMultiplier
+		}
+	case categoryIdentifier:
+		if c.IgnoreIdentifiers {
+			return ignoredIdentifierMultiplier
 		}
 	}
 
-	return false
-}
-
-// isControlFlowNode checks if a node represents a control flow element
-func (c *JavaScriptCostModel) isControlFlowNode(label string) bool {
-	controlFlowNodes := []string{
-		"IfStatement", "SwitchStatement", "SwitchCase",
-		"ForStatement", "ForInStatement", "ForOfStatement",
-		"WhileStatement", "DoWhileStatement",
-		"TryStatement", "CatchClause", "FinallyClause",
-		"BreakStatement", "ContinueStatement", "ReturnStatement", "ThrowStatement",
-	}
-
-	for _, nodeType := range controlFlowNodes {
-		if strings.HasPrefix(label, nodeType) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// isExpressionNode checks if a node represents an expression
-func (c *JavaScriptCostModel) isExpressionNode(label string) bool {
-	expressionNodes := []string{
-		"BinaryExpression", "UnaryExpression", "LogicalExpression",
-		"ConditionalExpression", "CallExpression", "MemberExpression",
-		"AssignmentExpression", "UpdateExpression", "NewExpression",
-		"ArrayExpression", "ObjectExpression", "SequenceExpression",
-		"AwaitExpression", "YieldExpression", "SpreadElement",
-		"TemplateLiteral",
-	}
-
-	for _, nodeType := range expressionNodes {
-		if strings.HasPrefix(label, nodeType) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// isLiteralNode checks if a node represents a literal value
-func (c *JavaScriptCostModel) isLiteralNode(label string) bool {
-	return strings.HasPrefix(label, "Literal(") ||
-		strings.HasPrefix(label, "StringLiteral") ||
-		strings.HasPrefix(label, "NumberLiteral") ||
-		strings.HasPrefix(label, "BooleanLiteral") ||
-		strings.HasPrefix(label, "NullLiteral") ||
-		strings.HasPrefix(label, "RegExpLiteral")
-}
-
-// isIdentifierNode checks if a node represents an identifier
-func (c *JavaScriptCostModel) isIdentifierNode(label string) bool {
-	return strings.HasPrefix(label, "Identifier(")
+	return defaultMultiplier
 }
 
 // shouldIgnoreDifference determines if the difference between two labels should be ignored
 func (c *JavaScriptCostModel) shouldIgnoreDifference(label1, label2 string) bool {
+	category1, category2 := categoryOf(label1), categoryOf(label2)
+
 	// Ignore literal differences if configured
-	if c.IgnoreLiterals && c.isLiteralNode(label1) && c.isLiteralNode(label2) {
+	if c.IgnoreLiterals && category1 == categoryLiteral && category2 == categoryLiteral {
 		return true
 	}
 
 	// Ignore identifier differences if configured
-	if c.IgnoreIdentifiers && c.isIdentifierNode(label1) && c.isIdentifierNode(label2) {
+	if c.IgnoreIdentifiers && category1 == categoryIdentifier && category2 == categoryIdentifier {
 		return true
 	}
 
@@ -208,38 +235,34 @@ func (c *JavaScriptCostModel) shouldIgnoreDifference(label1, label2 string) bool
 // calculateLabelSimilarity calculates similarity between two node labels
 func (c *JavaScriptCostModel) calculateLabelSimilarity(label1, label2 string) float64 {
 	// Extract base node types (remove parenthetical content)
-	baseType1 := c.extractBaseNodeType(label1)
-	baseType2 := c.extractBaseNodeType(label2)
+	baseType1, _ := splitLabel(label1)
+	baseType2, _ := splitLabel(label2)
 
 	// If base types are identical, high similarity
 	if baseType1 == baseType2 {
-		return 0.8
+		return sameBaseTypeSimilarity
 	}
 
 	// Check for related node types
-	if c.areRelatedNodeTypes(baseType1, baseType2) {
-		return 0.5
+	if areRelatedNodeTypes(baseType1, baseType2) {
+		return relatedTypeSimilarity
 	}
 
 	// Check for same category
-	if c.areSameCategory(baseType1, baseType2) {
-		return 0.3
+	if areSameCategory(baseType1, baseType2) {
+		return sameCategorySimilarity
 	}
 
-	return 0.0 // No similarity
+	return unrelatedSimilarity
 }
 
-// extractBaseNodeType extracts the base node type from a label
-func (c *JavaScriptCostModel) extractBaseNodeType(label string) string {
-	if idx := strings.Index(label, "("); idx != -1 {
-		return label[:idx]
-	}
-	return label
-}
+// relatedNodeTypes pairs node types that express the same construct in
+// different syntactic forms, so renaming between them is cheaper than renaming
+// across unrelated types.
+var relatedNodeTypes = buildRelatedNodeTypes()
 
-// areRelatedNodeTypes checks if two node types are related
-func (c *JavaScriptCostModel) areRelatedNodeTypes(type1, type2 string) bool {
-	relatedPairs := [][2]string{
+func buildRelatedNodeTypes() map[[2]string]struct{} {
+	pairs := [][2]string{
 		{"FunctionDeclaration", "FunctionExpression"},
 		{"FunctionDeclaration", "ArrowFunctionExpression"},
 		{"FunctionExpression", "ArrowFunctionExpression"},
@@ -255,28 +278,33 @@ func (c *JavaScriptCostModel) areRelatedNodeTypes(type1, type2 string) bool {
 		{"IfStatement", "ConditionalExpression"},
 	}
 
-	for _, pair := range relatedPairs {
-		if (type1 == pair[0] && type2 == pair[1]) || (type1 == pair[1] && type2 == pair[0]) {
-			return true
-		}
+	related := make(map[[2]string]struct{}, len(pairs)*2)
+	for _, pair := range pairs {
+		related[pair] = struct{}{}
+		related[[2]string{pair[1], pair[0]}] = struct{}{}
 	}
-
-	return false
+	return related
 }
 
-// areSameCategory checks if two node types belong to the same category
-func (c *JavaScriptCostModel) areSameCategory(type1, type2 string) bool {
-	if c.isStructuralNode(type1) && c.isStructuralNode(type2) {
-		return true
+// areRelatedNodeTypes checks if two node types are related
+func areRelatedNodeTypes(type1, type2 string) bool {
+	_, ok := relatedNodeTypes[[2]string{type1, type2}]
+	return ok
+}
+
+// areSameCategory checks if two node types belong to the same category.
+// Literals and identifiers are excluded: their categories only carry a discount
+// when the caller opted into ignoring them, not a claim of structural kinship.
+func areSameCategory(type1, type2 string) bool {
+	category1, category2 := categoryOf(type1), categoryOf(type2)
+	if category1 != category2 {
+		return false
 	}
 
-	if c.isControlFlowNode(type1) && c.isControlFlowNode(type2) {
+	switch category1 {
+	case categoryStructural, categoryControlFlow, categoryExpression:
 		return true
+	default:
+		return false
 	}
-
-	if c.isExpressionNode(type1) && c.isExpressionNode(type2) {
-		return true
-	}
-
-	return false
 }

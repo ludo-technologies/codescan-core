@@ -49,27 +49,24 @@ func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.Complexi
 	}
 	defer task.Complete()
 
-	for _, filePath := range req.Paths {
-		// Check context cancellation
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("complexity analysis cancelled: %w", ctx.Err())
-		default:
-		}
+	results := analyzeFilesConcurrently(ctx, req.Paths, task,
+		func(ctx context.Context, filePath string) fileAnalysis[[]domain.FunctionComplexity] {
+			functions, fileWarnings, fileErrors := s.analyzeFile(ctx, filePath, req)
+			return fileAnalysis[[]domain.FunctionComplexity]{value: functions, warnings: fileWarnings, errors: fileErrors}
+		})
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("complexity analysis cancelled: %w", ctx.Err())
+	}
 
-		// Analyze single file
-		functions, fileWarnings, fileErrors := s.analyzeFile(ctx, filePath, req)
-
-		if len(fileErrors) > 0 {
-			errors = append(errors, fileErrors...)
-			task.Increment(1)
+	for _, result := range results {
+		if len(result.errors) > 0 {
+			errors = append(errors, result.errors...)
 			continue // Skip this file but continue with others
 		}
 
-		allFunctions = append(allFunctions, functions...)
-		warnings = append(warnings, fileWarnings...)
+		allFunctions = append(allFunctions, result.value...)
+		warnings = append(warnings, result.warnings...)
 		filesProcessed++
-		task.Increment(1)
 	}
 
 	if len(allFunctions) == 0 {
@@ -201,28 +198,48 @@ func (s *ComplexityServiceImpl) sortFunctions(functions []domain.FunctionComplex
 	sorted := make([]domain.FunctionComplexity, len(functions))
 	copy(sorted, functions)
 
+	// Every comparator falls back to source location so that functions the
+	// primary criterion cannot separate still come out in the same order on
+	// every run.
 	switch sortBy {
-	case domain.SortByComplexity:
-		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].Metrics.Complexity > sorted[j].Metrics.Complexity
-		})
 	case domain.SortByName:
 		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].Name < sorted[j].Name
+			if sorted[i].Name != sorted[j].Name {
+				return sorted[i].Name < sorted[j].Name
+			}
+			return functionPrecedes(sorted[i], sorted[j])
 		})
 	case domain.SortByRisk:
 		riskOrder := map[domain.RiskLevel]int{domain.RiskLevelHigh: 0, domain.RiskLevelMedium: 1, domain.RiskLevelLow: 2}
 		sort.Slice(sorted, func(i, j int) bool {
-			return riskOrder[sorted[i].RiskLevel] < riskOrder[sorted[j].RiskLevel]
+			if riskOrder[sorted[i].RiskLevel] != riskOrder[sorted[j].RiskLevel] {
+				return riskOrder[sorted[i].RiskLevel] < riskOrder[sorted[j].RiskLevel]
+			}
+			return functionPrecedes(sorted[i], sorted[j])
 		})
 	default:
-		// Default: sort by complexity descending
+		// Default and domain.SortByComplexity: complexity descending.
 		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].Metrics.Complexity > sorted[j].Metrics.Complexity
+			if sorted[i].Metrics.Complexity != sorted[j].Metrics.Complexity {
+				return sorted[i].Metrics.Complexity > sorted[j].Metrics.Complexity
+			}
+			return functionPrecedes(sorted[i], sorted[j])
 		})
 	}
 
 	return sorted
+}
+
+// functionPrecedes orders two functions by where they appear in the project,
+// which is unique per function and independent of analysis scheduling.
+func functionPrecedes(a, b domain.FunctionComplexity) bool {
+	if a.FilePath != b.FilePath {
+		return a.FilePath < b.FilePath
+	}
+	if a.StartLine != b.StartLine {
+		return a.StartLine < b.StartLine
+	}
+	return a.Name < b.Name
 }
 
 // generateSummary generates a summary of the complexity analysis.
