@@ -297,6 +297,7 @@ func runComplexityAnalysisInternal(files []string, cfg *config.Config) (*domain.
 		Paths:           files,
 		LowThreshold:    cfg.Complexity.LowThreshold,
 		MediumThreshold: cfg.Complexity.MediumThreshold,
+		MinComplexity:   cfg.Output.MinComplexity,
 		SortBy:          domain.SortByComplexity,
 	}
 
