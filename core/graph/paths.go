@@ -1,5 +1,7 @@
 package graph
 
+import "sort"
+
 // noComponent marks the absence of a component index.
 const noComponent = -1
 
@@ -7,14 +9,21 @@ const noComponent = -1
 //
 // Finding the longest simple path in a graph that may contain cycles is
 // NP-hard, so a ChainFinder walks the condensation instead: strongly connected
-// components are collapsed to single vertices and the longest path through the
-// resulting DAG is memoized in one linear pass. Each query then expands the
-// component path into a concrete route through the members of every component
-// it crosses, so every chain returned is a real simple path in the graph.
+// components are collapsed to single vertices and the heaviest path through the
+// resulting DAG is memoized in one linear pass, weighting each component by how
+// many nodes it holds. Each query then expands that component path into a
+// concrete route through the members of every component it crosses, so every
+// chain returned is a real simple path in the graph.
 //
-// Chains are compared by the number of components they cross. Ties are resolved
-// by traversal order, which is derived from the graph's node ordering, so
-// repeated queries over the same graph return the same chain.
+// The chain is maximal in dependency layers: no other simple path crosses more
+// strongly connected components. Within a component the route is not guaranteed
+// maximal — the final component is walked greedily through as many members as
+// it can reach, while components the chain passes through are crossed by the
+// shortest route between the edges that enter and leave them. Recovering the
+// longest route through a cycle is the NP-hard problem again.
+//
+// Ties are resolved by traversal order, which is derived from the graph's node
+// ordering, so repeated queries over the same graph return the same chain.
 type ChainFinder struct {
 	dag  *condensation
 	best []componentChain
@@ -51,10 +60,10 @@ func (f *ChainFinder) LongestChain() []string {
 		return nil
 	}
 
-	start, depth := noComponent, 0
+	start, nodes := noComponent, 0
 	for index, chain := range f.best {
-		if chain.depth > depth {
-			start, depth = index, chain.depth
+		if chain.nodes > nodes {
+			start, nodes = index, chain.nodes
 		}
 	}
 	if start == noComponent {
@@ -64,7 +73,7 @@ func (f *ChainFinder) LongestChain() []string {
 }
 
 func (f *ChainFinder) componentPathFrom(start int) []int {
-	path := make([]int, 0, f.best[start].depth)
+	var path []int
 	for index := start; index != noComponent; index = f.best[index].next {
 		path = append(path, index)
 	}
@@ -86,6 +95,13 @@ type condensation struct {
 
 func newCondensation(g DirectedGraph) *condensation {
 	components := StronglyConnectedComponents(g)
+	// Sort each component's members so a chain that starts inside a cycle starts
+	// at a predictable node rather than wherever Tarjan happened to pop it.
+	// These slices are this call's own; CycleDetector runs its own SCC pass, so
+	// its reported cycle order is untouched.
+	for _, component := range components {
+		sort.Strings(component)
+	}
 
 	dag := &condensation{
 		graph:       g,
@@ -122,15 +138,17 @@ func newCondensation(g DirectedGraph) *condensation {
 }
 
 // componentChain is the best chain reachable from one component: how many
-// components it spans and which component continues it.
+// graph nodes it spans and which component continues it.
 type componentChain struct {
-	depth int
+	nodes int
 	next  int
 }
 
-// longestChainPerComponent memoizes, for every component, the longest chain
-// starting there. The condensation is acyclic, so no component is reachable
-// from itself and a single memoized pass suffices.
+// longestChainPerComponent memoizes, for every component, the heaviest chain
+// starting there, weighting a component by its node count so that a chain
+// through a large cycle outranks an equally deep chain through single modules.
+// The condensation is acyclic, so no component is reachable from itself and a
+// single memoized pass suffices.
 func (dag *condensation) longestChainPerComponent() []componentChain {
 	best := make([]componentChain, len(dag.components))
 	resolved := make([]bool, len(dag.components))
@@ -142,10 +160,11 @@ func (dag *condensation) longestChainPerComponent() []componentChain {
 		}
 		resolved[index] = true
 
-		chain := componentChain{depth: 1, next: noComponent}
+		size := len(dag.components[index])
+		chain := componentChain{nodes: size, next: noComponent}
 		for _, successor := range dag.successors[index] {
-			if candidate := longestFrom(successor); candidate.depth+1 > chain.depth {
-				chain = componentChain{depth: candidate.depth + 1, next: successor}
+			if candidate := longestFrom(successor); candidate.nodes+size > chain.nodes {
+				chain = componentChain{nodes: candidate.nodes + size, next: successor}
 			}
 		}
 
@@ -184,17 +203,18 @@ func (dag *condensation) expand(componentPath []int, startNode string) []string 
 	return path
 }
 
-// routeWithin returns a simple path inside one component that starts at entry
-// (or the component's first node when entry is empty) and ends at exit (or at
-// entry itself when exit is empty). Every node of a strongly connected
-// component is reachable from every other, so a route always exists.
+// routeWithin returns a simple path inside one component, starting at entry (or
+// the component's first node when entry is empty).
+//
+// When exit is set the route ends there, by the shortest way through the
+// component. When it is empty — the component ends the chain, so nothing
+// constrains where the route stops — the route walks greedily through as many
+// members as it can reach. That greedy walk is what keeps a chain ending in a
+// cycle from collapsing to the single node it entered on.
 func (dag *condensation) routeWithin(index int, entry, exit string) []string {
 	component := dag.components[index]
 	if entry == "" {
 		entry = component[0]
-	}
-	if exit == "" || exit == entry {
-		return []string{entry}
 	}
 
 	members := make(map[string]struct{}, len(component))
@@ -202,6 +222,48 @@ func (dag *condensation) routeWithin(index int, entry, exit string) []string {
 		members[nodeID] = struct{}{}
 	}
 
+	if exit == "" {
+		return dag.walkWithin(entry, members)
+	}
+	if exit == entry {
+		return []string{entry}
+	}
+	return dag.shortestRouteWithin(entry, exit, members)
+}
+
+// walkWithin follows unvisited successors from entry for as long as it can,
+// staying inside members. Every step follows a real edge to a node not yet on
+// the path, so the result is a simple path; it is not guaranteed to be the
+// longest one, which is NP-hard to find.
+func (dag *condensation) walkWithin(entry string, members map[string]struct{}) []string {
+	path := []string{entry}
+	visited := map[string]struct{}{entry: {}}
+
+	for current := entry; ; {
+		next := ""
+		for _, successor := range dag.graph.Successors(current) {
+			if _, inside := members[successor]; !inside {
+				continue
+			}
+			if _, seen := visited[successor]; seen {
+				continue
+			}
+			next = successor
+			break
+		}
+		if next == "" {
+			return path
+		}
+		visited[next] = struct{}{}
+		path = append(path, next)
+		current = next
+	}
+}
+
+// shortestRouteWithin returns the shortest path from entry to exit that stays
+// inside members. Every node of a strongly connected component is reachable
+// from every other, so a route always exists.
+func (dag *condensation) shortestRouteWithin(entry, exit string, members map[string]struct{}) []string {
 	// Breadth-first search stays inside the component, so the route never
 	// revisits a node already contributed by an earlier component.
 	previous := map[string]string{entry: ""}

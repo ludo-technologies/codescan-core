@@ -548,9 +548,15 @@ func (cd *CloneDetector) DetectClonesWithLSH(ctx context.Context, fragments []*C
 		minhashThreshold = 1
 	}
 
-	// Stage 3a: collect the candidate pairs that survive the cheap filters.
+	// Stage 3: generate candidate pairs that survive the cheap filters and
+	// verify them a chunk at a time. Candidate count grows with fragments times
+	// candidates-per-query, which on a large repository runs to orders of
+	// magnitude more pairs than are ever reported, so they are never all held
+	// at once. Chunks are verified in generation order, which is what keeps
+	// pair IDs and clone identities independent of the chunk size.
 	seenPairs := make(map[[2]int]struct{})
-	var candidates [][2]int
+	chunk := make([][2]int, 0, candidateChunkSize)
+
 	for _, r := range records {
 		if isCancelled(ctx) {
 			break
@@ -585,12 +591,15 @@ func (cd *CloneDetector) DetectClonesWithLSH(ctx context.Context, fragments []*C
 				continue
 			}
 
-			candidates = append(candidates, key)
+			chunk = append(chunk, key)
+			if len(chunk) == candidateChunkSize {
+				// APTED verification, the expensive stage, across workers.
+				cd.clonePairs = cd.verifyCandidates(ctx, chunk, cd.clonePairs)
+				chunk = chunk[:0]
+			}
 		}
 	}
-
-	// Stage 3b: APTED verification, the expensive stage, across workers.
-	cd.clonePairs = cd.verifyCandidates(ctx, candidates)
+	cd.clonePairs = cd.verifyCandidates(ctx, chunk, cd.clonePairs)
 
 	// Finalize results
 	cd.limitAndSortClonePairs(cd.cloneDetectorConfig.MaxClonePairs)
@@ -625,9 +634,11 @@ func (cd *CloneDetector) prepareFragments() {
 			continue
 		}
 		// Nothing downstream reads the parser AST once the APTED tree exists,
-		// and fragments hold it for the whole run. Releasing it here lets the
-		// parse trees of already-converted files be collected while later
-		// files are still being prepared.
+		// and fragments hold it for the whole run. Dropping the last reference
+		// lets the parse trees of already-converted files be collected while
+		// later files are still being prepared. The converter deliberately does
+		// not copy parser nodes into TreeNode.OriginalNode, so this really is
+		// the last reference — see TreeConverter.ConvertAST.
 		fragment.ASTNode = nil
 		apted.PrepareTreeForAPTED(fragment.TreeNode)
 		features, _ := cd.featureExtractor.ExtractFeatures(fragment.TreeNode)
@@ -875,11 +886,21 @@ func (cd *CloneDetector) buildClonePair(measurement clonePairMeasurement, fragme
 	}
 }
 
+// candidateChunkSize bounds how many candidate pairs are verified at once.
+// Large enough that every worker has substantial work per chunk, small enough
+// that the per-candidate bookkeeping stays a few megabytes however many
+// candidates the index produces.
+const candidateChunkSize = 1 << 16
+
 // verifyCandidates runs APTED verification over candidate fragment pairs across
-// worker goroutines, then assembles the surviving pairs on a single goroutine in
-// candidate order. Pair IDs and clone identities therefore do not depend on how
-// the work was scheduled.
-func (cd *CloneDetector) verifyCandidates(ctx context.Context, candidates [][2]int) []*domain.ClonePair {
+// worker goroutines, then appends the surviving pairs to pairs on a single
+// goroutine in candidate order. Pair IDs and clone identities therefore do not
+// depend on how the work was scheduled or on how candidates were chunked.
+func (cd *CloneDetector) verifyCandidates(ctx context.Context, candidates [][2]int, pairs []*domain.ClonePair) []*domain.ClonePair {
+	if len(candidates) == 0 {
+		return pairs
+	}
+
 	measurements := make([]clonePairMeasurement, len(candidates))
 	accepted := make([]bool, len(candidates))
 
@@ -908,7 +929,6 @@ func (cd *CloneDetector) verifyCandidates(ctx context.Context, candidates [][2]i
 	}
 	wg.Wait()
 
-	pairs := make([]*domain.ClonePair, 0, len(candidates))
 	for index, candidate := range candidates {
 		if !accepted[index] {
 			continue

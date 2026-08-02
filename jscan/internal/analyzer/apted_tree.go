@@ -28,8 +28,10 @@ func (tc *TreeConverter) ConvertAST(astNode *parser.Node) *apted.TreeNode {
 	treeNode := apted.NewTreeNode(tc.nextID, label)
 	tc.nextID++
 
-	// Store reference to original AST node
-	treeNode.OriginalNode = astNode
+	// TreeNode.OriginalNode is deliberately left empty. Nothing in jscan reads
+	// back the parser node, and because parser nodes carry a parent pointer,
+	// storing one on every converted node would pin whole file ASTs in memory
+	// for as long as clone detection holds the trees.
 
 	for _, child := range parser.OrderedChildren(astNode) {
 		if childNode := tc.ConvertAST(child); childNode != nil {

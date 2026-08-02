@@ -461,7 +461,7 @@ func DetectOrphanFiles(allModuleInfos map[string]*domain.ModuleInfo, graph *Impo
 
 	// Files not reachable and not test/config files are orphans
 	var findings []*DeadCodeFinding
-	for filePath := range allModuleInfos {
+	for _, filePath := range sortedModulePaths(allModuleInfos) {
 		if reachable[filePath] {
 			continue
 		}

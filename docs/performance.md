@@ -37,6 +37,11 @@ Two mechanisms keep this tractable:
    estimate and a feature-Jaccard pre-filter before any tree edit distance is
    computed. Only survivors reach APTED.
 
+Candidates are generated and verified in bounded chunks rather than collected up
+front. Candidate count scales with fragments times candidates-per-query, which
+on a large repository is orders of magnitude more pairs than are ever reported,
+so holding them all would cost more memory than the analysis itself.
+
 Fragments larger than 500 nodes take a bounded heuristic path rather than exact
 APTED (`core/apted`: label/shape profile distance, capped key roots), so a
 single very large function cannot dominate a run.
@@ -85,7 +90,11 @@ fragment set, which are both held for the whole run:
   time. Restricting `--select` to fewer analyses reduces peak memory roughly in
   proportion.
 - Clone detection releases each fragment's parser AST as soon as its APTED tree
-  is built, so parse trees do not survive fragment preparation.
+  is built, so parse trees do not survive fragment preparation. This depends on
+  the tree converter not copying parser nodes into `TreeNode.OriginalNode`:
+  parser nodes carry a parent pointer, so retaining one pins the whole file's
+  AST. Clone-only peak memory over the 147k-line corpus is 709 MB with the
+  release effective, 942 MB without.
 
 Memory scales with source size, not with project history or file count.
 
@@ -185,8 +194,19 @@ Complexities below are in fragment count `n`, fragment size `m`, module count
 | Clone detection with LSH | O(n · candidates) verifications | Each verification is one APTED comparison |
 | Clone detection without LSH | O(n²) verifications | Exhaustive; the reason LSH auto-enables |
 | `core/graph` SCC | O(V + E) | Tarjan |
-| `core/graph` longest chain | O(V + E) | Condensation plus memoized DAG traversal — the longest simple path itself is NP-hard, so cycles are collapsed first |
+| `core/graph` longest chain | O(V + E) | Condensation plus memoized DAG traversal — see below |
 
 The last row is worth stating explicitly: dependency-chain reporting must never
 enumerate simple paths. On a real import graph with cycles, exhaustive
 enumeration does not terminate in practical time.
+
+What the chain guarantees, then, is that no other simple path crosses more
+strongly connected components — it is maximal in dependency layers. Components
+are weighted by module count when chains are compared, so a chain through a
+large cycle outranks an equally deep chain through single modules. Within a
+component the route is not guaranteed maximal: the component that ends the chain
+is walked greedily through as many members as it can reach, and components the
+chain passes through are crossed by the shortest route between the edges that
+enter and leave them. Recovering the longest route through a cycle is the
+NP-hard problem again. `MaxDepth` counts the edges of that concrete chain, so it
+is always a depth some real import path achieves.

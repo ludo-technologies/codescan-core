@@ -116,8 +116,48 @@ func TestLongestChainWholeGraphIsOneCycle(t *testing.T) {
 	if err := isSimplePath(g, chain); err != nil {
 		t.Fatalf("chain %v is not a simple path: %v", chain, err)
 	}
-	if len(chain) != 1 {
-		t.Errorf("LongestChain = %v, want a single component representative", chain)
+	// A graph that is nothing but a cycle still has depth: the chain must walk
+	// the cycle's members rather than collapse to whichever node it started on.
+	if len(chain) != 3 {
+		t.Errorf("LongestChain = %v, want all three cycle members", chain)
+	}
+}
+
+// TestLongestChainWalksTerminalCycle covers the shape that made chains collapse:
+// the chain ends inside a cycle, so nothing constrains where the route stops.
+func TestLongestChainWalksTerminalCycle(t *testing.T) {
+	g := chainGraph([][2]string{
+		{"entry", "x"},
+		{"x", "y"}, {"y", "x"},
+	})
+
+	chain := NewChainFinder(g).LongestChain()
+	if err := isSimplePath(g, chain); err != nil {
+		t.Fatalf("chain %v is not a simple path: %v", chain, err)
+	}
+	if len(chain) != 3 {
+		t.Errorf("LongestChain = %v, want entry plus both cycle members", chain)
+	}
+	if chain[0] != "entry" {
+		t.Errorf("LongestChain = %v, want it to start at entry", chain)
+	}
+}
+
+// TestLongestChainPrefersChainThroughCycle pins the weighting: two chains cross
+// the same number of components, but one of those components is a cycle holding
+// more modules, so it is the deeper dependency chain.
+func TestLongestChainPrefersChainThroughCycle(t *testing.T) {
+	g := chainGraph([][2]string{
+		{"root", "plain"}, {"plain", "leaf"},
+		{"root", "c1"}, {"c1", "c2"}, {"c2", "c3"}, {"c3", "c1"},
+	})
+
+	chain := NewChainFinder(g).LongestChain()
+	if err := isSimplePath(g, chain); err != nil {
+		t.Fatalf("chain %v is not a simple path: %v", chain, err)
+	}
+	if len(chain) != 4 {
+		t.Errorf("LongestChain = %v, want root plus all three cycle members", chain)
 	}
 }
 

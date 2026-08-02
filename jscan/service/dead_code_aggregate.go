@@ -368,19 +368,29 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 		addFileLevelFinding(f)
 	}
 
+	// Every comparator falls back to file path, which is unique per entry, so
+	// files the primary criterion cannot separate keep the same order on every
+	// run regardless of the order findings were collected in.
 	sort.Slice(files, func(i, j int) bool {
 		switch sortBy {
 		case domain.DeadCodeSortByFile:
 			return files[i].FilePath < files[j].FilePath
 		case domain.DeadCodeSortByLine:
-			return firstDeadCodeLine(files[i]) < firstDeadCodeLine(files[j])
+			if firstDeadCodeLine(files[i]) != firstDeadCodeLine(files[j]) {
+				return firstDeadCodeLine(files[i]) < firstDeadCodeLine(files[j])
+			}
 		case domain.DeadCodeSortByFunction:
-			return firstDeadCodeFunction(files[i]) < firstDeadCodeFunction(files[j])
+			if firstDeadCodeFunction(files[i]) != firstDeadCodeFunction(files[j]) {
+				return firstDeadCodeFunction(files[i]) < firstDeadCodeFunction(files[j])
+			}
 		case domain.DeadCodeSortBySeverity:
 			fallthrough
 		default:
-			return fileMaxSeverity(files[i]) > fileMaxSeverity(files[j])
+			if fileMaxSeverity(files[i]) != fileMaxSeverity(files[j]) {
+				return fileMaxSeverity(files[i]) > fileMaxSeverity(files[j])
+			}
 		}
+		return files[i].FilePath < files[j].FilePath
 	})
 
 	findingsByReason := make(map[string]int)
