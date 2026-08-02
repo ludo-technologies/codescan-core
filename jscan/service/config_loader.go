@@ -111,8 +111,10 @@ func (c *ConfigurationLoaderImpl) MergeConfig(base *domain.ComplexityRequest, ov
 		merged.ShowDetails = override.ShowDetails
 	}
 
-	// Filtering and sorting - override if non-default
-	if override.MinComplexity != 1 {
+	// Filtering and sorting - override only when the caller asked for a stricter
+	// filter than the default; an unset (zero) override must not clobber the
+	// min_complexity that came from the configuration file.
+	if override.MinComplexity > config.DefaultMinComplexityFilter {
 		merged.MinComplexity = override.MinComplexity
 	}
 
