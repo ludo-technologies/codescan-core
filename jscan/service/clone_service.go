@@ -198,9 +198,10 @@ func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRe
 	statistics.TotalFragments = len(allFragments)
 	statistics.NodesAnalyzed = nodesAnalyzed
 
-	// Sort clone pairs by similarity (descending)
+	// Sort clone pairs by similarity (descending), breaking ties on source
+	// location so equally similar pairs keep the same order on every run.
 	sort.Slice(clonePairs, func(i, j int) bool {
-		return clonePairs[i].Similarity > clonePairs[j].Similarity
+		return domain.ClonePairPrecedes(clonePairs[i], clonePairs[j])
 	})
 
 	// Extract unique clones represented by either pairs or groups.

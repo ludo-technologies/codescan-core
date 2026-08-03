@@ -433,12 +433,17 @@ func isCancelled(ctx context.Context) bool {
 	}
 }
 
-// DetectClones detects clones in the given code fragments
+// DetectClones detects clones in the given code fragments.
+//
+// The fragments are consumed, not just read: each one's ASTNode is released
+// once its APTED tree exists, so callers must not read CodeFragment.ASTNode
+// after handing fragments to a detector. See prepareFragments.
 func (cd *CloneDetector) DetectClones(fragments []*CodeFragment) ([]*domain.ClonePair, []*domain.CloneGroup) {
 	return cd.DetectClonesWithContext(context.Background(), fragments)
 }
 
-// DetectClonesWithContext detects clones with context support for cancellation
+// DetectClonesWithContext detects clones with context support for cancellation.
+// It consumes the fragments' ASTNode references; see DetectClones.
 func (cd *CloneDetector) DetectClonesWithContext(ctx context.Context, fragments []*CodeFragment) ([]*domain.ClonePair, []*domain.CloneGroup) {
 	cd.fragments = fragments
 	cd.clonePairs = []*domain.ClonePair{}
@@ -487,6 +492,7 @@ func (cd *CloneDetector) DetectClonesWithContext(ctx context.Context, fragments 
 
 // DetectClonesWithLSH runs a two-stage pipeline using LSH for candidate generation,
 // followed by APTED verification on candidates only. Falls back to exhaustive if misconfigured.
+// It consumes the fragments' ASTNode references; see DetectClones.
 func (cd *CloneDetector) DetectClonesWithLSH(ctx context.Context, fragments []*CodeFragment) ([]*domain.ClonePair, []*domain.CloneGroup) {
 	// If not enabled, delegate to standard path
 	if cd == nil || !cd.cloneDetectorConfig.UseLSH {
@@ -896,6 +902,12 @@ const candidateChunkSize = 1 << 16
 // worker goroutines, then appends the surviving pairs to pairs on a single
 // goroutine in candidate order. Pair IDs and clone identities therefore do not
 // depend on how the work was scheduled or on how candidates were chunked.
+//
+// That guarantee covers runs that finish. A worker that observes a cancelled
+// context abandons the rest of its stripe while other workers may still be
+// completing theirs, so the partial results of a cancelled run do depend on
+// scheduling. Callers that surface partial output must not present it as
+// reproducible.
 func (cd *CloneDetector) verifyCandidates(ctx context.Context, candidates [][2]int, pairs []*domain.ClonePair) []*domain.ClonePair {
 	if len(candidates) == 0 {
 		return pairs
@@ -1116,9 +1128,12 @@ func (cd *CloneDetector) tryCreateClonePair(i, j int, minSimilarity float64, pai
 
 // limitAndSortClonePairs ensures final results are sorted and limited
 func (cd *CloneDetector) limitAndSortClonePairs(maxPairs int) {
-	// Sort clone pairs by similarity (descending)
+	// Sort clone pairs by similarity (descending), breaking ties on source
+	// location. The truncation below makes the tie-break load-bearing: without
+	// it, which of a run of equally similar pairs survives the cut would depend
+	// on the order candidates happened to be generated in.
 	sort.Slice(cd.clonePairs, func(i, j int) bool {
-		return cd.clonePairs[i].Similarity > cd.clonePairs[j].Similarity
+		return domain.ClonePairPrecedes(cd.clonePairs[i], cd.clonePairs[j])
 	})
 
 	// Limit the number of pairs to prevent memory issues

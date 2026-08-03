@@ -113,11 +113,13 @@ func (s *DependencyGraphServiceImpl) Analyze(ctx context.Context, req domain.Dep
 	moduleMetrics := couplingCalc.CalculateMetrics(graph)
 	couplingAnalysis := couplingCalc.CalculateCouplingAnalysis(graph, moduleMetrics)
 
-	// Calculate max depth
-	maxDepth := couplingCalc.CalculateMaxDepth(graph)
+	// The max depth and the reported chains are the same search over the same
+	// condensation, so build the finder once and let both read from it.
+	chainFinder := coregraph.NewChainFinder(graph)
+	maxDepth := couplingCalc.CalculateMaxDepthFrom(chainFinder)
 
 	// Build analysis result
-	analysis := s.buildAnalysisResult(graph, circularDeps, couplingAnalysis, moduleMetrics, maxDepth)
+	analysis := s.buildAnalysisResult(graph, circularDeps, couplingAnalysis, moduleMetrics, maxDepth, chainFinder)
 
 	return &domain.DependencyGraphResponse{
 		Graph:       graph,
@@ -181,6 +183,7 @@ func (s *DependencyGraphServiceImpl) buildAnalysisResult(
 	couplingAnalysis *domain.CouplingAnalysis,
 	moduleMetrics map[string]*domain.ModuleDependencyMetrics,
 	maxDepth int,
+	chainFinder *coregraph.ChainFinder,
 ) *domain.DependencyAnalysisResult {
 	// Find root and leaf modules
 	var rootModules []string
@@ -212,7 +215,7 @@ func (s *DependencyGraphServiceImpl) buildAnalysisResult(
 	}
 
 	// Find longest dependency chains
-	longestChains := s.findLongestChains(graph, maxDepth)
+	longestChains := s.findLongestChains(graph, chainFinder, maxDepth)
 
 	return &domain.DependencyAnalysisResult{
 		TotalModules:         graph.NodeCount(),
@@ -232,15 +235,13 @@ func (s *DependencyGraphServiceImpl) buildAnalysisResult(
 const maxReportedChains = 5
 
 // findLongestChains finds the longest dependency chains in the graph, one per
-// entry-point module. Chains come from core/graph's condensation-based finder,
+// entry-point module. Chains come from the caller's condensation-based finder,
 // which is linear in the graph size — an exhaustive simple-path search would be
 // exponential on the cyclic import graphs real projects produce.
-func (s *DependencyGraphServiceImpl) findLongestChains(graph *domain.DependencyGraph, maxDepth int) []domain.DependencyPath {
-	if maxDepth == 0 {
+func (s *DependencyGraphServiceImpl) findLongestChains(graph *domain.DependencyGraph, finder *coregraph.ChainFinder, maxDepth int) []domain.DependencyPath {
+	if maxDepth == 0 || finder == nil {
 		return nil
 	}
-
-	finder := coregraph.NewChainFinder(graph)
 
 	var chains []domain.DependencyPath
 	for _, nodeID := range graph.NodeIDs() {

@@ -98,10 +98,13 @@ fragment set, which are both held for the whole run:
 
 Memory scales with source size, not with project history or file count.
 
-Concurrency trades memory for time: several files are parsed at once, so more
-parse trees are live simultaneously than in a serial run. On small inputs this
-shows up as a higher peak (83 MB rather than 56 MB for a 3.9k-line package)
-against a 5× reduction in wall time.
+Concurrency trades memory for time, in two ways. Several files are parsed at
+once, so more parse trees are live simultaneously than in a serial run. And
+because per-file results are collected into per-path slots and aggregated after
+the fan-out finishes, every file's findings stay resident until the whole
+analysis is done, where a serial loop could release each file's results as it
+consumed them. On small inputs this shows up as a higher peak (83 MB rather than
+56 MB for a 3.9k-line package) against a 5× reduction in wall time.
 
 ## Concurrency
 
@@ -111,16 +114,24 @@ Work is parallelized at two levels, both bounded by `runtime.NumCPU()`:
   (`service.ParallelExecutorImpl`).
 - **Within an analysis.** Per-file read, parse, and analysis fan out across
   workers (`service.analyzeFilesConcurrently`), and clone detection verifies
-  candidate pairs across workers.
+  LSH candidate pairs across workers.
+
+Clone detection's verification is parallel only on the LSH path. Below the LSH
+auto-threshold the exhaustive sweep still runs on a single goroutine, so a
+project small enough to skip LSH uses one core for the dominant analysis. That
+sweep is quadratic but bounded, and it is fast in absolute terms — the cost
+model and APTED work described above is what made it usable.
 
 Results do not depend on scheduling. Per-file results are collected into
 preallocated per-path slots, and clone pairs are assembled on a single goroutine
 in candidate order, so pair IDs and clone identities are stable. A given input
-produces byte-identical output on every run.
+produces byte-identical output on every run. The one exception is a run that is
+cancelled part-way: workers abandon their remaining candidates wherever they
+happen to be, so partial output is not reproducible.
 
 The practical consequence: wall time improves close to linearly with core count
-for the parse-bound analyses, and clone detection's verification stage scales the
-same way. Candidate *generation* (LSH indexing) remains single-threaded.
+for the parse-bound analyses, and clone detection's LSH verification stage scales
+the same way. Candidate *generation* (LSH indexing) remains single-threaded.
 
 ## Tuning
 
@@ -130,8 +141,10 @@ The single biggest lever is which analyses run at all:
 jscan analyze --select complexity,deadcode,cbo,deps src/   # drops the dominant cost
 ```
 
-The rest live in the TOML config (`.pyscn.toml` or `pyproject.toml`), largest
-effect first:
+The rest live in the config file — jscan reads `jscan.config.json`,
+`.jscanrc.json`, and `.jscan.toml`, and falls back to `.pyscn.toml` or
+`pyproject.toml` for a shared polyscan setup. Keys below are given in their TOML
+form, largest effect first:
 
 | Setting | Key | Default | Effect |
 |---|---|---|---|
@@ -210,3 +223,18 @@ chain passes through are crossed by the shortest route between the edges that
 enter and leave them. Recovering the longest route through a cycle is the
 NP-hard problem again. `MaxDepth` counts the edges of that concrete chain, so it
 is always a depth some real import path achieves.
+
+### `MaxDepth` values changed
+
+Reported `deps` depth moved with this rewrite, and on graphs with cycles it
+moved down. The previous implementation combined memoization with a
+path-dependent cycle cutoff, which both made the result depend on traversal
+order and let a chain count an edge back into a node it had already visited. A
+graph that is one 30-module cycle reported a depth of 30; the longest simple
+path through 30 nodes has 29 edges, which is what it reports now.
+
+`MaxDepth` feeds `DependencyPenalty` in `core/domain/scoring.go`, so the
+dependency score and the overall grade can move with it — by at most 3 points
+out of 100, since the depth penalty is capped there. A project pinned to a
+health-score threshold in CI may therefore see its score shift slightly on the
+first run after upgrading, in either direction.

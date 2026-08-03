@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	coreclone "github.com/ludo-technologies/polyscan/core/clone"
@@ -115,6 +116,61 @@ func (cp *ClonePair) String() string {
 		cp.Clone1.Location.String(),
 		cp.Clone2.Location.String(),
 		cp.Similarity)
+}
+
+// ClonePairPrecedes orders two clone pairs by descending similarity, falling
+// back to source location so that pairs the similarity cannot separate still
+// come out in the same order on every run.
+//
+// The fallback is not cosmetic. Near-duplicate code produces large runs of
+// pairs at an identical similarity, and the result slice is truncated to
+// MaxClonePairs after sorting, so without a tie-break an unstable comparator
+// would decide which of those equal pairs survive the cut.
+func ClonePairPrecedes(a, b *ClonePair) bool {
+	if a.Similarity != b.Similarity {
+		return a.Similarity > b.Similarity
+	}
+	if order := compareCloneLocations(a.Clone1, b.Clone1); order != 0 {
+		return order < 0
+	}
+	return compareCloneLocations(a.Clone2, b.Clone2) < 0
+}
+
+// compareCloneLocations orders two clones by where they sit in the project,
+// which is unique per clone and independent of analysis scheduling. A clone
+// without a location sorts last so that a missing location cannot make the
+// comparator inconsistent.
+func compareCloneLocations(a, b *Clone) int {
+	locA, locB := cloneLocation(a), cloneLocation(b)
+	if locA == nil && locB == nil {
+		return 0
+	}
+	if locA == nil {
+		return 1
+	}
+	if locB == nil {
+		return -1
+	}
+
+	switch {
+	case locA.FilePath != locB.FilePath:
+		return strings.Compare(locA.FilePath, locB.FilePath)
+	case locA.StartLine != locB.StartLine:
+		return locA.StartLine - locB.StartLine
+	case locA.StartCol != locB.StartCol:
+		return locA.StartCol - locB.StartCol
+	case locA.EndLine != locB.EndLine:
+		return locA.EndLine - locB.EndLine
+	default:
+		return locA.EndCol - locB.EndCol
+	}
+}
+
+func cloneLocation(c *Clone) *CloneLocation {
+	if c == nil {
+		return nil
+	}
+	return c.Location
 }
 
 // CloneGroup represents a group of related clones

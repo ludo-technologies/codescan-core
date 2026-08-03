@@ -322,8 +322,19 @@ func (c *CouplingMetricsCalculator) CalculateMaxDepth(graph *domain.DependencyGr
 	if graph == nil || graph.NodeCount() == 0 {
 		return 0
 	}
+	return c.CalculateMaxDepthFrom(coregraph.NewChainFinder(graph))
+}
 
-	chain := coregraph.NewChainFinder(graph).LongestChain()
+// CalculateMaxDepthFrom is CalculateMaxDepth against a chain finder the caller
+// already built. Building one condenses the whole graph, so a caller that also
+// reports the longest chains should build a single finder and share it rather
+// than paying for two SCC passes over the same import graph.
+func (c *CouplingMetricsCalculator) CalculateMaxDepthFrom(finder *coregraph.ChainFinder) int {
+	if finder == nil {
+		return 0
+	}
+
+	chain := finder.LongestChain()
 	if len(chain) == 0 {
 		return 0
 	}
