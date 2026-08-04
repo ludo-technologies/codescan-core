@@ -13,6 +13,59 @@ import (
 	"github.com/ludo-technologies/polyscan/jscan/internal/version"
 )
 
+// scannedFile is everything dead code analysis derives from one file on its
+// own, before findings are aggregated across the project.
+type scannedFile struct {
+	deadCode      map[string]*analyzer.DeadCodeResult
+	moduleInfo    *domain.ModuleInfo
+	unusedImports []*analyzer.DeadCodeFinding
+}
+
+// scanFileForDeadCode reads, parses, and analyzes one file. The module analyzer
+// only reads its configuration, so several files can be scanned at once.
+func scanFileForDeadCode(moduleAnalyzer *analyzer.ModuleAnalyzer, filePath string) fileAnalysis[*scannedFile] {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fileAnalysis[*scannedFile]{
+			errors: []string{fmt.Sprintf("[%s] failed to read file: %v", filePath, err)},
+		}
+	}
+
+	ast, err := parser.ParseForLanguage(filePath, content)
+	if err != nil {
+		return fileAnalysis[*scannedFile]{
+			errors: []string{fmt.Sprintf("[%s] failed to parse file: %v", filePath, err)},
+		}
+	}
+
+	cfgs, err := analyzer.NewCFGBuilder().BuildAll(ast)
+	if err != nil {
+		return fileAnalysis[*scannedFile]{
+			errors: []string{fmt.Sprintf("[%s] failed to build CFG: %v", filePath, err)},
+		}
+	}
+
+	scan := fileAnalysis[*scannedFile]{
+		value: &scannedFile{deadCode: analyzer.DetectAll(cfgs, filePath)},
+	}
+	if len(cfgs) == 0 {
+		scan.warnings = append(scan.warnings, fmt.Sprintf("[%s] no functions found in file", filePath))
+	}
+
+	moduleInfo, moduleErr := moduleAnalyzer.AnalyzeFile(ast, filePath)
+	if moduleErr != nil {
+		scan.warnings = append(scan.warnings, fmt.Sprintf("[%s] module analysis warning: %v", filePath, moduleErr))
+	} else {
+		// Only a cleanly analyzed module joins the project-wide import graph.
+		scan.value.moduleInfo = moduleInfo
+	}
+	if moduleInfo != nil {
+		scan.value.unusedImports = analyzer.DetectUnusedImports(ast, moduleInfo, filePath)
+	}
+
+	return scan
+}
+
 // AnalyzeDeadCode runs dead code analysis using the shared aggregation path.
 func AnalyzeDeadCode(ctx context.Context, req domain.DeadCodeRequest) (*domain.DeadCodeResponse, error) {
 	return AnalyzeDeadCodeWithTask(ctx, req, nil)
@@ -87,53 +140,27 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 		totalFindings++
 	}
 
-	for _, filePath := range req.Paths {
-		incrementTask := func() {
-			if task != nil {
-				task.Increment(1)
-			}
-		}
+	scanned := analyzeFilesConcurrently(ctx, req.Paths, task,
+		func(_ context.Context, filePath string) fileAnalysis[*scannedFile] {
+			return scanFileForDeadCode(moduleAnalyzer, filePath)
+		})
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("dead code analysis cancelled: %w", ctx.Err())
+	}
 
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("dead code analysis cancelled: %w", ctx.Err())
-		default:
-		}
+	for index, scan := range scanned {
+		filePath := req.Paths[index]
+		warnings = append(warnings, scan.warnings...)
+		errors = append(errors, scan.errors...)
 
 		analyzedFiles[filePath] = true
-
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("[%s] failed to read file: %v", filePath, err))
-			incrementTask()
+		if scan.value == nil {
 			continue
 		}
 
-		ast, err := parser.ParseForLanguage(filePath, content)
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("[%s] failed to parse file: %v", filePath, err))
-			incrementTask()
-			continue
-		}
-
-		builder := analyzer.NewCFGBuilder()
-		cfgs, err := builder.BuildAll(ast)
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("[%s] failed to build CFG: %v", filePath, err))
-			incrementTask()
-			continue
-		}
-
-		if len(cfgs) == 0 {
-			warnings = append(warnings, fmt.Sprintf("[%s] no functions found in file", filePath))
-		}
-
-		results := analyzer.DetectAll(cfgs, filePath)
-
-		moduleInfo, moduleErr := moduleAnalyzer.AnalyzeFile(ast, filePath)
-		if moduleErr != nil {
-			warnings = append(warnings, fmt.Sprintf("[%s] module analysis warning: %v", filePath, moduleErr))
-		} else if moduleInfo != nil {
+		results := scan.value.deadCode
+		moduleInfo := scan.value.moduleInfo
+		if moduleInfo != nil {
 			allModuleInfos[filePath] = moduleInfo
 		}
 
@@ -143,40 +170,46 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 		fileDeadBlocks := 0
 		fileTotalBlocks := 0
 
-		if moduleInfo != nil {
-			unusedImports := analyzer.DetectUnusedImports(ast, moduleInfo, filePath)
-			for _, finding := range unusedImports {
-				f := domain.DeadCodeFinding{
-					Location: domain.DeadCodeLocation{
-						FilePath:  filePath,
-						StartLine: finding.StartLine,
-						EndLine:   finding.EndLine,
-					},
-					Reason:      string(finding.Reason),
-					Severity:    domain.DeadCodeSeverity(finding.Severity),
-					Description: finding.Description,
-				}
-				if !f.Severity.IsAtLeast(minSeverity) {
-					continue
-				}
-				fileLevelFindings = append(fileLevelFindings, f)
-
-				switch f.Severity {
-				case domain.DeadCodeSeverityCritical:
-					criticalFindings++
-				case domain.DeadCodeSeverityWarning:
-					warningFindings++
-				case domain.DeadCodeSeverityInfo:
-					infoFindings++
-				}
-				totalFindings++
+		for _, finding := range scan.value.unusedImports {
+			f := domain.DeadCodeFinding{
+				Location: domain.DeadCodeLocation{
+					FilePath:  filePath,
+					StartLine: finding.StartLine,
+					EndLine:   finding.EndLine,
+				},
+				Reason:      string(finding.Reason),
+				Severity:    domain.DeadCodeSeverity(finding.Severity),
+				Description: finding.Description,
 			}
+			if !f.Severity.IsAtLeast(minSeverity) {
+				continue
+			}
+			fileLevelFindings = append(fileLevelFindings, f)
+
+			switch f.Severity {
+			case domain.DeadCodeSeverityCritical:
+				criticalFindings++
+			case domain.DeadCodeSeverityWarning:
+				warningFindings++
+			case domain.DeadCodeSeverityInfo:
+				infoFindings++
+			}
+			totalFindings++
 		}
 
-		for funcName, result := range results {
+		// Detection results are keyed by function name; walk them in sorted
+		// order so the report does not depend on Go's map iteration order.
+		funcNames := make([]string, 0, len(results))
+		for funcName := range results {
+			funcNames = append(funcNames, funcName)
+		}
+		sort.Strings(funcNames)
+
+		for _, funcName := range funcNames {
 			if funcName == domain.ModuleFunctionName {
 				continue
 			}
+			result := results[funcName]
 
 			fileTotalFunctions++
 			totalFunctions++
@@ -260,7 +293,6 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 
 		totalBlocks += fileTotalBlocks
 		deadBlocks += fileDeadBlocks
-		incrementTask()
 	}
 
 	graph := analyzer.BuildImportGraph(allModuleInfos, analyzedFiles)
@@ -336,19 +368,29 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 		addFileLevelFinding(f)
 	}
 
+	// Every comparator falls back to file path, which is unique per entry, so
+	// files the primary criterion cannot separate keep the same order on every
+	// run regardless of the order findings were collected in.
 	sort.Slice(files, func(i, j int) bool {
 		switch sortBy {
 		case domain.DeadCodeSortByFile:
 			return files[i].FilePath < files[j].FilePath
 		case domain.DeadCodeSortByLine:
-			return firstDeadCodeLine(files[i]) < firstDeadCodeLine(files[j])
+			if firstDeadCodeLine(files[i]) != firstDeadCodeLine(files[j]) {
+				return firstDeadCodeLine(files[i]) < firstDeadCodeLine(files[j])
+			}
 		case domain.DeadCodeSortByFunction:
-			return firstDeadCodeFunction(files[i]) < firstDeadCodeFunction(files[j])
+			if firstDeadCodeFunction(files[i]) != firstDeadCodeFunction(files[j]) {
+				return firstDeadCodeFunction(files[i]) < firstDeadCodeFunction(files[j])
+			}
 		case domain.DeadCodeSortBySeverity:
 			fallthrough
 		default:
-			return fileMaxSeverity(files[i]) > fileMaxSeverity(files[j])
+			if fileMaxSeverity(files[i]) != fileMaxSeverity(files[j]) {
+				return fileMaxSeverity(files[i]) > fileMaxSeverity(files[j])
+			}
 		}
+		return files[i].FilePath < files[j].FilePath
 	})
 
 	findingsByReason := make(map[string]int)

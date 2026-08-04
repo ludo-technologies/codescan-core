@@ -1,9 +1,8 @@
 package lsh
 
 import (
-	"encoding/binary"
 	"fmt"
-	"hash/fnv"
+	"slices"
 )
 
 const (
@@ -11,12 +10,23 @@ const (
 	defaultRows  = 4
 )
 
+// bandKey identifies one band's bucket. The band index and the hash of the
+// band's signature slice together determine the bucket, so a comparable struct
+// serves as the map key directly — no formatted string per band per fragment.
+type bandKey struct {
+	band int
+	hash uint64
+}
+
 // LSHIndex implements MinHash LSH with banding.
 type LSHIndex struct {
 	bands      int
 	rows       int
-	buckets    map[string][]string
+	buckets    map[bandKey][]string
 	signatures map[string]*MinHashSignature
+	// insertKeys is scratch space reused by AddFragment. Queries use their own
+	// buffer so that reading the index stays free of mutation.
+	insertKeys []bandKey
 }
 
 // NewLSHIndex creates an index with banding parameters.
@@ -30,7 +40,7 @@ func NewLSHIndex(bands, rows int) *LSHIndex {
 	return &LSHIndex{
 		bands:      bands,
 		rows:       rows,
-		buckets:    make(map[string][]string),
+		buckets:    make(map[bandKey][]string),
 		signatures: make(map[string]*MinHashSignature),
 	}
 }
@@ -43,8 +53,9 @@ func (idx *LSHIndex) AddFragment(id string, signature *MinHashSignature) error {
 	if id == "" {
 		return fmt.Errorf("empty fragment id")
 	}
+	_, reindexed := idx.signatures[id]
 	idx.signatures[id] = signature
-	idx.addToBuckets(id, signature)
+	idx.addToBuckets(id, signature, reindexed)
 	return nil
 }
 
@@ -68,7 +79,7 @@ func (idx *LSHIndex) FindCandidatesLimit(signature *MinHashSignature, maxCandida
 	}
 	seen := make(map[string]struct{})
 	out := []string{}
-	for _, key := range idx.computeBandKeys(signature) {
+	for _, key := range idx.appendBandKeys(nil, signature) {
 		for _, id := range idx.buckets[key] {
 			if maxCandidates > 0 && len(out) >= maxCandidates {
 				return out
@@ -103,24 +114,24 @@ func (idx *LSHIndex) Rows() int {
 	return idx.rows
 }
 
-func (idx *LSHIndex) addToBuckets(id string, sig *MinHashSignature) {
-	keys := idx.computeBandKeys(sig)
-	for _, k := range keys {
+// addToBuckets files a fragment under each of its band keys. A fragment being
+// indexed for the first time cannot already be in any bucket, so the duplicate
+// scan — linear in bucket size, and buckets grow large when many fragments hash
+// alike — only runs when the same ID is indexed again.
+func (idx *LSHIndex) addToBuckets(id string, sig *MinHashSignature, reindexed bool) {
+	idx.insertKeys = idx.appendBandKeys(idx.insertKeys[:0], sig)
+	for _, k := range idx.insertKeys {
 		cur := idx.buckets[k]
-		exists := false
-		for _, v := range cur {
-			if v == id {
-				exists = true
-				break
-			}
+		if reindexed && slices.Contains(cur, id) {
+			continue
 		}
-		if !exists {
-			idx.buckets[k] = append(cur, id)
-		}
+		idx.buckets[k] = append(cur, id)
 	}
 }
 
-func (idx *LSHIndex) computeBandKeys(sig *MinHashSignature) []string {
+// appendBandKeys appends the band keys of a signature to dst and returns the
+// extended slice, so callers that run repeatedly can reuse one buffer.
+func (idx *LSHIndex) appendBandKeys(dst []bandKey, sig *MinHashSignature) []bandKey {
 	total := len(sig.signatures)
 	r := idx.rows
 	b := idx.bands
@@ -134,22 +145,29 @@ func (idx *LSHIndex) computeBandKeys(sig *MinHashSignature) []string {
 	if b > maxBands {
 		b = maxBands
 	}
-	keys := make([]string, 0, b)
+	if cap(dst) < len(dst)+b {
+		grown := make([]bandKey, len(dst), len(dst)+b)
+		copy(grown, dst)
+		dst = grown
+	}
+
 	for band := 0; band < b; band++ {
 		start := band * r
 		end := start + r
 		if end > total {
 			end = total
 		}
-		part := sig.signatures[start:end]
-		h := fnv.New64a()
-		buf := make([]byte, 8)
-		for _, v := range part {
-			binary.BigEndian.PutUint64(buf, v)
-			_, _ = h.Write(buf)
+
+		// FNV-1a over the big-endian bytes of the band's signature values.
+		h := uint64(fnvOffsetBasis64)
+		for _, v := range sig.signatures[start:end] {
+			for shift := 56; shift >= 0; shift -= 8 {
+				h ^= (v >> uint(shift)) & 0xff
+				h *= fnvPrime64
+			}
 		}
-		key := fmt.Sprintf("b:%d:%016x", band, h.Sum64())
-		keys = append(keys, key)
+		dst = append(dst, bandKey{band: band, hash: h})
 	}
-	return keys
+
+	return dst
 }

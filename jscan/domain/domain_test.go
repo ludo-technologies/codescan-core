@@ -519,3 +519,44 @@ func TestErrorCodeConstants(t *testing.T) {
 		}
 	}
 }
+
+// TestClonePairPrecedesBreaksTiesOnLocation pins the property the clone result
+// truncation depends on: pairs at an identical similarity must come out in a
+// fixed order, whatever order they were collected in.
+func TestClonePairPrecedesBreaksTiesOnLocation(t *testing.T) {
+	pair := func(file1 string, line1 int, file2 string, line2 int, similarity float64) *ClonePair {
+		return &ClonePair{
+			Clone1:     &Clone{Location: &CloneLocation{FilePath: file1, StartLine: line1}},
+			Clone2:     &Clone{Location: &CloneLocation{FilePath: file2, StartLine: line2}},
+			Similarity: similarity,
+		}
+	}
+
+	stronger, weaker := pair("a.ts", 1, "b.ts", 1, 0.9), pair("a.ts", 1, "b.ts", 1, 0.8)
+	if !ClonePairPrecedes(stronger, weaker) || ClonePairPrecedes(weaker, stronger) {
+		t.Error("a higher similarity must sort first")
+	}
+
+	// Equal similarity: the first clone's location decides, then the second's.
+	early, late := pair("a.ts", 10, "z.ts", 1, 0.85), pair("b.ts", 2, "c.ts", 1, 0.85)
+	if !ClonePairPrecedes(early, late) || ClonePairPrecedes(late, early) {
+		t.Error("equal similarity must fall back to the first clone's file path")
+	}
+
+	sameFirst, sameFirstLater := pair("a.ts", 1, "b.ts", 1, 0.85), pair("a.ts", 1, "b.ts", 9, 0.85)
+	if !ClonePairPrecedes(sameFirst, sameFirstLater) || ClonePairPrecedes(sameFirstLater, sameFirst) {
+		t.Error("a shared first clone must fall back to the second clone's location")
+	}
+
+	// A pair equal on every field precedes neither, or sorting is inconsistent.
+	duplicate := pair("a.ts", 1, "b.ts", 1, 0.85)
+	if ClonePairPrecedes(sameFirst, duplicate) || ClonePairPrecedes(duplicate, sameFirst) {
+		t.Error("identical pairs must not precede each other")
+	}
+
+	// A missing location must not make the comparator inconsistent.
+	located, unlocated := pair("a.ts", 1, "b.ts", 1, 0.85), &ClonePair{Similarity: 0.85}
+	if !ClonePairPrecedes(located, unlocated) || ClonePairPrecedes(unlocated, located) {
+		t.Error("a pair without a location must sort last")
+	}
+}

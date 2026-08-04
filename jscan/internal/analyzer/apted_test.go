@@ -88,8 +88,11 @@ func TestTreeConverterConvertAST(t *testing.T) {
 	if tree.Label != "VariableDeclaration(const)" {
 		t.Fatalf("root label = %q", tree.Label)
 	}
-	if tree.OriginalNode != root {
-		t.Fatal("converter did not retain the original parser node")
+	// The converter must not pin the parser node: parser nodes carry a parent
+	// pointer, so retaining one would keep the whole file AST alive for as long
+	// as clone detection holds the converted tree.
+	if tree.OriginalNode != nil {
+		t.Fatal("converter retained the parser node, pinning the source AST")
 	}
 	if len(tree.Children) != 1 || tree.Children[0].Label != "Identifier(answer)" {
 		t.Fatalf("converted children = %#v", tree.Children)

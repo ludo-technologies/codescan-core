@@ -17,7 +17,8 @@ type CycleDetector struct {
 	onStack  map[string]bool
 	indices  map[string]int
 	lowlinks map[string]int
-	result   *CycleResult
+	// collect receives every completed component, including single-node ones.
+	collect func(scc []string)
 }
 
 // NewCycleDetector creates a new CycleDetector.
@@ -27,14 +28,38 @@ func NewCycleDetector() *CycleDetector {
 
 // DetectCycles finds all cycles (SCCs with size > 1) in the directed graph.
 func (d *CycleDetector) DetectCycles(g DirectedGraph) *CycleResult {
-	d.index = 0
-	d.stack = nil
-	d.onStack = make(map[string]bool)
-	d.indices = make(map[string]int)
-	d.lowlinks = make(map[string]int)
-	d.result = &CycleResult{
+	result := &CycleResult{
 		AffectedNodes: make(map[string]bool),
 	}
+
+	// Only SCCs with more than one node are actual cycles.
+	for _, scc := range StronglyConnectedComponents(g) {
+		if len(scc) <= 1 {
+			continue
+		}
+		result.Cycles = append(result.Cycles, scc)
+		for _, node := range scc {
+			result.AffectedNodes[node] = true
+		}
+	}
+
+	result.HasCycles = len(result.Cycles) > 0
+	return result
+}
+
+// StronglyConnectedComponents returns every strongly connected component of g,
+// including single-node components, using Tarjan's algorithm. Components are
+// returned in reverse topological order: a component appears before any
+// component it depends on.
+func StronglyConnectedComponents(g DirectedGraph) [][]string {
+	d := &CycleDetector{
+		onStack:  make(map[string]bool),
+		indices:  make(map[string]int),
+		lowlinks: make(map[string]int),
+	}
+
+	var components [][]string
+	d.collect = func(scc []string) { components = append(components, scc) }
 
 	for _, nodeID := range g.NodeIDs() {
 		if _, visited := d.indices[nodeID]; !visited {
@@ -42,8 +67,7 @@ func (d *CycleDetector) DetectCycles(g DirectedGraph) *CycleResult {
 		}
 	}
 
-	d.result.HasCycles = len(d.result.Cycles) > 0
-	return d.result
+	return components
 }
 
 func (d *CycleDetector) strongConnect(g DirectedGraph, v string) {
@@ -77,12 +101,8 @@ func (d *CycleDetector) strongConnect(g DirectedGraph, v string) {
 				break
 			}
 		}
-		// Only record SCCs with more than one node (actual cycles).
-		if len(scc) > 1 {
-			d.result.Cycles = append(d.result.Cycles, scc)
-			for _, node := range scc {
-				d.result.AffectedNodes[node] = true
-			}
+		if d.collect != nil {
+			d.collect(scc)
 		}
 	}
 }

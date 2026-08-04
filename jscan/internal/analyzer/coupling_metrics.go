@@ -123,7 +123,16 @@ func (c *CouplingMetricsCalculator) CalculateCouplingAnalysis(graph *domain.Depe
 	var zoneOfUselessness []string
 	var mainSequence []string
 
-	for nodeID, m := range metrics {
+	// Walk modules in a fixed order: floating-point sums are order-dependent, so
+	// map iteration order would otherwise perturb the averages below.
+	nodeIDs := make([]string, 0, len(metrics))
+	for nodeID := range metrics {
+		nodeIDs = append(nodeIDs, nodeID)
+	}
+	sort.Strings(nodeIDs)
+
+	for _, nodeID := range nodeIDs {
+		m := metrics[nodeID]
 		coupling := m.AfferentCoupling + m.EfferentCoupling
 		totalCoupling += float64(coupling)
 		totalInstability += m.Instability
@@ -302,55 +311,32 @@ func (c *CouplingMetricsCalculator) CalculateTransitiveDependencies(nodeID strin
 	return result
 }
 
-// CalculateMaxDepth calculates the maximum dependency depth in the graph
+// CalculateMaxDepth calculates the maximum dependency depth in the graph,
+// measured in edges along the longest dependency chain.
+//
+// The chain comes from core/graph's condensation-based finder: cycles are
+// collapsed before the search, so the depth is well defined even when modules
+// import each other, and it is the same chain the report shows under
+// LongestChains.
 func (c *CouplingMetricsCalculator) CalculateMaxDepth(graph *domain.DependencyGraph) int {
 	if graph == nil || graph.NodeCount() == 0 {
 		return 0
 	}
+	return c.CalculateMaxDepthFrom(coregraph.NewChainFinder(graph))
+}
 
-	maxDepth := 0
-	memo := make(map[string]int)
-
-	var calculateDepth func(nodeID string, visited map[string]bool) int
-	calculateDepth = func(nodeID string, visited map[string]bool) int {
-		if depth, ok := memo[nodeID]; ok {
-			return depth
-		}
-
-		if visited[nodeID] {
-			return 0 // Cycle detected, don't count
-		}
-
-		visited[nodeID] = true
-		defer func() { visited[nodeID] = false }()
-
-		edges := graph.GetOutgoingEdges(nodeID)
-		if len(edges) == 0 {
-			memo[nodeID] = 0
-			return 0
-		}
-
-		maxChildDepth := 0
-		for _, edge := range edges {
-			if graph.GetNode(edge.To) != nil {
-				childDepth := calculateDepth(edge.To, visited)
-				if childDepth > maxChildDepth {
-					maxChildDepth = childDepth
-				}
-			}
-		}
-
-		depth := maxChildDepth + 1
-		memo[nodeID] = depth
-		return depth
+// CalculateMaxDepthFrom is CalculateMaxDepth against a chain finder the caller
+// already built. Building one condenses the whole graph, so a caller that also
+// reports the longest chains should build a single finder and share it rather
+// than paying for two SCC passes over the same import graph.
+func (c *CouplingMetricsCalculator) CalculateMaxDepthFrom(finder *coregraph.ChainFinder) int {
+	if finder == nil {
+		return 0
 	}
 
-	for nodeID := range graph.Nodes {
-		depth := calculateDepth(nodeID, make(map[string]bool))
-		if depth > maxDepth {
-			maxDepth = depth
-		}
+	chain := finder.LongestChain()
+	if len(chain) == 0 {
+		return 0
 	}
-
-	return maxDepth
+	return len(chain) - 1
 }

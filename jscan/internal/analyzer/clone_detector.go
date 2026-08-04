@@ -2,11 +2,13 @@ package analyzer
 
 import (
 	"bytes"
+	"container/heap"
 	"context"
 	"fmt"
 	"math"
 	"runtime"
 	"sort"
+	"sync"
 
 	"github.com/ludo-technologies/polyscan/core/apted"
 	coreclone "github.com/ludo-technologies/polyscan/core/clone"
@@ -160,6 +162,10 @@ type CloneDetector struct {
 	// Embed config fields (private to maintain encapsulation)
 	cloneDetectorConfig CloneDetectorConfig
 
+	// costModel is retained so per-worker analyzers can be created during
+	// concurrent verification; APTED analyzers own mutable scratch buffers and
+	// cannot be shared, while the cost model is read-only.
+	costModel        apted.CostModel
 	analyzer         *apted.APTEDAnalyzer
 	converter        *TreeConverter
 	textualAnalyzer  *coreclone.TextualSimilarityAnalyzer
@@ -208,6 +214,7 @@ func NewCloneDetector(config *CloneDetectorConfig) *CloneDetector {
 
 	return &CloneDetector{
 		cloneDetectorConfig: *config,
+		costModel:           costModel,
 		analyzer:            analyzer,
 		converter:           NewTreeConverter(),
 		textualAnalyzer:     textualAnalyzer,
@@ -412,6 +419,10 @@ func (cd *CloneDetector) shouldIncludeFragment(fragment *CodeFragment) bool {
 	return true
 }
 
+// cancellationCheckInterval is how many comparisons run between context checks.
+// Checking a context is cheap but not free, and comparisons are short.
+const cancellationCheckInterval = 10
+
 // isCancelled checks if the context is cancelled
 func isCancelled(ctx context.Context) bool {
 	select {
@@ -422,12 +433,17 @@ func isCancelled(ctx context.Context) bool {
 	}
 }
 
-// DetectClones detects clones in the given code fragments
+// DetectClones detects clones in the given code fragments.
+//
+// The fragments are consumed, not just read: each one's ASTNode is released
+// once its APTED tree exists, so callers must not read CodeFragment.ASTNode
+// after handing fragments to a detector. See prepareFragments.
 func (cd *CloneDetector) DetectClones(fragments []*CodeFragment) ([]*domain.ClonePair, []*domain.CloneGroup) {
 	return cd.DetectClonesWithContext(context.Background(), fragments)
 }
 
-// DetectClonesWithContext detects clones with context support for cancellation
+// DetectClonesWithContext detects clones with context support for cancellation.
+// It consumes the fragments' ASTNode references; see DetectClones.
 func (cd *CloneDetector) DetectClonesWithContext(ctx context.Context, fragments []*CodeFragment) ([]*domain.ClonePair, []*domain.CloneGroup) {
 	cd.fragments = fragments
 	cd.clonePairs = []*domain.ClonePair{}
@@ -476,6 +492,7 @@ func (cd *CloneDetector) DetectClonesWithContext(ctx context.Context, fragments 
 
 // DetectClonesWithLSH runs a two-stage pipeline using LSH for candidate generation,
 // followed by APTED verification on candidates only. Falls back to exhaustive if misconfigured.
+// It consumes the fragments' ASTNode references; see DetectClones.
 func (cd *CloneDetector) DetectClonesWithLSH(ctx context.Context, fragments []*CodeFragment) ([]*domain.ClonePair, []*domain.CloneGroup) {
 	// If not enabled, delegate to standard path
 	if cd == nil || !cd.cloneDetectorConfig.UseLSH {
@@ -537,14 +554,20 @@ func (cd *CloneDetector) DetectClonesWithLSH(ctx context.Context, fragments []*C
 		minhashThreshold = 1
 	}
 
+	// Stage 3: generate candidate pairs that survive the cheap filters and
+	// verify them a chunk at a time. Candidate count grows with fragments times
+	// candidates-per-query, which on a large repository runs to orders of
+	// magnitude more pairs than are ever reported, so they are never all held
+	// at once. Chunks are verified in generation order, which is what keeps
+	// pair IDs and clone identities independent of the chunk size.
 	seenPairs := make(map[[2]int]struct{})
-	pairID := 0
+	chunk := make([][2]int, 0, candidateChunkSize)
+
 	for _, r := range records {
 		if isCancelled(ctx) {
 			break
 		}
-		cands := lsh.FindCandidates(r.sig)
-		for _, j := range cands {
+		for _, j := range lsh.FindCandidates(r.sig) {
 			i := r.idx
 			if j == i || j < 0 || i < 0 {
 				continue
@@ -565,26 +588,24 @@ func (cd *CloneDetector) DetectClonesWithLSH(ctx context.Context, fragments []*C
 			if cd.isOverlappingLocation(f1.Location, f2.Location) {
 				continue
 			}
-
-			// MinHash similarity pre-filter
-			sig1 := sigByIndex[a]
-			sig2 := sigByIndex[b]
-			est := hasher.EstimateJaccardSimilarity(sig1, sig2)
-			if est < minhashThreshold {
-				continue
-			}
-
-			// APTED verification
 			if f1.TreeNode == nil || f2.TreeNode == nil {
 				continue
 			}
-			pair := cd.compareFragments(f1, f2, pairID)
-			if pair != nil && cd.isSignificantClone(pair) {
-				cd.clonePairs = append(cd.clonePairs, pair)
-				pairID++
+
+			// MinHash similarity pre-filter
+			if hasher.EstimateJaccardSimilarity(sigByIndex[a], sigByIndex[b]) < minhashThreshold {
+				continue
+			}
+
+			chunk = append(chunk, key)
+			if len(chunk) == candidateChunkSize {
+				// APTED verification, the expensive stage, across workers.
+				cd.clonePairs = cd.verifyCandidates(ctx, chunk, cd.clonePairs)
+				chunk = chunk[:0]
 			}
 		}
 	}
+	cd.clonePairs = cd.verifyCandidates(ctx, chunk, cd.clonePairs)
 
 	// Finalize results
 	cd.limitAndSortClonePairs(cd.cloneDetectorConfig.MaxClonePairs)
@@ -618,6 +639,13 @@ func (cd *CloneDetector) prepareFragments() {
 		if fragment.TreeNode == nil {
 			continue
 		}
+		// Nothing downstream reads the parser AST once the APTED tree exists,
+		// and fragments hold it for the whole run. Dropping the last reference
+		// lets the parse trees of already-converted files be collected while
+		// later files are still being prepared. The converter deliberately does
+		// not copy parser nodes into TreeNode.OriginalNode, so this really is
+		// the last reference — see TreeConverter.ConvertAST.
+		fragment.ASTNode = nil
 		apted.PrepareTreeForAPTED(fragment.TreeNode)
 		features, _ := cd.featureExtractor.ExtractFeatures(fragment.TreeNode)
 		fragment.Features = features
@@ -662,14 +690,13 @@ func (cd *CloneDetector) detectClonePairsWithContext(ctx context.Context) {
 // detectClonePairsStandardWithContext uses standard approach with context
 func (cd *CloneDetector) detectClonePairsStandardWithContext(ctx context.Context) {
 	n := len(cd.fragments)
-	const checkInterval = 10 // Check context every 10 comparisons
 
 	pairID := 0
 	for i := 0; i < n; i++ {
 		for j := i + 1; j < n; j++ {
 
-			// Check for cancellation periodically (every 10 comparisons)
-			if (i*n+j)%checkInterval == 0 && isCancelled(ctx) {
+			// Check for cancellation periodically
+			if (i*n+j)%cancellationCheckInterval == 0 && isCancelled(ctx) {
 				return
 			}
 			fragment1 := cd.fragments[i]
@@ -702,16 +729,30 @@ func (cd *CloneDetector) detectClonePairsWithBatchingContext(ctx context.Context
 		batchSize = 100
 	}
 
-	// Priority queue to keep only the best pairs
-	topPairs := make([]*domain.ClonePair, 0, maxPairs)
+	// Keep only the best pairs, in a heap ordered by ascending similarity so the
+	// weakest pair — the one a new pair has to beat — is always at the root.
+	topPairs := &weakestFirstPairs{pairs: make([]*domain.ClonePair, 0, maxPairs)}
 	minSimilarity := cd.cloneDetectorConfig.Type4Threshold // Use the lowest threshold as minimum
 
 	pairID := 0
+	record := func(pair *domain.ClonePair) {
+		if pair == nil {
+			return
+		}
+		topPairs.push(pair, maxPairs)
+		pairID++
+		// Once the heap is full, only pairs stronger than its weakest member can
+		// still make the cut, so raise the bar for later comparisons.
+		if topPairs.Len() >= maxPairs {
+			minSimilarity = topPairs.weakest().Similarity
+		}
+	}
+
 	// Process in batches to limit memory usage
 	for batchStart := 0; batchStart < n; batchStart += batchSize {
 		// Check for cancellation at batch start
 		if isCancelled(ctx) {
-			cd.clonePairs = topPairs
+			cd.clonePairs = topPairs.pairs
 			return
 		}
 		batchEnd := batchStart + batchSize
@@ -723,86 +764,194 @@ func (cd *CloneDetector) detectClonePairsWithBatchingContext(ctx context.Context
 		for i := batchStart; i < batchEnd; i++ {
 			// Compare with fragments in current batch
 			for j := i + 1; j < batchEnd; j++ {
-				if pair := cd.tryCreateClonePair(i, j, minSimilarity, pairID); pair != nil {
-					topPairs = cd.addPairWithLimit(topPairs, pair, maxPairs)
-					pairID++
-					// Update minimum similarity threshold
-					if len(topPairs) >= maxPairs {
-						minSimilarity = topPairs[len(topPairs)-1].Similarity
-					}
-				}
+				record(cd.tryCreateClonePair(i, j, minSimilarity, pairID))
 			}
 
 			// Compare with all previous fragments
 			for j := 0; j < batchStart; j++ {
-				if pair := cd.tryCreateClonePair(i, j, minSimilarity, pairID); pair != nil {
-					topPairs = cd.addPairWithLimit(topPairs, pair, maxPairs)
-					pairID++
-					// Update minimum similarity threshold
-					if len(topPairs) >= maxPairs {
-						minSimilarity = topPairs[len(topPairs)-1].Similarity
-					}
-				}
+				record(cd.tryCreateClonePair(i, j, minSimilarity, pairID))
 			}
-		}
-
-		// Periodic garbage collection hint for large batches
-		if batchStart%5000 == 0 {
-			// Force garbage collection to prevent memory buildup
-			runtime.GC()
 		}
 	}
 
 	// Replace clone pairs with the best ones found
-	cd.clonePairs = topPairs
+	cd.clonePairs = topPairs.pairs
 }
 
-// compareFragments compares two fragments and returns a clone pair if similar.
+// weakestFirstPairs is a bounded min-heap of clone pairs keyed on similarity.
+// Keeping the top N pairs by re-sorting on every insert costs O(N log N) per
+// accepted pair; a heap makes it O(log N).
+type weakestFirstPairs struct {
+	pairs []*domain.ClonePair
+}
+
+func (h *weakestFirstPairs) Len() int { return len(h.pairs) }
+
+func (h *weakestFirstPairs) Less(i, j int) bool {
+	return h.pairs[i].Similarity < h.pairs[j].Similarity
+}
+
+func (h *weakestFirstPairs) Swap(i, j int) { h.pairs[i], h.pairs[j] = h.pairs[j], h.pairs[i] }
+
+func (h *weakestFirstPairs) Push(x any) { h.pairs = append(h.pairs, x.(*domain.ClonePair)) }
+
+func (h *weakestFirstPairs) Pop() any {
+	last := len(h.pairs) - 1
+	pair := h.pairs[last]
+	h.pairs = h.pairs[:last]
+	return pair
+}
+
+// weakest returns the lowest-similarity pair currently retained.
+func (h *weakestFirstPairs) weakest() *domain.ClonePair { return h.pairs[0] }
+
+// push adds a pair, evicting the weakest one when the heap is already at limit
+// and the newcomer is stronger.
+func (h *weakestFirstPairs) push(pair *domain.ClonePair, limit int) {
+	if len(h.pairs) < limit {
+		heap.Push(h, pair)
+		return
+	}
+	if pair.Similarity > h.weakest().Similarity {
+		h.pairs[0] = pair
+		heap.Fix(h, 0)
+	}
+}
+
+// clonePairMeasurement is what comparing two fragments yields, before the
+// detector assigns clone identities and pair IDs. Keeping measurement separate
+// from that bookkeeping is what lets comparisons run concurrently.
+type clonePairMeasurement struct {
+	distance   float64
+	similarity float64
+	cloneType  domain.CloneType
+	confidence float64
+}
+
+// measureFragments compares two fragments with the given APTED analyzer and
+// reports whether they form a clone pair. It touches no detector state, so
+// callers may run it concurrently as long as each has its own analyzer.
 // Uses a Jaccard pre-filter on pre-computed features to minimize expensive APTED calls.
-func (cd *CloneDetector) compareFragments(fragment1, fragment2 *CodeFragment, pairID int) *domain.ClonePair {
+func (cd *CloneDetector) measureFragments(analyzer *apted.APTEDAnalyzer, fragment1, fragment2 *CodeFragment) (clonePairMeasurement, bool) {
 	if fragment1.TreeNode == nil || fragment2.TreeNode == nil {
-		return nil
+		return clonePairMeasurement{}, false
 	}
 
 	// Early filtering check
 	coreFragment1, coreFragment2 := toCoreFragment(fragment1, 0), toCoreFragment(fragment2, 1)
 	if !coreclone.ShouldCompareFragments(coreFragment1, coreFragment2) {
-		return nil
+		return clonePairMeasurement{}, false
 	}
 
 	// Jaccard pre-filter: reject clear non-clones before expensive APTED work.
 	// Only used for rejection — all non-rejected pairs proceed to APTED-based
 	// classification for accurate clone typing and distance computation.
 	if !cd.pairClassifier.PassesJaccardPreFilter(coreFragment1, coreFragment2) {
-		return nil
+		return clonePairMeasurement{}, false
 	}
 
 	// Compute edit distance and similarity using APTED algorithm
-	distance, similarity := cd.analyzer.ComputeDistanceAndSimilarity(fragment1.TreeNode, fragment2.TreeNode)
+	distance, similarity := analyzer.ComputeDistanceAndSimilarity(fragment1.TreeNode, fragment2.TreeNode)
 
 	// Determine clone type with textual/syntactic gating
 	coreType, similarity := cd.pairClassifier.ClassifyPair(coreFragment1, coreFragment2, similarity)
 	cloneType := domain.CloneType(coreType)
 	if cloneType == 0 {
-		return nil // Not a significant clone
+		return clonePairMeasurement{}, false // Not a significant clone
 	}
 
-	// Calculate confidence based on fragment size and similarity
-	confidence := coreclone.CalculateConfidence(coreFragment1, coreFragment2, similarity)
+	return clonePairMeasurement{
+		distance:   distance,
+		similarity: similarity,
+		cloneType:  cloneType,
+		// Calculate confidence based on fragment size and similarity
+		confidence: coreclone.CalculateConfidence(coreFragment1, coreFragment2, similarity),
+	}, true
+}
 
-	// Create domain Clone objects (shared per fragment across pairs)
-	clone1 := cd.fragmentToClone(fragment1)
-	clone2 := cd.fragmentToClone(fragment2)
+// compareFragments compares two fragments and returns a clone pair if similar.
+func (cd *CloneDetector) compareFragments(fragment1, fragment2 *CodeFragment, pairID int) *domain.ClonePair {
+	measurement, ok := cd.measureFragments(cd.analyzer, fragment1, fragment2)
+	if !ok {
+		return nil
+	}
+	return cd.buildClonePair(measurement, fragment1, fragment2, pairID)
+}
 
+// buildClonePair attaches clone identities to a measurement. The same fragment
+// always maps to the same clone, so this must run on a single goroutine.
+func (cd *CloneDetector) buildClonePair(measurement clonePairMeasurement, fragment1, fragment2 *CodeFragment, pairID int) *domain.ClonePair {
 	return &domain.ClonePair{
 		ID:         pairID,
-		Clone1:     clone1,
-		Clone2:     clone2,
-		Similarity: similarity,
-		Distance:   distance,
-		Type:       cloneType,
-		Confidence: confidence,
+		Clone1:     cd.fragmentToClone(fragment1),
+		Clone2:     cd.fragmentToClone(fragment2),
+		Similarity: measurement.similarity,
+		Distance:   measurement.distance,
+		Type:       measurement.cloneType,
+		Confidence: measurement.confidence,
 	}
+}
+
+// candidateChunkSize bounds how many candidate pairs are verified at once.
+// Large enough that every worker has substantial work per chunk, small enough
+// that the per-candidate bookkeeping stays a few megabytes however many
+// candidates the index produces.
+const candidateChunkSize = 1 << 16
+
+// verifyCandidates runs APTED verification over candidate fragment pairs across
+// worker goroutines, then appends the surviving pairs to pairs on a single
+// goroutine in candidate order. Pair IDs and clone identities therefore do not
+// depend on how the work was scheduled or on how candidates were chunked.
+//
+// That guarantee covers runs that finish. A worker that observes a cancelled
+// context abandons the rest of its stripe while other workers may still be
+// completing theirs, so the partial results of a cancelled run do depend on
+// scheduling. Callers that surface partial output must not present it as
+// reproducible.
+func (cd *CloneDetector) verifyCandidates(ctx context.Context, candidates [][2]int, pairs []*domain.ClonePair) []*domain.ClonePair {
+	if len(candidates) == 0 {
+		return pairs
+	}
+
+	measurements := make([]clonePairMeasurement, len(candidates))
+	accepted := make([]bool, len(candidates))
+
+	workers := runtime.NumCPU()
+	if workers > len(candidates) {
+		workers = len(candidates)
+	}
+
+	var wg sync.WaitGroup
+	for worker := 0; worker < workers; worker++ {
+		wg.Add(1)
+		go func(offset int) {
+			defer wg.Done()
+			// Each worker needs its own analyzer: APTED reuses scratch buffers
+			// across comparisons.
+			analyzer := apted.NewAPTEDAnalyzerWithNormalization(cd.costModel, apted.NormalizeByMax)
+			for index := offset; index < len(candidates); index += workers {
+				if index%cancellationCheckInterval == 0 && isCancelled(ctx) {
+					return
+				}
+				pair := candidates[index]
+				measurements[index], accepted[index] = cd.measureFragments(
+					analyzer, cd.fragments[pair[0]], cd.fragments[pair[1]])
+			}
+		}(worker)
+	}
+	wg.Wait()
+
+	for index, candidate := range candidates {
+		if !accepted[index] {
+			continue
+		}
+		fragment1, fragment2 := cd.fragments[candidate[0]], cd.fragments[candidate[1]]
+		pair := cd.buildClonePair(measurements[index], fragment1, fragment2, len(pairs))
+		if cd.isSignificantClone(pair) {
+			pairs = append(pairs, pair)
+		}
+	}
+	return pairs
 }
 
 // fragmentToClone converts a CodeFragment to a domain.Clone.
@@ -977,36 +1126,14 @@ func (cd *CloneDetector) tryCreateClonePair(i, j int, minSimilarity float64, pai
 	return nil
 }
 
-// addPairWithLimit adds a pair to the collection while maintaining size limit
-func (cd *CloneDetector) addPairWithLimit(pairs []*domain.ClonePair, newPair *domain.ClonePair, maxPairs int) []*domain.ClonePair {
-	// If under limit, just add
-	if len(pairs) < maxPairs {
-		pairs = append(pairs, newPair)
-		// Keep sorted by similarity (descending)
-		sort.Slice(pairs, func(i, j int) bool {
-			return pairs[i].Similarity > pairs[j].Similarity
-		})
-		return pairs
-	}
-
-	// If at limit, check if new pair is better than the worst
-	if newPair.Similarity > pairs[len(pairs)-1].Similarity {
-		// Replace worst pair
-		pairs[len(pairs)-1] = newPair
-		// Re-sort to maintain order
-		sort.Slice(pairs, func(i, j int) bool {
-			return pairs[i].Similarity > pairs[j].Similarity
-		})
-	}
-
-	return pairs
-}
-
 // limitAndSortClonePairs ensures final results are sorted and limited
 func (cd *CloneDetector) limitAndSortClonePairs(maxPairs int) {
-	// Sort clone pairs by similarity (descending)
+	// Sort clone pairs by similarity (descending), breaking ties on source
+	// location. The truncation below makes the tie-break load-bearing: without
+	// it, which of a run of equally similar pairs survives the cut would depend
+	// on the order candidates happened to be generated in.
 	sort.Slice(cd.clonePairs, func(i, j int) bool {
-		return cd.clonePairs[i].Similarity > cd.clonePairs[j].Similarity
+		return domain.ClonePairPrecedes(cd.clonePairs[i], cd.clonePairs[j])
 	})
 
 	// Limit the number of pairs to prevent memory issues

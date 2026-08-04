@@ -32,8 +32,11 @@ type TreeNode struct {
 	//   // pyscn
 	//   pyNode := treeNode.OriginalNode.(*parser.Node)
 	//
-	//   // jscan
-	//   jsNode := treeNode.OriginalNode.(*parser.Node)
+	// Populating it is a deliberate choice, not a default. A parser node that
+	// carries a parent pointer pins its whole file AST for as long as the
+	// converted tree lives, which is the entire run for clone detection —
+	// jscan's converter therefore leaves this empty, so do not assume an
+	// adapter has filled it in.
 	OriginalNode any
 }
 
