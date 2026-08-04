@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Adopt `core/clone` for grouping strategies, group dedup, Type-1/2 similarity gates, pair classification, and AST feature extraction; keep JS/TS adapters (fragment extraction, comment stripping, cost model, LSH orchestration)
 
+### Fixed
+
+- Match `analysis.exclude_patterns` against whole path segments instead of any substring of a file's path, so the default entries `out` and `dist` no longer drop `src/routes/`, `src/layout/`, `src/checkout/`, or `src/utils/distance.ts`. Patterns containing a slash are matched against the path, with `**` spanning any number of directories, and patterns are now evaluated relative to the analyzed path so a parent directory named `build` no longer excludes an entire project. Affected projects will see more files analyzed and therefore different scores
+
 ## [0.9.0] - 2026-07-11
 
 ### Added

@@ -16,7 +16,7 @@ Two things will otherwise waste your time.
 
 **The default gate fails on any dead code finding**, including the warning that an exported function is not imported by another analyzed file. In a library, that describes your entire public API. Start with `--allow-dead-code` and tighten later.
 
-**The default exclude patterns silently drop source directories.** Short entries such as `out` and `dist` are matched as substrings of the full file path, so `src/routes/`, `src/layout/`, and `src/checkout/` are skipped. A gate that analyzes a fraction of your code passes easily and tells you nothing. Commit a configuration file with an explicit exclude list, and check the `Analyzing N files...` count against reality once. The [configuration reference](../configuration/reference.md#analysisexclude_patterns) has a safe list to start from.
+**A gate is only as good as the file set it runs on.** Check the `Analyzing N files...` count against reality once, so that you know the gate covers your source tree. Versions up to 0.9.0 matched the exclude patterns `out` and `dist` against any part of a path and skipped `src/routes/`, `src/layout/`, and `src/checkout/`, which made a passing gate meaningless. Pin a version later than 0.9.0 in CI, and see the [configuration reference](../configuration/reference.md#analysisexclude_patterns) for the current matching rules.
 
 ## GitHub Actions
 

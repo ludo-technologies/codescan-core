@@ -70,18 +70,13 @@ Note that `jscan init --interactive` adds `**/*.vue` to `analysis.include_patter
 
 ## Recommended setup
 
-### 1. Fix the exclude patterns first
+### 1. Check the exclude patterns first
 
-The default exclude list contains short entries that match as substrings of a file's full path. In a TypeScript application this silently removes real source directories:
+An exclude pattern matches a whole file or directory name, so `dist` skips a directory named `dist` and leaves `src/utils/distance.ts` alone. Any pattern that names a directory you did not mean to exclude removes every file under it, and nothing in the output mentions the missing files. The only clue is a low count on the `Analyzing N files...` line.
 
-- `src/routes/` is skipped, because `routes` contains `out`.
-- `src/layout/` and `app/**/layout.tsx` are skipped, for the same reason.
-- `src/checkout/` is skipped.
-- `src/utils/distance.ts` is skipped, because `distance` contains `dist`.
+Versions up to 0.9.0 matched a pattern against any part of a path, so the default entries `out` and `dist` silently dropped `src/routes/`, `src/layout/`, `app/**/layout.tsx`, `src/checkout/`, and `src/utils/distance.ts`. Upgrade before trusting a report from one of those versions.
 
-Nothing in the output mentions the missing files. The only clue is a low count on the `Analyzing N files...` line.
-
-Write an explicit list without the short entries:
+A short explicit list is still worth writing, because your own list replaces the default rather than extending it:
 
 ```json title="jscan.config.json"
 {
@@ -118,7 +113,7 @@ Those two numbers should agree, apart from anything your `.gitignore` excludes. 
 
 ### 2. Point jscan at the source root
 
-Analyze `src/` rather than the project root. This keeps build output, configuration files, and scripts out of the analysis without needing patterns for them, which is what lets you drop the risky short patterns in step one.
+Analyze `src/` rather than the project root. This keeps build output, configuration files, and scripts out of the analysis without needing patterns for them, which is what lets you keep the list in step one short.
 
 ```bash
 jscan analyze src/
@@ -169,7 +164,7 @@ Cross-package imports usually go through a workspace alias such as `@myorg/core`
 
 jscan knows the App Router conventions. Inside a file under a path containing `/app/` and named `page`, `layout`, `template`, `loading`, `error`, `not-found`, `default`, or `route`, the default export is exempt from the unused-export warning, as are the framework's reserved names such as `metadata`, `generateStaticParams`, and `revalidate`. In `route` files the HTTP verb exports are exempt too.
 
-That exemption only helps if the file reaches the analyzer. A file named `layout.tsx` is dropped by the default exclude list before the exemption is consulted, which is one more reason to fix the patterns first.
+That exemption only helps if the file reaches the analyzer. Versions up to 0.9.0 dropped every file named `layout.tsx` before the exemption was consulted, because the default pattern `out` matched part of the name.
 
 Add `.next`, `.vercel`, and `.turbo` to your exclude list.
 
@@ -177,11 +172,9 @@ Add `.next`, `.vercel`, and `.turbo` to your exclude list.
 
 Add `.nuxt` and `.output` to your exclude list. Only the `.ts` and `.js` files are analyzed, since `.vue` files are not parsed.
 
-Note that `.output` is safe to include as a pattern, since it is long enough not to over-match, unlike the bare `out` entry in the default list.
-
 ### Node backends
 
-Express and Fastify projects usually have a `routes` directory, which the default exclude list removes. Fix the patterns and the rest works normally. Relative imports are common in backend code, so the dependency graph tends to be accurate here.
+Express and Fastify projects usually have a `routes` directory, which versions up to 0.9.0 removed from the analysis. Later versions read it normally. Relative imports are common in backend code, so the dependency graph tends to be accurate here.
 
 ## See also
 

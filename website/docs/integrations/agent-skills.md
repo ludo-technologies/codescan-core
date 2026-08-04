@@ -56,9 +56,9 @@ An agent will report what jscan says, and jscan has limitations that are easy to
 
 **Unused exports depend on what was analyzed.** If the agent runs jscan on one directory, every export in it is reported as unused, because the importers elsewhere were never read. Ask the agent to analyze the whole source root before acting on those findings.
 
-**The default exclude patterns drop real directories.** Short entries such as `out` and `dist` match as substrings of the full path, so `src/routes/`, `src/layout/`, and `src/checkout/` are silently skipped. If an agent reports a clean codebase, ask it to confirm the file count on the `Analyzing N files...` line against the number of source files you actually have. The [configuration reference](../configuration/reference.md#analysisexclude_patterns) explains the fix.
+**A clean report only covers the files that were read.** If an agent reports a clean codebase, ask it to confirm the file count on the `Analyzing N files...` line against the number of source files you actually have. Versions up to 0.9.0 matched the exclude patterns `out` and `dist` against any part of a path, which silently skipped `src/routes/`, `src/layout/`, and `src/checkout/`. The [configuration reference](../configuration/reference.md#analysisexclude_patterns) describes how patterns match now.
 
-Committing a `jscan.config.json` with a corrected exclude list solves this for every future agent run, since the agent picks the file up automatically.
+Committing a `jscan.config.json` records your exclude list for every future agent run, since the agent picks the file up automatically.
 
 ## Working with Python too?
 
