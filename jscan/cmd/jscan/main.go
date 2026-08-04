@@ -1,3 +1,16 @@
+// Command jscan is a code quality analyzer for JavaScript and TypeScript.
+//
+// It provides five subcommands. analyze runs the full analysis and writes a
+// report, check enforces thresholds and sets an exit code for continuous
+// integration, deps inspects and exports the module dependency graph, init
+// writes a configuration file, and version prints build information.
+//
+// Only check varies its exit code by result: 0 when every check passes, 1 when
+// a threshold is violated, and 2 when the analysis could not run. It signals
+// those through CheckExitError, which main unwraps so that the process exits
+// with the right code without cobra printing usage over the report.
+//
+// Full documentation is at https://jscan.codescan.dev/.
 package main
 
 import (

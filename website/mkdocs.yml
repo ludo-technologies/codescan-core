@@ -1,0 +1,137 @@
+site_name: jscan
+site_description: A code quality analyzer for JavaScript and TypeScript
+site_url: https://jscan.codescan.dev/
+site_author: ludo-technologies
+repo_url: https://github.com/ludo-technologies/polyscan
+repo_name: ludo-technologies/polyscan
+edit_uri: edit/main/website/docs/
+copyright: Copyright &copy; 2024–2026 ludo-technologies
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  logo: assets/icon.svg
+  favicon: assets/icon.svg
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.indexes
+    - navigation.tracking
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+    - content.tooltips
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ludo-technologies/polyscan
+    - icon: fontawesome/brands/npm
+      link: https://www.npmjs.com/package/jscan
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quick-start.md
+  - Guides:
+      - Analyze a TypeScript Project: guides/typescript-projects.md
+      - Reduce Duplicate Code: guides/reduce-duplicate-code.md
+      - Read the Dependency Graph: guides/dependency-graph.md
+  - CLI Reference:
+      - cli/index.md
+      - analyze: cli/analyze.md
+      - check: cli/check.md
+      - deps: cli/deps.md
+      - init: cli/init.md
+      - version: cli/version.md
+  - Configuration:
+      - configuration/index.md
+      - Reference: configuration/reference.md
+      - Examples: configuration/examples.md
+  - Output Formats:
+      - output/index.md
+      - HTML Report: output/html-report.md
+      - JSON Schema: output/json-schema.md
+      - Health Score: output/health-score.md
+  - Integrations:
+      - integrations/index.md
+      - CI/CD: integrations/ci-cd.md
+      - Agent Skills: integrations/agent-skills.md
+  - Contributing: contributing.md
+  - FAQ: faq.md

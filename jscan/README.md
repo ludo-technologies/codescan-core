@@ -171,7 +171,11 @@ Create a `jscan.config.json` or `.jscanrc.json` in your project root:
 
 ## Documentation
 
-📚 **[Development Guide](docs/DEVELOPMENT.md)** • **[Architecture](docs/ARCHITECTURE.md)** • **[Testing](docs/TESTING.md)** • **[Performance](../docs/performance.md)** • **[Contributing](CONTRIBUTING.md)**
+📚 **[jscan.codescan.dev](https://jscan.codescan.dev/)** — installation, CLI reference, configuration, output formats, and CI/CD integration.
+
+Start with the [quick start](https://jscan.codescan.dev/getting-started/quick-start/), then the [CLI reference](https://jscan.codescan.dev/cli/) and the [configuration guide](https://jscan.codescan.dev/configuration/).
+
+For contributors: **[Development Guide](docs/DEVELOPMENT.md)** • **[Architecture](docs/ARCHITECTURE.md)** • **[Testing](docs/TESTING.md)** • **[Performance](../docs/performance.md)** • **[Contributing](CONTRIBUTING.md)**
 
 ## Enterprise Support
 
