@@ -2,15 +2,16 @@
 
 ## Prerequisites
 
-- **Go 1.24+** - [Download](https://go.dev/dl/)
+- **Go 1.24.6+** - [Download](https://go.dev/dl/)
+- **A C compiler** - required because tree-sitter is reached through cgo
 - **golangci-lint** - Required for linting (`make lint`)
 
 ## Getting Started
 
 ```bash
-# Clone the repository
+# Clone the monorepo and enter the jscan module
 git clone https://github.com/ludo-technologies/polyscan.git
-cd jscan
+cd polyscan/jscan
 
 # Download dependencies
 go mod download
@@ -34,7 +35,7 @@ make build
 | `make install` | Build and install the binary via `go install` |
 | `make run` | Build and run against `testdata/javascript/simple/` |
 | `make version` | Print version, commit, and build date |
-| `make build-all` | Cross-compile for linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64 |
+| `make build-all` | Attempt builds for linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64. See the note below |
 | `make deps` | Download and verify module dependencies |
 | `make tidy` | Tidy `go.mod` and `go.sum` |
 
@@ -66,3 +67,31 @@ The build injects version metadata via linker flags (`-ldflags`):
 - `Commit` - from `git rev-parse --short HEAD`
 - `Date` - build date
 - `BuiltBy` - set to `make` when built via Makefile
+
+The release workflow injects only `Version`, so a released binary reports
+`unknown` for the commit and date and `source` as its builder.
+
+## Cross-compilation does not work
+
+tree-sitter is a C library reached through cgo, so setting `GOOS` and `GOARCH`
+only succeeds for the platform you are already on. `make build-all` will fail
+for the other targets.
+
+This is why `.github/workflows/jscan-release.yml` builds each target on its own
+runner rather than cross-compiling from one. Note that there is no Intel macOS
+target: the release matrix covers linux/amd64, linux/arm64, darwin/arm64, and
+windows/amd64.
+
+## Documentation site
+
+The user-facing documentation at [jscan.codescan.dev](https://jscan.codescan.dev/)
+is built with MkDocs Material from `website/` at the repository root.
+
+```bash
+cd ../website
+pip install -r requirements.txt
+mkdocs serve
+```
+
+CI builds it with `mkdocs build --strict`, so a broken internal link fails the
+build.

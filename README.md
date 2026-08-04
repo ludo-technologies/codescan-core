@@ -88,6 +88,7 @@ go get github.com/ludo-technologies/polyscan/core
 |-----------|-------------|
 | [`core/`](core/) | Language-agnostic analysis algorithms as a standalone Go module |
 | [`jscan/`](jscan/) | JavaScript/TypeScript code quality analyzer and standalone Go module |
+| [`website/`](website/) | Source of the jscan documentation site at [jscan.codescan.dev](https://jscan.codescan.dev/) |
 
 jscan moved here from its former standalone repository, [ludo-technologies/jscan](https://github.com/ludo-technologies/jscan); releases up to v0.9.0 live there, and newer releases ship from this monorepo under the same npm package name [`jscan`](https://www.npmjs.com/package/jscan). [pyscn](https://github.com/ludo-technologies/pyscn) remains an independent repository and consumes `core/` as a Go module dependency.
 
@@ -95,7 +96,11 @@ Each module is tagged with a directory prefix, e.g. `core/v0.2.1`, `jscan/v0.9.1
 
 ## Documentation
 
-📖 **[pyscn documentation site](https://docs.codescan.dev/)** • **[jscan README](jscan/README.md)** • **[core README](core/README.md)** • **[Performance](docs/performance.md)**
+📖 **[jscan documentation site](https://jscan.codescan.dev/)** • **[pyscn documentation site](https://docs.codescan.dev/)**
+
+**[jscan README](jscan/README.md)** • **[core README](core/README.md)** • **[Performance](docs/performance.md)**
+
+The jscan site is built with MkDocs Material from [`website/`](website/) and deploys to GitHub Pages on every push to `main`.
 
 For contributors: **[Contributing](CONTRIBUTING.md)** • **[Code of Conduct](CODE_OF_CONDUCT.md)** • **[Security](SECURITY.md)**
 

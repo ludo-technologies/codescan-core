@@ -6,17 +6,20 @@ Thank you for your interest in contributing to jscan! This document provides gui
 
 ### Prerequisites
 
-- **Go 1.24+** - [Download Go](https://go.dev/dl/)
+- **Go 1.24.6+** - [Download Go](https://go.dev/dl/)
+- **A C compiler** - required because jscan parses with tree-sitter through cgo
 - **golangci-lint** - [Install instructions](https://golangci-lint.run/welcome/install/)
 - **Make** - Available by default on macOS and Linux
 
 ### Getting Started
 
+jscan lives in the [polyscan monorepo](https://github.com/ludo-technologies/polyscan) under `jscan/`. The standalone `jscan` repository was retired.
+
 1. Fork the repository on GitHub
-2. Clone your fork:
+2. Clone your fork and enter the `jscan` directory:
    ```bash
-   git clone https://github.com/<your-username>/jscan.git
-   cd jscan
+   git clone https://github.com/<your-username>/polyscan.git
+   cd polyscan/jscan
    ```
 3. Install dependencies:
    ```bash
