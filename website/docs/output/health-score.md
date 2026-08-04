@@ -41,6 +41,28 @@ Architecture validation is not implemented in jscan, so its penalty is always 0.
 
 These thresholds are shared with pyscn so that a grade means the same thing regardless of the language being analyzed.
 
+## Project scale
+
+Directly below the health score, jscan prints the size of the repository it just analyzed:
+
+```text
+Project Scale: Medium (123 files, 456 functions, 7890 LOC)
+```
+
+The label comes from the number of analyzed files alone:
+
+| Label | Analyzed files |
+| --- | --- |
+| Micro | 0 to 9 |
+| Small | 10 to 49 |
+| Medium | 50 to 199 |
+| Large | 200 to 999 |
+| Enterprise | 1000 or more |
+
+The scale is reported for context only. It does not change the health score or the grade in any way, so two repositories of different sizes with identical metrics receive identical scores.
+
+The line count comes from the clone analysis, which is the stage that reads whole files. When clone analysis is turned off, the line count is omitted and the line reads `Project Scale: Medium (123 files, 456 functions)`.
+
 ## How each penalty is computed
 
 Four of the categories use the same shape. A ratio is computed, and the penalty grows linearly from 0 until the ratio reaches a saturation point, beyond which the penalty stays at its maximum.

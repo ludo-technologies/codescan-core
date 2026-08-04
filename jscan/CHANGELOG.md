@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Report a project scale line (Micro, Small, Medium, Large, Enterprise, classified by analyzed file count) directly below the health score in the terminal summary, the text output, and the HTML report header. The `summary` object of the JSON and YAML output gains `project_scale` and `total_loc`. The scale is contextual only and does not affect the health score
+
 ### Changed
 
 - Adopt `core/clone` for grouping strategies, group dedup, Type-1/2 similarity gates, pair classification, and AST feature extraction; keep JS/TS adapters (fragment extraction, comment stripping, cost model, LSH orchestration)

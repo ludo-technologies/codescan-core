@@ -54,6 +54,51 @@ func TestCalculateDuplicationPercentageReportsUncappedRatio(t *testing.T) {
 	}
 }
 
+func TestBuildAnalyzeSummary_WiresProjectScale(t *testing.T) {
+	complexityResponse := &domain.ComplexityResponse{
+		Summary: domain.ComplexitySummary{
+			TotalFunctions: 240,
+			FilesAnalyzed:  123,
+		},
+	}
+	cloneResponse := &domain.CloneResponse{Statistics: &domain.CloneStatistics{
+		LinesAnalyzed: 7890,
+	}}
+
+	summary := BuildAnalyzeSummary(complexityResponse, nil, cloneResponse, nil, nil)
+
+	if summary.ProjectScale != domain.ScaleMedium {
+		t.Errorf("ProjectScale = %q, want %q", summary.ProjectScale, domain.ScaleMedium)
+	}
+	if summary.TotalLOC != 7890 {
+		t.Errorf("TotalLOC = %d, want 7890", summary.TotalLOC)
+	}
+
+	want := "Medium (123 files, 240 functions, 7890 LOC)"
+	if got := FormatProjectScale(summary); got != want {
+		t.Errorf("FormatProjectScale() = %q, want %q", got, want)
+	}
+	if cli := FormatCLISummary(summary, time.Second); !strings.Contains(cli, "Project Scale: "+want) {
+		t.Errorf("CLI summary missing project scale line:\n%s", cli)
+	}
+}
+
+func TestFormatProjectScale_OmitsLOCWhenUnavailable(t *testing.T) {
+	// Clone analysis is what supplies the line count, so a run without it
+	// reports files and functions only.
+	summary := BuildAnalyzeSummary(&domain.ComplexityResponse{
+		Summary: domain.ComplexitySummary{
+			TotalFunctions: 6,
+			FilesAnalyzed:  4,
+		},
+	}, nil, nil, nil, nil)
+
+	want := "Micro (4 files, 6 functions)"
+	if got := FormatProjectScale(summary); got != want {
+		t.Errorf("FormatProjectScale() = %q, want %q", got, want)
+	}
+}
+
 func TestOutputFormatterWriteComplexityJSON(t *testing.T) {
 	formatter := NewOutputFormatter()
 

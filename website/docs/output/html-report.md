@@ -14,6 +14,8 @@ jscan analyze --output reports/quality.html --no-open src/
 
 ## Layout
 
+Above the tabs, the report header carries the health score badge, and directly below it the project scale line reports how large the analyzed repository is. See [Project scale](health-score.md#project-scale) for the size labels.
+
 The report opens on a summary and has one tab per analysis. Tabs appear only for the analyses that ran, so a report produced with `--select complexity` has two tabs rather than six.
 
 | Tab | Contents |

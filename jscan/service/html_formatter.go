@@ -105,6 +105,12 @@ func (f *OutputFormatterImpl) WriteHTML(
 				return "poor"
 			}
 		},
+		"projectScale": func(summary *domain.AnalyzeSummary) string {
+			if summary == nil {
+				return ""
+			}
+			return FormatProjectScale(summary)
+		},
 		"gradeClass": func(grade string) string {
 			switch grade {
 			case "A":
@@ -320,6 +326,7 @@ const htmlTemplate = `<!DOCTYPE html>
             <div class="score-badge {{gradeClass .Summary.Grade}}">
                 Health Score: {{.Summary.HealthScore}}/100 (Grade: {{.Summary.Grade}})
             </div>
+            <p class="subtitle">Project Scale: {{projectScale .Summary}}</p>
         </div>
 
         <div class="tabs">
