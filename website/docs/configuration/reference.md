@@ -151,62 +151,19 @@ The default is:
 }
 ```
 
-Matching happens in two places, with different rules.
+A pattern is matched against whole names, never against part of one.
 
-A **directory** is skipped when its own name equals a pattern exactly, or matches it as a glob. This behaves the way you would expect: `dist` skips any directory named `dist` at any depth, and nothing else.
+A pattern **without a slash** is compared to the file's own name and to each directory name above it. `dist` skips every directory named `dist` at any depth along with everything inside it, and it leaves `src/utils/distance.ts` alone, because no name in that path is exactly `dist`. Glob characters apply to a single name, so `*.min.js` matches file names and `__*__` matches a directory named `__tests__`.
 
-A **file** is skipped when its filename matches a pattern as a glob, **or when the pattern appears anywhere in the file's full path as a plain substring**. That second rule is far broader than it looks, and it is the cause of the problem described next.
+A pattern **containing a slash** is compared to the path itself, where `**` stands for any number of directory levels. `src/generated` skips that directory and everything under it. `**/dist/**` skips every file below any directory named `dist`.
 
-!!! danger "Short patterns silently exclude files you meant to analyze"
+Patterns are matched relative to the path you pass to jscan, so the directories above it are never considered. A project stored at `/home/me/build/myapp` is analyzed normally even though `build` is on the default list. A file you name directly on the command line is matched on its own name alone, so `jscan analyze src/dist/bundle.js` analyzes that file.
 
-    Because file matching falls back to a substring test on the whole path, a short pattern in the list removes every file whose path merely contains those characters. Two entries in the default list cause this in ordinary projects:
+!!! note "Behavior changed in the release after 0.9.0"
 
-    - `out` matches `src/layout/Header.tsx`, `src/checkout/Cart.ts`, and `src/routes/api.ts`, because `layout`, `checkout`, and `routes` all contain the letters `out`.
-    - `dist` matches `src/utils/distance.ts` and anything else containing `dist`.
+    Earlier versions also skipped a file when a pattern appeared anywhere in its path as a plain substring. The default entries `out` and `dist` therefore removed `src/routes/api.ts`, `src/layout/Header.tsx`, `src/checkout/Cart.ts`, and `src/utils/distance.ts` without reporting anything. If you worked around that by trimming the short entries out of your `exclude_patterns`, you can now go back to the default list.
 
-    The files are dropped during collection, so nothing in the output mentions them. The only visible symptom is that the `Analyzing N files...` count is lower than you expect.
-
-    Verify what jscan actually read before trusting a clean report:
-
-    ```console
-    $ jscan analyze --text src/ | head -1
-    Analyzing 1 files...
-    ```
-
-    If that count looks wrong, override `exclude_patterns` with a list that leaves out the short entries:
-
-    ```json
-    {
-      "analysis": {
-        "exclude_patterns": [
-          "node_modules",
-          "bower_components",
-          "jspm_packages",
-          "vendor",
-          "third_party",
-          "coverage",
-          ".git",
-          ".next",
-          ".nuxt",
-          ".turbo",
-          ".cache",
-          "*.min.js",
-          "*.min.mjs",
-          "*.min.cjs",
-          "*.bundle.js",
-          "*.map"
-        ]
-      }
-    }
-    ```
-
-    This list drops `out`, `dist`, `build`, `assets`, `extern`, `external`, and `overrides`, which are the entries most likely to over-match. Dropping them has a cost: a directory named `dist` or `build` inside the analyzed path will now be analyzed, because the same list drives both the directory rule and the file rule. Point jscan at your source directory rather than the project root to avoid that:
-
-    ```bash
-    jscan analyze src/
-    ```
-
-Because your list replaces the default, start from one of the lists above and append to it rather than writing a short one from scratch. Omitting `node_modules` in particular will make jscan analyze your entire dependency tree.
+Because your list replaces the default, start from the list above and append to it rather than writing a short one from scratch. Omitting `node_modules` in particular will make jscan analyze your entire dependency tree.
 
 ### `analysis.include_patterns`
 

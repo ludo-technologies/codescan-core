@@ -5,7 +5,7 @@ Complete configuration files for common project shapes. Each one is valid as wri
 Remember two rules while reading these:
 
 - `analysis.exclude_patterns` **replaces** the default list rather than adding to it.
-- Short entries in that list also match as substrings of a file's full path, so `out` removes `src/routes/` and `src/layout/`. Every example below therefore avoids the short entries. The [reference](reference.md#analysisexclude_patterns) explains this in full.
+- Each entry matches a whole file or directory name, so `dist` skips a directory named `dist` and leaves `src/utils/distance.ts` alone. The [reference](reference.md#analysisexclude_patterns) explains the matching rules in full.
 
 ## Starting point for any project
 
@@ -69,9 +69,9 @@ The thresholds are raised because component code accumulates conditional renderi
 
 Next.js reserves several export names that nothing in your code imports. jscan recognizes them and does not report them as unused, but only inside App Router convention files, meaning a file under a path containing `/app/` and named `page`, `layout`, `template`, `loading`, `error`, `not-found`, `default`, or `route`. In those files the default export is exempt, along with `metadata`, `generateMetadata`, `viewport`, `generateViewport`, `generateStaticParams`, `dynamic`, `dynamicParams`, `revalidate`, `fetchCache`, `runtime`, `preferredRegion`, and `maxDuration`. In `route` files the HTTP verb exports such as `GET` and `POST` are exempt as well.
 
-!!! note "This exemption is easy to lose"
+!!! note "This exemption needs the file to reach the analyzer"
 
-    A file named `layout.tsx` contains the letters `out`, so the default `exclude_patterns` drops it before the exemption is ever consulted. The custom list above avoids that, which is another reason not to keep the default list in a Next.js project.
+    Up to version 0.9.0 a file named `layout.tsx` was dropped by the default `exclude_patterns`, because the pattern `out` matched any part of a path. The exemption was never consulted for those files. Later versions match whole names only, so `layout.tsx` is analyzed.
 
 ## Node.js backend service
 
@@ -188,7 +188,7 @@ When the current state is far from where you want it, set thresholds you can act
 
 The high `min_complexity` keeps the report focused on the worst functions rather than producing thousands of lines nobody reads. Lower `max_complexity` by five every time the build passes comfortably, and the gate will ratchet the codebase in the right direction without ever blocking work.
 
-Note that `legacy/generated` is long enough not to over-match, which is what makes it safe to include. Prefer specific multi-segment paths over short names for this reason.
+Note that `legacy/generated` contains a slash, so it is matched against the path rather than against a single name. It skips that directory and everything under it, and it matches nothing else.
 
 ## YAML instead of JSON
 

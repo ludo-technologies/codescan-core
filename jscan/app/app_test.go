@@ -129,6 +129,35 @@ func TestFileHelperIsExcluded(t *testing.T) {
 		{"test.test.js", []string{"*.test.js"}, true},
 		{"node_modules/test.js", []string{"node_modules"}, true},
 		{"src/test.js", []string{"node_modules"}, false},
+
+		// A pattern names a whole path segment, not a substring of one.
+		{"src/routes/api.ts", []string{"out"}, false},
+		{"src/layout/Header.tsx", []string{"out"}, false},
+		{"src/checkout/Cart.ts", []string{"out"}, false},
+		{"src/utils/distance.ts", []string{"dist"}, false},
+		{"src/build-tools/rollup.ts", []string{"build"}, false},
+		{"app/dashboard/layout.tsx", []string{"out", "dist", "build"}, false},
+
+		// Intended exclusions still apply.
+		{"out/bundle.js", []string{"out"}, true},
+		{"dist/bundle.js", []string{"dist"}, true},
+		{"packages/ui/dist/index.js", []string{"dist"}, true},
+		{"src/vendor/jquery.js", []string{"vendor"}, true},
+		{"src/app.min.js", []string{"*.min.js"}, true},
+
+		// Directory globs match segments.
+		{"src/__tests__/app.test.ts", []string{"__*__"}, true},
+		{"src/tests/app.ts", []string{"__*__"}, false},
+
+		// Patterns containing a slash are matched against the path.
+		{"src/generated/api.ts", []string{"src/generated"}, true},
+		{"src/generated/nested/api.ts", []string{"src/generated/**"}, true},
+		{"src/generated.ts", []string{"src/generated"}, false},
+		{"packages/a/dist/index.js", []string{"**/dist/**"}, true},
+		{"packages/a/src/index.js", []string{"**/dist/**"}, false},
+
+		// Empty patterns exclude nothing.
+		{"src/index.ts", []string{""}, false},
 	}
 
 	for _, tt := range tests {
@@ -136,6 +165,93 @@ func TestFileHelperIsExcluded(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("isExcluded(%s, %v) = %v, expected %v", tt.path, tt.excludePatterns, result, tt.expected)
 		}
+	}
+}
+
+// TestFileHelperCollectKeepsSubstringDirectories covers the collection path for
+// issue #39: directories whose names contain an exclude pattern as a substring
+// were dropped from the analysis without any diagnostic.
+func TestFileHelperCollectKeepsSubstringDirectories(t *testing.T) {
+	tempDir := t.TempDir()
+
+	kept := []string{
+		"src/layout/Header.ts",
+		"src/checkout/Cart.ts",
+		"src/routes/api.ts",
+		"src/utils/distance.ts",
+		"src/normal/Plain.ts",
+	}
+	dropped := []string{
+		"dist/bundle.js",
+		"out/server.js",
+		"node_modules/pkg/index.js",
+	}
+
+	for _, rel := range append(append([]string{}, kept...), dropped...) {
+		path := filepath.Join(tempDir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("Failed to create dir for %s: %v", rel, err)
+		}
+		if err := os.WriteFile(path, []byte("export const a = 1;"), 0644); err != nil {
+			t.Fatalf("Failed to create %s: %v", rel, err)
+		}
+	}
+
+	helper := NewFileHelper()
+	excludePatterns := []string{"node_modules", "dist", "build", "out"}
+
+	files, err := helper.CollectJSFiles([]string{tempDir}, true, nil, excludePatterns)
+	if err != nil {
+		t.Fatalf("CollectJSFiles failed: %v", err)
+	}
+
+	found := make(map[string]bool, len(files))
+	for _, f := range files {
+		rel, err := filepath.Rel(tempDir, f)
+		if err != nil {
+			t.Fatalf("Failed to relativize %s: %v", f, err)
+		}
+		found[filepath.ToSlash(rel)] = true
+	}
+
+	for _, rel := range kept {
+		if !found[rel] {
+			t.Errorf("Expected %s to be analyzed, but it was excluded", rel)
+		}
+	}
+	for _, rel := range dropped {
+		if found[rel] {
+			t.Errorf("Expected %s to be excluded, but it was analyzed", rel)
+		}
+	}
+	if len(files) != len(kept) {
+		t.Errorf("Expected %d files, got %d: %v", len(kept), len(files), files)
+	}
+}
+
+// TestFileHelperCollectIgnoresParentDirectoryNames verifies that exclude
+// patterns are matched relative to the analysis root, so a project checked out
+// under a directory such as "build" is still analyzed.
+func TestFileHelperCollectIgnoresParentDirectoryNames(t *testing.T) {
+	tempDir := t.TempDir()
+
+	root := filepath.Join(tempDir, "build", "myapp")
+	if err := os.MkdirAll(filepath.Join(root, "src"), 0755); err != nil {
+		t.Fatalf("Failed to create project dir: %v", err)
+	}
+	srcFile := filepath.Join(root, "src", "index.ts")
+	if err := os.WriteFile(srcFile, []byte("export const a = 1;"), 0644); err != nil {
+		t.Fatalf("Failed to create source file: %v", err)
+	}
+
+	helper := NewFileHelper()
+
+	files, err := helper.CollectJSFiles([]string{root}, true, nil, []string{"build", "dist"})
+	if err != nil {
+		t.Fatalf("CollectJSFiles failed: %v", err)
+	}
+	if len(files) != 1 {
+		t.Errorf("Expected 1 file below a parent directory named build, got %d: %v", len(files), files)
 	}
 }
 

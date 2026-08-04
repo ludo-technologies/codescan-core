@@ -27,7 +27,9 @@ func (h *FileHelper) CollectJSFiles(paths []string, recursive bool, includePatte
 		}
 
 		if !info.IsDir() {
-			if h.isJSFile(path) && !h.isExcluded(path, excludePatterns) {
+			// A file named directly is only matched on its own name: the
+			// directories it happens to live under are not part of the request.
+			if h.isJSFile(path) && !h.isExcluded(filepath.Base(path), excludePatterns) {
 				files = append(files, path)
 			}
 			continue
@@ -43,36 +45,33 @@ func (h *FileHelper) CollectJSFiles(paths []string, recursive bool, includePatte
 					return err
 				}
 
-				// gitignore check (relative path required)
-				if gi != nil {
-					relPath, relErr := filepath.Rel(path, filePath)
-					if relErr == nil && gi.MatchesPath(relPath) {
-						if info.IsDir() {
-							return filepath.SkipDir
-						}
-						return nil
-					}
+				// Exclusions apply to the path relative to the analysis root, so
+				// directories above the root never exclude the whole tree.
+				relPath, relErr := filepath.Rel(path, filePath)
+				if relErr != nil {
+					relPath = filePath
 				}
 
-				// Skip excluded directories early
-				if info.IsDir() {
-					dirName := filepath.Base(filePath)
-					for _, pattern := range excludePatterns {
-						// Check for exact directory name match
-						if pattern == dirName {
-							return filepath.SkipDir
-						}
-						// Check for directory name with glob pattern
-						// Note: filepath.Match errors are ignored (invalid patterns simply don't match)
-						// This is intentional to allow the program to continue with valid patterns
-						if matched, err := filepath.Match(pattern, dirName); err == nil && matched {
-							return filepath.SkipDir
-						}
+				if gi != nil && relErr == nil && gi.MatchesPath(relPath) {
+					if info.IsDir() {
+						return filepath.SkipDir
 					}
 					return nil
 				}
 
-				if h.isJSFile(filePath) && !h.isExcluded(filePath, excludePatterns) {
+				// Skip excluded directories early
+				if info.IsDir() {
+					// The walk root itself is never excluded: the user asked for it.
+					if relPath == "." {
+						return nil
+					}
+					if h.isExcluded(relPath, excludePatterns) {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+
+				if h.isJSFile(filePath) && !h.isExcluded(relPath, excludePatterns) {
 					files = append(files, filePath)
 				}
 
@@ -87,7 +86,7 @@ func (h *FileHelper) CollectJSFiles(paths []string, recursive bool, includePatte
 			for _, entry := range entries {
 				if !entry.IsDir() {
 					filePath := filepath.Join(path, entry.Name())
-					if h.isJSFile(filePath) && !h.isExcluded(filePath, excludePatterns) {
+					if h.isJSFile(filePath) && !h.isExcluded(entry.Name(), excludePatterns) {
 						files = append(files, filePath)
 					}
 				}
@@ -141,21 +140,84 @@ func (h *FileHelper) isJSFile(path string) bool {
 		ext == ".mjs" || ext == ".cjs" || ext == ".mts" || ext == ".cts"
 }
 
-// isExcluded checks if a path matches any exclude pattern
+// isExcluded checks if a path matches any exclude pattern.
+//
+// Patterns without a slash are matched against the file name and against each
+// directory segment of the path, so "dist" excludes "dist/bundle.js" but not
+// "src/utils/distance.ts". Patterns with a slash are matched against the path
+// as a whole, with "**" matching any number of segments.
+//
+// Note: filepath.Match errors are ignored throughout (invalid patterns simply
+// don't match) so that the remaining valid patterns still apply.
 func (h *FileHelper) isExcluded(path string, excludePatterns []string) bool {
-	baseName := filepath.Base(path)
+	segments := strings.Split(filepath.ToSlash(path), "/")
+	baseName := segments[len(segments)-1]
+	dirSegments := segments[:len(segments)-1]
+
 	for _, pattern := range excludePatterns {
-		// Check glob pattern against base name
-		// Note: filepath.Match errors are ignored (invalid patterns simply don't match)
+		pattern = strings.Trim(filepath.ToSlash(pattern), "/")
+		if pattern == "" {
+			continue
+		}
+
+		if strings.Contains(pattern, "/") {
+			if matchesPathPattern(pattern, segments) {
+				return true
+			}
+			continue
+		}
+
 		if matched, err := filepath.Match(pattern, baseName); err == nil && matched {
 			return true
 		}
-		// Also check if pattern appears in the full path (for directory matching)
-		if strings.Contains(path, pattern) {
+		for _, segment := range dirSegments {
+			if segment == pattern {
+				return true
+			}
+			if matched, err := filepath.Match(pattern, segment); err == nil && matched {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// matchesPathPattern reports whether a multi-segment pattern such as
+// "src/generated/**" matches the given path segments. The pattern may start at
+// any segment boundary, so it behaves like a relative path fragment.
+func matchesPathPattern(pattern string, segments []string) bool {
+	patternSegments := strings.Split(pattern, "/")
+	for i := range segments {
+		if matchSegments(patternSegments, segments[i:]) {
 			return true
 		}
 	}
 	return false
+}
+
+// matchSegments matches pattern segments against a leading run of path
+// segments, where "**" matches zero or more segments and every other segment is
+// a glob. Matching a prefix is enough, so a pattern naming a directory such as
+// "src/generated" also matches everything below it.
+func matchSegments(pattern, segments []string) bool {
+	if len(pattern) == 0 {
+		return true
+	}
+	if pattern[0] == "**" {
+		for i := 0; i <= len(segments); i++ {
+			if matchSegments(pattern[1:], segments[i:]) {
+				return true
+			}
+		}
+		return false
+	}
+	if len(segments) == 0 {
+		return false
+	}
+	if matched, err := filepath.Match(pattern[0], segments[0]); err != nil || !matched {
+		return false
+	}
+	return matchSegments(pattern[1:], segments[1:])
 }
 
 // loadGitIgnore loads a .gitignore file from the root directory.

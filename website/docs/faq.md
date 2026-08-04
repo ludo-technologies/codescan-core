@@ -4,14 +4,9 @@
 
 ### Why did jscan analyze far fewer files than my project has?
 
-Almost certainly the exclude patterns. jscan matches a file against `analysis.exclude_patterns` by testing whether a pattern appears anywhere in the file's full path as a plain substring. The default list contains `out` and `dist`, which means:
+Check your exclude patterns first. A pattern in `analysis.exclude_patterns` matches a whole file or directory name, so `dist` skips a directory named `dist` and leaves `src/utils/distance.ts` alone. A pattern that names a directory you did not mean to exclude removes every file under it, and nothing in the output names the missing files. Compare the `Analyzing N files...` line against a `find` count to confirm. The [configuration reference](configuration/reference.md#analysisexclude_patterns) describes the matching rules.
 
-- `src/routes/api.ts` is skipped, because `routes` contains `out`.
-- `src/layout/Header.tsx` and `app/**/layout.tsx` are skipped.
-- `src/checkout/Cart.ts` is skipped.
-- `src/utils/distance.ts` is skipped, because `distance` contains `dist`.
-
-Nothing in the output names the missing files. Compare the `Analyzing N files...` line against a `find` count to confirm, then commit a configuration file with an explicit exclude list. The [configuration reference](configuration/reference.md#analysisexclude_patterns) has a safe list.
+Versions up to 0.9.0 also matched a pattern against any part of a file's path, so the default entries `out` and `dist` silently dropped `src/routes/`, `src/layout/`, `src/checkout/`, and `src/utils/distance.ts`. Upgrade if you see that.
 
 A second possibility is your `.gitignore`. jscan reads the one at the root of the analyzed directory and skips whatever it ignores.
 
