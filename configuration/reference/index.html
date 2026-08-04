@@ -2239,50 +2239,15 @@
 </span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">  </span><span class="p">}</span>
 </span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>Matching happens in two places, with different rules.</p>
-<p>A <strong>directory</strong> is skipped when its own name equals a pattern exactly, or matches it as a glob. This behaves the way you would expect: <code>dist</code> skips any directory named <code>dist</code> at any depth, and nothing else.</p>
-<p>A <strong>file</strong> is skipped when its filename matches a pattern as a glob, <strong>or when the pattern appears anywhere in the file's full path as a plain substring</strong>. That second rule is far broader than it looks, and it is the cause of the problem described next.</p>
-<div class="admonition danger">
-<p class="admonition-title">Short patterns silently exclude files you meant to analyze</p>
-<p>Because file matching falls back to a substring test on the whole path, a short pattern in the list removes every file whose path merely contains those characters. Two entries in the default list cause this in ordinary projects:</p>
-<ul>
-<li><code>out</code> matches <code>src/layout/Header.tsx</code>, <code>src/checkout/Cart.ts</code>, and <code>src/routes/api.ts</code>, because <code>layout</code>, <code>checkout</code>, and <code>routes</code> all contain the letters <code>out</code>.</li>
-<li><code>dist</code> matches <code>src/utils/distance.ts</code> and anything else containing <code>dist</code>.</li>
-</ul>
-<p>The files are dropped during collection, so nothing in the output mentions them. The only visible symptom is that the <code>Analyzing N files...</code> count is lower than you expect.</p>
-<p>Verify what jscan actually read before trusting a clean report:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--text<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="go">Analyzing 1 files...</span>
-</span></code></pre></div>
-<p>If that count looks wrong, override <code>exclude_patterns</code> with a list that leaves out the short entries:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;analysis&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">&quot;exclude_patterns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">      </span><span class="s2">&quot;node_modules&quot;</span><span class="p">,</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="s2">&quot;bower_components&quot;</span><span class="p">,</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="s2">&quot;jspm_packages&quot;</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="s2">&quot;vendor&quot;</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="s2">&quot;third_party&quot;</span><span class="p">,</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">      </span><span class="s2">&quot;coverage&quot;</span><span class="p">,</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="s2">&quot;.git&quot;</span><span class="p">,</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="s2">&quot;.next&quot;</span><span class="p">,</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">      </span><span class="s2">&quot;.nuxt&quot;</span><span class="p">,</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">      </span><span class="s2">&quot;.turbo&quot;</span><span class="p">,</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">      </span><span class="s2">&quot;.cache&quot;</span><span class="p">,</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">      </span><span class="s2">&quot;*.min.js&quot;</span><span class="p">,</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">      </span><span class="s2">&quot;*.min.mjs&quot;</span><span class="p">,</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">      </span><span class="s2">&quot;*.min.cjs&quot;</span><span class="p">,</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">      </span><span class="s2">&quot;*.bundle.js&quot;</span><span class="p">,</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">      </span><span class="s2">&quot;*.map&quot;</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="p">]</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="p">}</span>
-</span></code></pre></div>
-<p>This list drops <code>out</code>, <code>dist</code>, <code>build</code>, <code>assets</code>, <code>extern</code>, <code>external</code>, and <code>overrides</code>, which are the entries most likely to over-match. Dropping them has a cost: a directory named <code>dist</code> or <code>build</code> inside the analyzed path will now be analyzed, because the same list drives both the directory rule and the file rule. Point jscan at your source directory rather than the project root to avoid that:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
-</span></code></pre></div>
+<p>A pattern is matched against whole names, never against part of one.</p>
+<p>A pattern <strong>without a slash</strong> is compared to the file's own name and to each directory name above it. <code>dist</code> skips every directory named <code>dist</code> at any depth along with everything inside it, and it leaves <code>src/utils/distance.ts</code> alone, because no name in that path is exactly <code>dist</code>. Glob characters apply to a single name, so <code>*.min.js</code> matches file names and <code>__*__</code> matches a directory named <code>__tests__</code>.</p>
+<p>A pattern <strong>containing a slash</strong> is compared to the path itself, where <code>**</code> stands for any number of directory levels. <code>src/generated</code> skips that directory and everything under it. <code>**/dist/**</code> skips every file below any directory named <code>dist</code>.</p>
+<p>Patterns are matched relative to the path you pass to jscan, so the directories above it are never considered. A project stored at <code>/home/me/build/myapp</code> is analyzed normally even though <code>build</code> is on the default list. A file you name directly on the command line is matched on its own name alone, so <code>jscan analyze src/dist/bundle.js</code> analyzes that file.</p>
+<div class="admonition note">
+<p class="admonition-title">Behavior changed in the release after 0.9.0</p>
+<p>Earlier versions also skipped a file when a pattern appeared anywhere in its path as a plain substring. The default entries <code>out</code> and <code>dist</code> therefore removed <code>src/routes/api.ts</code>, <code>src/layout/Header.tsx</code>, <code>src/checkout/Cart.ts</code>, and <code>src/utils/distance.ts</code> without reporting anything. If you worked around that by trimming the short entries out of your <code>exclude_patterns</code>, you can now go back to the default list.</p>
 </div>
-<p>Because your list replaces the default, start from one of the lists above and append to it rather than writing a short one from scratch. Omitting <code>node_modules</code> in particular will make jscan analyze your entire dependency tree.</p>
+<p>Because your list replaces the default, start from the list above and append to it rather than writing a short one from scratch. Omitting <code>node_modules</code> in particular will make jscan analyze your entire dependency tree.</p>
 <h3 id="analysisinclude_patterns"><code>analysis.include_patterns</code><a class="headerlink" href="#analysisinclude_patterns" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; array of strings</p>
 <p>The analyzed extensions are fixed at <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>. This key is validated only to the extent that it must not be an empty array, which means you cannot delete it from a file that already has one.</p>

@@ -818,10 +818,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-fix-the-exclude-patterns-first" class="md-nav__link">
+  <a href="#1-check-the-exclude-patterns-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Fix the exclude patterns first
+        1. Check the exclude patterns first
       
     </span>
   </a>
@@ -1817,10 +1817,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-fix-the-exclude-patterns-first" class="md-nav__link">
+  <a href="#1-check-the-exclude-patterns-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Fix the exclude patterns first
+        1. Check the exclude patterns first
       
     </span>
   </a>
@@ -2094,16 +2094,10 @@
 <p><code>.vue</code> files are not collected, so the <code>&lt;script&gt;</code> block inside them is never analyzed. The <code>.ts</code> and <code>.js</code> files in a Vue or Nuxt project are analyzed normally. Support is on the roadmap.</p>
 <p>Note that <code>jscan init --interactive</code> adds <code>**/*.vue</code> to <code>analysis.include_patterns</code> when you choose the Vue preset. That key is not read, so the entry has no effect either way.</p>
 <h2 id="recommended-setup">Recommended setup<a class="headerlink" href="#recommended-setup" title="Permanent link">&para;</a></h2>
-<h3 id="1-fix-the-exclude-patterns-first">1. Fix the exclude patterns first<a class="headerlink" href="#1-fix-the-exclude-patterns-first" title="Permanent link">&para;</a></h3>
-<p>The default exclude list contains short entries that match as substrings of a file's full path. In a TypeScript application this silently removes real source directories:</p>
-<ul>
-<li><code>src/routes/</code> is skipped, because <code>routes</code> contains <code>out</code>.</li>
-<li><code>src/layout/</code> and <code>app/**/layout.tsx</code> are skipped, for the same reason.</li>
-<li><code>src/checkout/</code> is skipped.</li>
-<li><code>src/utils/distance.ts</code> is skipped, because <code>distance</code> contains <code>dist</code>.</li>
-</ul>
-<p>Nothing in the output mentions the missing files. The only clue is a low count on the <code>Analyzing N files...</code> line.</p>
-<p>Write an explicit list without the short entries:</p>
+<h3 id="1-check-the-exclude-patterns-first">1. Check the exclude patterns first<a class="headerlink" href="#1-check-the-exclude-patterns-first" title="Permanent link">&para;</a></h3>
+<p>An exclude pattern matches a whole file or directory name, so <code>dist</code> skips a directory named <code>dist</code> and leaves <code>src/utils/distance.ts</code> alone. Any pattern that names a directory you did not mean to exclude removes every file under it, and nothing in the output mentions the missing files. The only clue is a low count on the <code>Analyzing N files...</code> line.</p>
+<p>Versions up to 0.9.0 matched a pattern against any part of a path, so the default entries <code>out</code> and <code>dist</code> silently dropped <code>src/routes/</code>, <code>src/layout/</code>, <code>app/**/layout.tsx</code>, <code>src/checkout/</code>, and <code>src/utils/distance.ts</code>. Upgrade before trusting a report from one of those versions.</p>
+<p>A short explicit list is still worth writing, because your own list replaces the default rather than extending it:</p>
 <div class="language-json highlight"><span class="filename">jscan.config.json</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;complexity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">&quot;low_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span>
@@ -2132,7 +2126,7 @@
 </span></code></pre></div>
 <p>Those two numbers should agree, apart from anything your <code>.gitignore</code> excludes. If they do not, a pattern is over-matching.</p>
 <h3 id="2-point-jscan-at-the-source-root">2. Point jscan at the source root<a class="headerlink" href="#2-point-jscan-at-the-source-root" title="Permanent link">&para;</a></h3>
-<p>Analyze <code>src/</code> rather than the project root. This keeps build output, configuration files, and scripts out of the analysis without needing patterns for them, which is what lets you drop the risky short patterns in step one.</p>
+<p>Analyze <code>src/</code> rather than the project root. This keeps build output, configuration files, and scripts out of the analysis without needing patterns for them, which is what lets you keep the list in step one short.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
 </span></code></pre></div>
 <p>Pass the whole source root rather than a subdirectory. The unused-export analysis compares imports against exports across the analyzed files only, so running it on <code>src/components/</code> alone reports every component as unused, because the importers in the rest of <code>src/</code> were never read.</p>
@@ -2161,13 +2155,12 @@
 <h2 id="frameworks">Frameworks<a class="headerlink" href="#frameworks" title="Permanent link">&para;</a></h2>
 <h3 id="nextjs">Next.js<a class="headerlink" href="#nextjs" title="Permanent link">&para;</a></h3>
 <p>jscan knows the App Router conventions. Inside a file under a path containing <code>/app/</code> and named <code>page</code>, <code>layout</code>, <code>template</code>, <code>loading</code>, <code>error</code>, <code>not-found</code>, <code>default</code>, or <code>route</code>, the default export is exempt from the unused-export warning, as are the framework's reserved names such as <code>metadata</code>, <code>generateStaticParams</code>, and <code>revalidate</code>. In <code>route</code> files the HTTP verb exports are exempt too.</p>
-<p>That exemption only helps if the file reaches the analyzer. A file named <code>layout.tsx</code> is dropped by the default exclude list before the exemption is consulted, which is one more reason to fix the patterns first.</p>
+<p>That exemption only helps if the file reaches the analyzer. Versions up to 0.9.0 dropped every file named <code>layout.tsx</code> before the exemption was consulted, because the default pattern <code>out</code> matched part of the name.</p>
 <p>Add <code>.next</code>, <code>.vercel</code>, and <code>.turbo</code> to your exclude list.</p>
 <h3 id="nuxt-and-vue">Nuxt and Vue<a class="headerlink" href="#nuxt-and-vue" title="Permanent link">&para;</a></h3>
 <p>Add <code>.nuxt</code> and <code>.output</code> to your exclude list. Only the <code>.ts</code> and <code>.js</code> files are analyzed, since <code>.vue</code> files are not parsed.</p>
-<p>Note that <code>.output</code> is safe to include as a pattern, since it is long enough not to over-match, unlike the bare <code>out</code> entry in the default list.</p>
 <h3 id="node-backends">Node backends<a class="headerlink" href="#node-backends" title="Permanent link">&para;</a></h3>
-<p>Express and Fastify projects usually have a <code>routes</code> directory, which the default exclude list removes. Fix the patterns and the rest works normally. Relative imports are common in backend code, so the dependency graph tends to be accurate here.</p>
+<p>Express and Fastify projects usually have a <code>routes</code> directory, which versions up to 0.9.0 removed from the analysis. Later versions read it normally. Relative imports are common in backend code, so the dependency graph tends to be accurate here.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../configuration/examples/">Configuration examples</a> for complete files</li>

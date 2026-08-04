@@ -2278,14 +2278,8 @@
 <h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <h3 id="why-did-jscan-analyze-far-fewer-files-than-my-project-has">Why did jscan analyze far fewer files than my project has?<a class="headerlink" href="#why-did-jscan-analyze-far-fewer-files-than-my-project-has" title="Permanent link">&para;</a></h3>
-<p>Almost certainly the exclude patterns. jscan matches a file against <code>analysis.exclude_patterns</code> by testing whether a pattern appears anywhere in the file's full path as a plain substring. The default list contains <code>out</code> and <code>dist</code>, which means:</p>
-<ul>
-<li><code>src/routes/api.ts</code> is skipped, because <code>routes</code> contains <code>out</code>.</li>
-<li><code>src/layout/Header.tsx</code> and <code>app/**/layout.tsx</code> are skipped.</li>
-<li><code>src/checkout/Cart.ts</code> is skipped.</li>
-<li><code>src/utils/distance.ts</code> is skipped, because <code>distance</code> contains <code>dist</code>.</li>
-</ul>
-<p>Nothing in the output names the missing files. Compare the <code>Analyzing N files...</code> line against a <code>find</code> count to confirm, then commit a configuration file with an explicit exclude list. The <a href="../configuration/reference/#analysisexclude_patterns">configuration reference</a> has a safe list.</p>
+<p>Check your exclude patterns first. A pattern in <code>analysis.exclude_patterns</code> matches a whole file or directory name, so <code>dist</code> skips a directory named <code>dist</code> and leaves <code>src/utils/distance.ts</code> alone. A pattern that names a directory you did not mean to exclude removes every file under it, and nothing in the output names the missing files. Compare the <code>Analyzing N files...</code> line against a <code>find</code> count to confirm. The <a href="../configuration/reference/#analysisexclude_patterns">configuration reference</a> describes the matching rules.</p>
+<p>Versions up to 0.9.0 also matched a pattern against any part of a file's path, so the default entries <code>out</code> and <code>dist</code> silently dropped <code>src/routes/</code>, <code>src/layout/</code>, <code>src/checkout/</code>, and <code>src/utils/distance.ts</code>. Upgrade if you see that.</p>
 <p>A second possibility is your <code>.gitignore</code>. jscan reads the one at the root of the analyzed directory and skips whatever it ignores.</p>
 <h3 id="why-is-every-one-of-my-exports-reported-as-unused">Why is every one of my exports reported as unused?<a class="headerlink" href="#why-is-every-one-of-my-exports-reported-as-unused" title="Permanent link">&para;</a></h3>
 <p>The unused-export check compares imports against exports across the files in the current run only. It has no way to see importers outside that set.</p>
