@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Adopt `core/clone` for grouping strategies, group dedup, Type-1/2 similarity gates, pair classification, and AST feature extraction; keep JS/TS adapters (fragment extraction, comment stripping, cost model, LSH orchestration)
 - Generate configuration files containing only keys that change behavior, so `jscan init` no longer produces a file that is mostly inert. The default for `dead_code.min_severity` becomes `info`, which is the severity floor the analysis has always used
-- Remove the unreachable `internal/reporter` package and `service/config_loader.go`, neither of which any command called
+- Match `analysis.include_patterns` and `analysis.exclude_patterns` without regard to case, so that `**/*.ts` selects `Widget.TS` exactly as the file collector accepts it, and `*.min.js` also skips `Vendor.MIN.JS`
+- Remove the unreachable `internal/reporter` package, `service/config_loader.go`, and the five `*ConfigurationLoader` interfaces in `domain` that nothing implemented, none of which any command called
 
 ### Fixed
 

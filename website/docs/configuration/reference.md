@@ -108,6 +108,8 @@ Order of the functions in the complexity report. One of:
 
 Functions the criterion cannot separate are ordered by source location, so the report is stable across runs. The text report names the criterion in its `Functions (sorted by ...)` heading.
 
+`jscan check` reads this key too, where it decides the order the complexity violations are listed in. It does not change whether the check passes.
+
 ### `output.directory`
 
 :material-minus-circle: **Not applied** &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default `""`
@@ -161,7 +163,7 @@ The default is:
 }
 ```
 
-A pattern is matched against whole names, never against part of one.
+A pattern is matched against whole names, never against part of one, and matching ignores case, so `*.min.js` also skips `Vendor.MIN.JS`.
 
 A pattern **without a slash** is compared to the file's own name and to each directory name above it. `dist` skips every directory named `dist` at any depth along with everything inside it, and it leaves `src/utils/distance.ts` alone, because no name in that path is exactly `dist`. Glob characters apply to a single name, so `*.min.js` matches file names and `__*__` matches a directory named `__tests__`.
 
@@ -239,6 +241,8 @@ Raising it changes `jscan check` as well: a run whose only findings fall below t
 :material-check-circle: **Applied** &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default `"severity"`
 
 Order of the files in the dead code report. One of `severity`, `line`, `file`, or `function`. Files that the criterion cannot separate are ordered by path, so the report is stable across runs.
+
+`jscan check` passes this key to the analysis as well, but reports only finding counts, which no ordering can change.
 
 ### Not applied
 

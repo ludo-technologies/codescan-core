@@ -436,19 +436,31 @@ func formatFunctionCoverage(reported, parsed int) string {
 	return fmt.Sprintf("%d", reported)
 }
 
-// complexitySortLabel names the criterion the functions are listed by, taken
-// from the configuration the analysis reported back so that the heading cannot
-// drift away from the actual order.
-func complexitySortLabel(responseConfig interface{}) string {
+// complexityFunctionsHeading names the criterion the functions are listed by,
+// taken from the configuration the analysis reported back so that the heading
+// cannot drift away from the actual order.
+//
+// When the criterion cannot be read back, the heading claims nothing rather
+// than guessing: a heading that names the wrong order is worse than one that
+// names none. The value arrives as a SortCriteria in process and as a plain
+// string once the response has been through JSON, so both are accepted.
+func complexityFunctionsHeading(responseConfig interface{}) string {
 	cfg, ok := responseConfig.(map[string]interface{})
 	if !ok {
-		return string(domain.SortByComplexity)
+		return "Functions:"
 	}
-	sortBy, ok := cfg["sort_by"].(domain.SortCriteria)
-	if !ok || sortBy == "" {
-		return string(domain.SortByComplexity)
+
+	var sortBy string
+	switch value := cfg["sort_by"].(type) {
+	case domain.SortCriteria:
+		sortBy = string(value)
+	case string:
+		sortBy = value
 	}
-	return string(sortBy)
+	if sortBy == "" {
+		return "Functions:"
+	}
+	return fmt.Sprintf("Functions (sorted by %s):", sortBy)
 }
 
 func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityResponse, writer io.Writer) error {
@@ -474,7 +486,7 @@ func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityRes
 
 	// Function details
 	if len(response.Functions) > 0 {
-		fmt.Fprintf(writer, "Functions (sorted by %s):\n", complexitySortLabel(response.Config))
+		fmt.Fprintf(writer, "%s\n", complexityFunctionsHeading(response.Config))
 		for _, fn := range response.Functions {
 			riskIndicator := ""
 			switch fn.RiskLevel {

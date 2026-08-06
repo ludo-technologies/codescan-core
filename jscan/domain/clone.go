@@ -311,18 +311,6 @@ type CloneOutputFormatter interface {
 	FormatCloneStatistics(stats *CloneStatistics, format OutputFormat, writer io.Writer) error
 }
 
-// CloneConfigurationLoader defines the interface for loading clone detection configuration
-type CloneConfigurationLoader interface {
-	// LoadCloneConfig loads clone detection configuration from file
-	LoadCloneConfig(configPath string) (*CloneRequest, error)
-
-	// SaveCloneConfig saves clone detection configuration to file
-	SaveCloneConfig(config *CloneRequest, configPath string) error
-
-	// GetDefaultCloneConfig returns default clone detection configuration
-	GetDefaultCloneConfig() *CloneRequest
-}
-
 // Validation methods
 
 // Validate validates a clone request

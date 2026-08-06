@@ -19,8 +19,8 @@
 //   - A .gitignore at the root of the walked directory is honored. Only that
 //     one file is read, not nested ones and not the repository root's when a
 //     subdirectory was passed.
-//   - Exclude patterns are matched on whole path segments, relative to the
-//     analysis root, so "dist" skips dist/bundle.js and leaves
+//   - Exclude patterns are matched on whole path segments, ignoring case and
+//     relative to the analysis root, so "dist" skips dist/bundle.js and leaves
 //     src/utils/distance.ts alone.
 //   - Include patterns, when a caller supplies any, keep only the files that
 //     match one, under the same matching rules. They narrow the walk; they

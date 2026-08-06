@@ -311,6 +311,42 @@ func TestFileHelperCollectAppliesIncludePatterns(t *testing.T) {
 	}
 }
 
+// TestFileHelperCollectMatchesPatternsIgnoringCase pins that pattern matching
+// and isJSFile agree about case, so a file with an uppercase extension is not
+// dropped by the default include patterns.
+func TestFileHelperCollectMatchesPatternsIgnoringCase(t *testing.T) {
+	tempDir := t.TempDir()
+
+	for _, rel := range []string{"Widget.TS", "Legacy.JS", "Vendor/Bundle.JS"} {
+		path := filepath.Join(tempDir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("Failed to create dir for %s: %v", rel, err)
+		}
+		if err := os.WriteFile(path, []byte("export const a = 1;"), 0644); err != nil {
+			t.Fatalf("Failed to create %s: %v", rel, err)
+		}
+	}
+
+	helper := NewFileHelper()
+	files, err := helper.CollectJSFiles([]string{tempDir}, true, []string{"**/*.ts", "**/*.js"}, []string{"vendor"})
+	if err != nil {
+		t.Fatalf("CollectJSFiles failed: %v", err)
+	}
+
+	found := make(map[string]bool, len(files))
+	for _, f := range files {
+		found[filepath.Base(f)] = true
+	}
+	for _, name := range []string{"Widget.TS", "Legacy.JS"} {
+		if !found[name] {
+			t.Errorf("Expected %s to be analyzed, got %v", name, files)
+		}
+	}
+	if found["Bundle.JS"] {
+		t.Errorf("Expected the excluded directory to be skipped regardless of case, got %v", files)
+	}
+}
+
 // TestFileHelperCollectKeepsExplicitlyNamedFile verifies that include patterns
 // do not drop a file the user named on the command line.
 func TestFileHelperCollectKeepsExplicitlyNamedFile(t *testing.T) {

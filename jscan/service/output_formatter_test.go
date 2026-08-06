@@ -513,3 +513,48 @@ func TestBuildAnalyzeSummary_WiresCycles(t *testing.T) {
 		t.Errorf("DependencyScore should be < 100 when cycles exist, got %d", summary.DependencyScore)
 	}
 }
+
+// TestComplexityFunctionsHeading covers the heading that names the sort order:
+// it must follow the criterion the analysis reported, and claim nothing when it
+// cannot read one back.
+func TestComplexityFunctionsHeading(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   interface{}
+		expected string
+	}{
+		{
+			name:     "criterion as reported in process",
+			config:   map[string]interface{}{"sort_by": domain.SortByName},
+			expected: "Functions (sorted by name):",
+		},
+		{
+			name:     "criterion after a JSON round trip",
+			config:   map[string]interface{}{"sort_by": "risk"},
+			expected: "Functions (sorted by risk):",
+		},
+		{
+			name:     "no configuration at all",
+			config:   nil,
+			expected: "Functions:",
+		},
+		{
+			name:     "configuration without the key",
+			config:   map[string]interface{}{"min_complexity": 1},
+			expected: "Functions:",
+		},
+		{
+			name:     "unexpected type for the key",
+			config:   map[string]interface{}{"sort_by": 42},
+			expected: "Functions:",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if heading := complexityFunctionsHeading(tc.config); heading != tc.expected {
+				t.Errorf("heading = %q, expected %q", heading, tc.expected)
+			}
+		})
+	}
+}

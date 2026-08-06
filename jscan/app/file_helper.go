@@ -169,15 +169,19 @@ func (h *FileHelper) isExcluded(path string, excludePatterns []string) bool {
 // "src/utils/distance.ts". Patterns with a slash are matched against the path
 // as a whole, with "**" matching any number of segments.
 //
+// Matching ignores case, on both sides, so that the default include pattern
+// "**/*.ts" selects Widget.TS exactly as isJSFile accepts it. Treating the two
+// differently would drop such a file with nothing said about it.
+//
 // Note: filepath.Match errors are ignored throughout (invalid patterns simply
 // don't match) so that the remaining valid patterns still apply.
 func matchesAnyPattern(path string, patterns []string) bool {
-	segments := strings.Split(filepath.ToSlash(path), "/")
+	segments := strings.Split(strings.ToLower(filepath.ToSlash(path)), "/")
 	baseName := segments[len(segments)-1]
 	dirSegments := segments[:len(segments)-1]
 
 	for _, pattern := range patterns {
-		pattern = strings.Trim(filepath.ToSlash(pattern), "/")
+		pattern = strings.ToLower(strings.Trim(filepath.ToSlash(pattern), "/"))
 		if pattern == "" {
 			continue
 		}

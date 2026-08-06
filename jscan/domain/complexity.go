@@ -189,15 +189,3 @@ type OutputFormatter interface {
 	// Write writes the formatted output to the writer
 	Write(response *ComplexityResponse, format OutputFormat, writer io.Writer) error
 }
-
-// ConfigurationLoader defines the interface for loading configuration
-type ConfigurationLoader interface {
-	// LoadConfig loads configuration from the specified path
-	LoadConfig(path string) (*ComplexityRequest, error)
-
-	// LoadDefaultConfig loads the default configuration
-	LoadDefaultConfig() *ComplexityRequest
-
-	// MergeConfig merges CLI flags with configuration file
-	MergeConfig(base *ComplexityRequest, override *ComplexityRequest) *ComplexityRequest
-}

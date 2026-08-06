@@ -124,18 +124,6 @@ type CBOService interface {
 	AnalyzeFile(ctx context.Context, filePath string, req CBORequest) (*CBOResponse, error)
 }
 
-// CBOConfigurationLoader defines the interface for loading CBO configuration
-type CBOConfigurationLoader interface {
-	// LoadConfig loads configuration from the specified path
-	LoadConfig(path string) (*CBORequest, error)
-
-	// LoadDefaultConfig loads the default configuration
-	LoadDefaultConfig() *CBORequest
-
-	// MergeConfig merges CLI flags with configuration file
-	MergeConfig(base *CBORequest, override *CBORequest) *CBORequest
-}
-
 // CBOOutputFormatter defines the interface for formatting CBO analysis results
 type CBOOutputFormatter interface {
 	// Format formats the analysis response according to the specified format

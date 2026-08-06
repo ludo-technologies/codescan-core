@@ -70,9 +70,9 @@ The same warning catches misspelled keys, since a key jscan does not recognize i
 | `complexity.max_complexity` | `check` | Default for `--max-complexity`, used only when the flag is absent and the value is above 0 |
 | `complexity.report_unchanged` | `analyze`, `check` | Whether functions with complexity 1 are reported at all |
 | `dead_code.min_severity` | `analyze`, `check` | Findings below this severity are dropped |
-| `dead_code.sort_by` | `analyze` | Order of the files in the dead code report |
+| `dead_code.sort_by` | `analyze` | Order of the files in the dead code report. `check` reports only counts, which the order cannot change |
 | `output.min_complexity` | `analyze` | Functions below this complexity are left out of the report |
-| `output.sort_by` | `analyze` | Order of the functions in the complexity report |
+| `output.sort_by` | `analyze`, `check` | Order of the functions in the complexity report, and of the complexity violations `check` lists |
 | `analysis.include_patterns` | `analyze`, `check`, `deps` | Which files to analyze, of those jscan can parse |
 | `analysis.exclude_patterns` | `analyze`, `check`, `deps` | Directories and filename patterns to skip |
 | `analysis.recursive` | `analyze`, `check`, `deps` | Whether a directory is walked to its leaves or only at its top level |

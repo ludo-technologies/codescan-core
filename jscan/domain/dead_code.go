@@ -177,18 +177,6 @@ type DeadCodeService interface {
 	AnalyzeFunction(ctx context.Context, functionCFG interface{}, req DeadCodeRequest) (*FunctionDeadCode, error)
 }
 
-// DeadCodeConfigurationLoader defines the interface for loading dead code configuration
-type DeadCodeConfigurationLoader interface {
-	// LoadConfig loads dead code configuration from the specified path
-	LoadConfig(path string) (*DeadCodeRequest, error)
-
-	// LoadDefaultConfig loads the default dead code configuration
-	LoadDefaultConfig() *DeadCodeRequest
-
-	// MergeConfig merges CLI flags with configuration file
-	MergeConfig(base *DeadCodeRequest, override *DeadCodeRequest) *DeadCodeRequest
-}
-
 // DeadCodeFormatter defines the interface for formatting dead code analysis results
 type DeadCodeFormatter interface {
 	// Format formats the dead code analysis response according to the specified format
