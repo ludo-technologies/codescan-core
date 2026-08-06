@@ -1359,6 +1359,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="dead_code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dead_codemin_severity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dead_code.min_severity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dead_codesort_by" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dead_code.sort_by
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-applied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not applied
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2034,6 +2073,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="dead_code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dead_codemin_severity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dead_code.min_severity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dead_codesort_by" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dead_code.sort_by
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#not-applied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not applied
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2144,7 +2222,7 @@
 
 <h1 id="configuration-reference">Configuration Reference<a class="headerlink" href="#configuration-reference" title="Permanent link">&para;</a></h1>
 <p>Every key jscan accepts, with its type, its default, and whether it currently changes anything.</p>
-<p>Keys marked <span class="twemoji" title="Applied"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> affect the analysis. Keys marked <span class="twemoji" title="Not applied"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> are parsed and validated, then ignored. The <a href="../#which-keys-take-effect-today">configuration guide</a> explains why that distinction exists.</p>
+<p>Keys marked <span class="twemoji" title="Applied"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> affect the analysis. Keys marked <span class="twemoji" title="Not applied"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> are parsed and validated, then ignored, and jscan warns on stderr when your file sets one. The <a href="../#which-keys-take-effect-today">configuration guide</a> explains why that distinction exists.</p>
 <p>All examples use JSON. YAML and TOML files accept the same keys with the same names.</p>
 <hr />
 <h2 id="complexity"><code>complexity</code><a class="headerlink" href="#complexity" title="Permanent link">&para;</a></h2>
@@ -2173,8 +2251,9 @@
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>true</code></p>
 <p>Intended to switch complexity analysis off. No command reads it. Use <code>--select</code> to choose analyses instead.</p>
 <h3 id="complexityreport_unchanged"><code>complexity.report_unchanged</code><a class="headerlink" href="#complexityreport_unchanged" title="Permanent link">&para;</a></h3>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>true</code></p>
-<p>Intended to hide functions whose complexity is exactly 1. No command reads it. Set <code>output.min_complexity</code> to 2 for the same effect.</p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>true</code></p>
+<p>Set it to <code>false</code> to leave out functions whose complexity is exactly 1, which on most codebases is the majority of them.</p>
+<p>This differs from setting <code>output.min_complexity</code> to 2 in what the counts say afterwards. A function dropped by <code>min_complexity</code> is still counted as parsed, so the report shows <code>12 reported / 340 parsed</code>; a function dropped by <code>report_unchanged</code> is not counted at all, because it was never meant to be part of the report.</p>
 <hr />
 <h2 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h2>
 <h3 id="outputmin_complexity"><code>output.min_complexity</code><a class="headerlink" href="#outputmin_complexity" title="Permanent link">&para;</a></h3>
@@ -2195,8 +2274,32 @@
 <h3 id="outputshow_details"><code>output.show_details</code><a class="headerlink" href="#outputshow_details" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>false</code></p>
 <h3 id="outputsort_by"><code>output.sort_by</code><a class="headerlink" href="#outputsort_by" title="Permanent link">&para;</a></h3>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default <code>"complexity"</code></p>
-<p>Validated against <code>name</code>, <code>complexity</code>, and <code>risk</code>, then ignored. Reports are always sorted by complexity, descending.</p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default <code>"complexity"</code></p>
+<p>Order of the functions in the complexity report. One of:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Order</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>complexity</code></td>
+<td>Complexity, highest first</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>Function name, alphabetical</td>
+</tr>
+<tr>
+<td><code>risk</code></td>
+<td>Risk band, high risk first</td>
+</tr>
+</tbody>
+</table>
+<p>Functions the criterion cannot separate are ordered by source location, so the report is stable across runs. The text report names the criterion in its <code>Functions (sorted by ...)</code> heading.</p>
+<p><code>jscan check</code> reads this key too, where it decides the order the complexity violations are listed in. It does not change whether the check passes.</p>
 <h3 id="outputdirectory"><code>output.directory</code><a class="headerlink" href="#outputdirectory" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default <code>""</code></p>
 <p>Use <code>jscan analyze --output &lt;path&gt;</code> to choose where the HTML report goes.</p>
@@ -2239,7 +2342,7 @@
 </span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">  </span><span class="p">}</span>
 </span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>A pattern is matched against whole names, never against part of one.</p>
+<p>A pattern is matched against whole names, never against part of one, and matching ignores case, so <code>*.min.js</code> also skips <code>Vendor.MIN.JS</code>.</p>
 <p>A pattern <strong>without a slash</strong> is compared to the file's own name and to each directory name above it. <code>dist</code> skips every directory named <code>dist</code> at any depth along with everything inside it, and it leaves <code>src/utils/distance.ts</code> alone, because no name in that path is exactly <code>dist</code>. Glob characters apply to a single name, so <code>*.min.js</code> matches file names and <code>__*__</code> matches a directory named <code>__tests__</code>.</p>
 <p>A pattern <strong>containing a slash</strong> is compared to the path itself, where <code>**</code> stands for any number of directory levels. <code>src/generated</code> skips that directory and everything under it. <code>**/dist/**</code> skips every file below any directory named <code>dist</code>.</p>
 <p>Patterns are matched relative to the path you pass to jscan, so the directories above it are never considered. A project stored at <code>/home/me/build/myapp</code> is analyzed normally even though <code>build</code> is on the default list. A file you name directly on the command line is matched on its own name alone, so <code>jscan analyze src/dist/bundle.js</code> analyzes that file.</p>
@@ -2249,18 +2352,46 @@
 </div>
 <p>Because your list replaces the default, start from the list above and append to it rather than writing a short one from scratch. Omitting <code>node_modules</code> in particular will make jscan analyze your entire dependency tree.</p>
 <h3 id="analysisinclude_patterns"><code>analysis.include_patterns</code><a class="headerlink" href="#analysisinclude_patterns" title="Permanent link">&para;</a></h3>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; array of strings</p>
-<p>The analyzed extensions are fixed at <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>. This key is validated only to the extent that it must not be an empty array, which means you cannot delete it from a file that already has one.</p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; array of strings</p>
+<p>Which files to analyze, of those jscan can parse. A file is analyzed when it matches at least one pattern here and no pattern in <code>exclude_patterns</code>.</p>
+<p>The default is every extension jscan understands:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;analysis&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;include_patterns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="s2">&quot;**/*.js&quot;</span><span class="p">,</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="s2">&quot;**/*.ts&quot;</span><span class="p">,</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="s2">&quot;**/*.jsx&quot;</span><span class="p">,</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="s2">&quot;**/*.tsx&quot;</span><span class="p">,</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="s2">&quot;**/*.mjs&quot;</span><span class="p">,</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="s2">&quot;**/*.cjs&quot;</span><span class="p">,</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="s2">&quot;**/*.mts&quot;</span><span class="p">,</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="s2">&quot;**/*.cts&quot;</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="p">]</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Patterns use the same matching rules as <a href="#analysisexclude_patterns"><code>exclude_patterns</code></a>, including the part that catches people out: they are matched relative to the path you pass on the command line, so <code>src/**/*.ts</code> matches nothing when you run <code>jscan analyze src/</code>. Prefer a leading <code>**/</code> unless you mean to depend on where the command is run from.</p>
+<p>This key cannot widen the analysis. The analyzed extensions are fixed at <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>, so adding <code>**/*.vue</code> changes nothing. It also must not be an empty array, which would select no files at all.</p>
+<p>A file you name directly on the command line is analyzed whether or not it matches, on the grounds that naming it is a clearer statement of intent than the config file is.</p>
 <h3 id="analysisrecursive"><code>analysis.recursive</code><a class="headerlink" href="#analysisrecursive" title="Permanent link">&para;</a></h3>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>true</code></p>
-<p>Directory walks are always recursive.</p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>true</code></p>
+<p>Set it to <code>false</code> to analyze only the files directly inside each directory you pass, without descending into subdirectories. Files named directly on the command line are unaffected.</p>
 <h3 id="analysisfollow_symlinks"><code>analysis.follow_symlinks</code><a class="headerlink" href="#analysisfollow_symlinks" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>false</code></p>
 <p>Symbolic links are never followed.</p>
 <hr />
 <h2 id="dead_code"><code>dead_code</code><a class="headerlink" href="#dead_code" title="Permanent link">&para;</a></h2>
-<p>Every key in this group is <span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>not applied</strong>. Dead code detection currently runs with a fixed configuration: it reports at info severity and above, sorts by severity, and enables all six unreachable-code checks.</p>
-<p>The keys are still validated, so an invalid value fails the run.</p>
+<p>Two keys in this group reach the analysis. The rest are validated and ignored: every unreachable-code check always runs, context lines are never shown, and nothing is ignored.</p>
+<h3 id="dead_codemin_severity"><code>dead_code.min_severity</code><a class="headerlink" href="#dead_codemin_severity" title="Permanent link">&para;</a></h3>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default <code>"info"</code></p>
+<p>Findings below this severity are dropped before anything is reported or counted. One of <code>critical</code>, <code>warning</code>, or <code>info</code>.</p>
+<p>The default of <code>info</code> keeps every finding, which is what the health score is calibrated against. Raising it to <code>warning</code> also raises the score, so compare scores only between runs that used the same floor.</p>
+<p>Raising it changes <code>jscan check</code> as well: a run whose only findings fall below the floor passes.</p>
+<h3 id="dead_codesort_by"><code>dead_code.sort_by</code><a class="headerlink" href="#dead_codesort_by" title="Permanent link">&para;</a></h3>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default <code>"severity"</code></p>
+<p>Order of the files in the dead code report. One of <code>severity</code>, <code>line</code>, <code>file</code>, or <code>function</code>. Files that the criterion cannot separate are ordered by path, so the report is stable across runs.</p>
+<p><code>jscan check</code> passes this key to the analysis as well, but reports only finding counts, which no ordering can change.</p>
+<h3 id="not-applied">Not applied<a class="headerlink" href="#not-applied" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -2278,12 +2409,6 @@
 <td></td>
 </tr>
 <tr>
-<td><code>dead_code.min_severity</code></td>
-<td>string</td>
-<td><code>"warning"</code></td>
-<td>One of <code>critical</code>, <code>warning</code>, <code>info</code></td>
-</tr>
-<tr>
 <td><code>dead_code.show_context</code></td>
 <td>boolean</td>
 <td><code>false</code></td>
@@ -2294,12 +2419,6 @@
 <td>integer</td>
 <td><code>3</code></td>
 <td>From 0 to 20</td>
-</tr>
-<tr>
-<td><code>dead_code.sort_by</code></td>
-<td>string</td>
-<td><code>"severity"</code></td>
-<td>One of <code>severity</code>, <code>line</code>, <code>file</code>, <code>function</code></td>
 </tr>
 <tr>
 <td><code>dead_code.detect_after_return</code></td>

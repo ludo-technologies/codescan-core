@@ -1598,10 +1598,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-include_patterns-does-not-work" class="md-nav__link">
+  <a href="#narrowing-what-gets-analyzed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why include_patterns does not work
+        Narrowing what gets analyzed
       
     </span>
   </a>
@@ -1765,6 +1765,12 @@
 <p>Passing <code>--config</code> to <code>analyze</code> makes it print <code>Using config: &lt;path&gt;</code> before the results, which is the quickest way to confirm that a file is being read at all. The <code>check</code> and <code>deps</code> commands accept <code>--config</code> but print no such line.</p>
 <h2 id="which-keys-take-effect-today">Which keys take effect today<a class="headerlink" href="#which-keys-take-effect-today" title="Permanent link">&para;</a></h2>
 <p>This is the part worth reading carefully. jscan validates the whole configuration schema, but the commands act on only part of it. Setting a key from the second table below is accepted, and validated, and then ignored.</p>
+<p>You do not have to memorize the split. Any command that loads a file naming such a key prints a warning to stderr:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="go">Warning: /work/app/jscan.config.json sets 2 keys that no command reads: dead_code.context_lines, output.format</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="go">  See https://jscan.codescan.dev/configuration/#which-keys-take-effect-today</span>
+</span></code></pre></div>
+<p>The same warning catches misspelled keys, since a key jscan does not recognize is by definition one that no command reads. A file written by <a href="../cli/init/"><code>jscan init</code></a> never triggers it: the generated file contains only keys that work.</p>
 <h3 id="keys-that-change-behavior">Keys that change behavior<a class="headerlink" href="#keys-that-change-behavior" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1791,14 +1797,44 @@
 <td>Default for <code>--max-complexity</code>, used only when the flag is absent and the value is above 0</td>
 </tr>
 <tr>
+<td><code>complexity.report_unchanged</code></td>
+<td><code>analyze</code>, <code>check</code></td>
+<td>Whether functions with complexity 1 are reported at all</td>
+</tr>
+<tr>
+<td><code>dead_code.min_severity</code></td>
+<td><code>analyze</code>, <code>check</code></td>
+<td>Findings below this severity are dropped</td>
+</tr>
+<tr>
+<td><code>dead_code.sort_by</code></td>
+<td><code>analyze</code></td>
+<td>Order of the files in the dead code report. <code>check</code> reports only counts, which the order cannot change</td>
+</tr>
+<tr>
 <td><code>output.min_complexity</code></td>
 <td><code>analyze</code></td>
 <td>Functions below this complexity are left out of the report</td>
 </tr>
 <tr>
+<td><code>output.sort_by</code></td>
+<td><code>analyze</code>, <code>check</code></td>
+<td>Order of the functions in the complexity report, and of the complexity violations <code>check</code> lists</td>
+</tr>
+<tr>
+<td><code>analysis.include_patterns</code></td>
+<td><code>analyze</code>, <code>check</code>, <code>deps</code></td>
+<td>Which files to analyze, of those jscan can parse</td>
+</tr>
+<tr>
 <td><code>analysis.exclude_patterns</code></td>
 <td><code>analyze</code>, <code>check</code>, <code>deps</code></td>
 <td>Directories and filename patterns to skip</td>
+</tr>
+<tr>
+<td><code>analysis.recursive</code></td>
+<td><code>analyze</code>, <code>check</code>, <code>deps</code></td>
+<td>Whether a directory is walked to its leaves or only at its top level</td>
 </tr>
 </tbody>
 </table>
@@ -1812,8 +1848,16 @@
 </thead>
 <tbody>
 <tr>
-<td><code>dead_code.*</code></td>
-<td>Dead code detection runs with fixed settings. Severity floor, sorting, context lines, the per-reason detection switches, and <code>ignore_patterns</code> have no effect.</td>
+<td><code>dead_code.show_context</code>, <code>dead_code.context_lines</code></td>
+<td>Context lines are never shown.</td>
+</tr>
+<tr>
+<td><code>dead_code.detect_*</code>, <code>dead_code.ignore_patterns</code></td>
+<td>All unreachable-code checks always run, and nothing is ignored.</td>
+</tr>
+<tr>
+<td><code>dead_code.enabled</code>, <code>complexity.enabled</code></td>
+<td>Use <code>--select</code> to choose which analyses run.</td>
 </tr>
 <tr>
 <td><code>clones.*</code></td>
@@ -1824,20 +1868,12 @@
 <td>The format comes from the <code>--format</code> flag only.</td>
 </tr>
 <tr>
-<td><code>output.show_details</code>, <code>output.sort_by</code>, <code>output.directory</code></td>
+<td><code>output.show_details</code>, <code>output.directory</code></td>
 <td>Not read by any command.</td>
 </tr>
 <tr>
-<td><code>analysis.include_patterns</code></td>
-<td>The set of analyzed extensions is fixed. See below.</td>
-</tr>
-<tr>
-<td><code>analysis.recursive</code>, <code>analysis.follow_symlinks</code></td>
-<td>The walk is always recursive and never follows symbolic links.</td>
-</tr>
-<tr>
-<td><code>complexity.enabled</code>, <code>complexity.report_unchanged</code></td>
-<td>Not read by any command.</td>
+<td><code>analysis.follow_symlinks</code></td>
+<td>Symbolic links are never followed.</td>
 </tr>
 <tr>
 <td><code>system_analysis.*</code>, <code>dependencies.*</code>, <code>architecture.*</code>, <code>module_analysis.*</code></td>
@@ -1846,12 +1882,16 @@
 </tbody>
 </table>
 <p>This is documented rather than hidden because a configuration key that quietly does nothing is worse than one that does not exist. If a setting you need is in the second table, use the equivalent command line flag where one exists, and otherwise track the gap in the <a href="https://github.com/ludo-technologies/polyscan/issues">issue tracker</a>.</p>
-<h3 id="why-include_patterns-does-not-work">Why <code>include_patterns</code> does not work<a class="headerlink" href="#why-include_patterns-does-not-work" title="Permanent link">&para;</a></h3>
-<p>jscan collects files by extension, using a fixed list: <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>. The collector then removes anything matching <code>analysis.exclude_patterns</code>. It never consults <code>include_patterns</code>.</p>
-<p>The practical consequence is that you cannot narrow the analysis by writing <code>include_patterns</code>. Narrow it by passing a more specific path, or by adding to <code>exclude_patterns</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Instead of an include pattern, pass the path you mean</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>src/components/
+<h3 id="narrowing-what-gets-analyzed">Narrowing what gets analyzed<a class="headerlink" href="#narrowing-what-gets-analyzed" title="Permanent link">&para;</a></h3>
+<p><code>analysis.include_patterns</code> selects from the files jscan can parse; it cannot add file types, because the analyzed extensions are fixed at <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>. Adding <code>**/*.vue</code> to the list changes nothing.</p>
+<p>Patterns are matched the same way <code>exclude_patterns</code> are, and relative to the path you pass on the command line. Analyzing <code>src/</code> with an include pattern of <code>src/**/*.ts</code> therefore matches nothing, because the paths being matched start below <code>src</code>:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;analysis&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;include_patterns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;**/*.ts&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;**/*.tsx&quot;</span><span class="p">]</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">}</span>
 </span></code></pre></div>
+<p>A file you name directly is analyzed whether or not it matches, so <code>jscan analyze src/legacy.js</code> still works under a TypeScript-only include list.</p>
 <h2 id="jscan-also-reads-your-gitignore">jscan also reads your <code>.gitignore</code><a class="headerlink" href="#jscan-also-reads-your-gitignore" title="Permanent link">&para;</a></h2>
 <p>Before applying <code>exclude_patterns</code>, jscan looks for a <code>.gitignore</code> file in the directory you asked it to analyze, and skips anything that file ignores. This is usually what you want, since build output and local artifacts are normally ignored by git as well.</p>
 <p>Two details are worth knowing:</p>
@@ -1862,23 +1902,23 @@
 <p>If a file you expected in the report is missing, check both your <code>.gitignore</code> and the <code>exclude_patterns</code> behavior described in the <a href="reference/#analysisexclude_patterns">reference</a>.</p>
 <h2 id="a-minimal-useful-file">A minimal useful file<a class="headerlink" href="#a-minimal-useful-file" title="Permanent link">&para;</a></h2>
 <p>Most projects need only this much:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;complexity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;low_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">&quot;medium_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">&quot;analysis&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">&quot;exclude_patterns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="s2">&quot;node_modules&quot;</span><span class="p">,</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="s2">&quot;dist&quot;</span><span class="p">,</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="s2">&quot;build&quot;</span><span class="p">,</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="s2">&quot;.next&quot;</span><span class="p">,</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="s2">&quot;coverage&quot;</span><span class="p">,</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="s2">&quot;*.min.js&quot;</span><span class="p">,</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">      </span><span class="s2">&quot;**/*.generated.ts&quot;</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">    </span><span class="p">]</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;complexity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">&quot;low_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">&quot;medium_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&quot;analysis&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">&quot;exclude_patterns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="s2">&quot;node_modules&quot;</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">      </span><span class="s2">&quot;dist&quot;</span><span class="p">,</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="s2">&quot;build&quot;</span><span class="p">,</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="s2">&quot;.next&quot;</span><span class="p">,</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">      </span><span class="s2">&quot;coverage&quot;</span><span class="p">,</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">      </span><span class="s2">&quot;*.min.js&quot;</span><span class="p">,</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">      </span><span class="s2">&quot;**/*.generated.ts&quot;</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">    </span><span class="p">]</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="p">}</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Writing <code>exclude_patterns</code> replaces the default list</p>
@@ -1886,8 +1926,8 @@
 </div>
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <p>The configuration is validated on load, and an invalid file stops the command with a message naming the offending key:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--config<span class="w"> </span>bad.json<span class="w"> </span>src/
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="go">Error: failed to load configuration: invalid configuration: complexity.medium_threshold (5) must be &gt; low_threshold (10)</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--config<span class="w"> </span>bad.json<span class="w"> </span>src/
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="go">Error: failed to load configuration: invalid configuration: complexity.medium_threshold (5) must be &gt; low_threshold (10)</span>
 </span></code></pre></div>
 <p>The rules enforced are listed with each key in the <a href="reference/">reference</a>.</p>
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
