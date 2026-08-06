@@ -62,13 +62,9 @@ The format determines where results go and what else is printed.
 
 Measures the cyclomatic complexity of every function, which counts the number of linearly independent paths through it. jscan builds a control flow graph for each function and derives the count from the graph, so the number reflects real branching rather than a text heuristic.
 
-Starting from a baseline of 1, each of the following adds 1: an `if` or `else if`, a loop, a `catch`, a ternary, and each `&&`, `||`, or `??` operator. Optional chaining with `?.` adds nothing.
+Starting from a baseline of 1, each of the following adds 1: an `if` or `else if`, a loop, a `catch`, a `case` label, a ternary, and each `&&`, `||`, or `??` operator. A `default` clause adds nothing, the same as `else`, and neither does optional chaining with `?.`.
 
-!!! warning "`switch` is counted as a single branch"
-
-    A `switch` statement adds 1 no matter how many cases it contains. A four-case switch scores 2, while the same logic written as four `if` statements scores 5. The `switch_cases` field in the JSON output is always 0.
-
-    Code built around large switch statements, such as reducers and state machines, is therefore scored more leniently than equivalent code written with `if`. A low score on a large switch is not evidence that it is simple.
+Counting each `case` label means a `switch` scores the same as the equivalent chain of `if` statements: a four-case switch and four `if` statements both score 5. The number of case labels seen in a function is reported as `switch_cases` in the JSON output.
 
 Functions are assigned a risk level from two thresholds, both configurable:
 

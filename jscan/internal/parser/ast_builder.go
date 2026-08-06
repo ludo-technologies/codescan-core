@@ -354,16 +354,22 @@ func (b *ASTBuilder) buildSwitchStatement(tsNode *sitter.Node) *Node {
 		node.Test = b.buildNode(valueNode)
 	}
 
-	// Extract cases
+	// Extract cases. The switch body also contains its braces, so keep only
+	// the nodes that are actual case or default clauses.
 	if bodyNode := b.getChildByFieldName(tsNode, "body"); bodyNode != nil {
 		for i := 0; i < int(bodyNode.ChildCount()); i++ {
 			child := bodyNode.Child(i)
-			if child != nil && !b.isTrivia(child) {
-				caseNode := b.buildNode(child)
-				if caseNode != nil {
-					node.Cases = append(node.Cases, caseNode)
-				}
+			if child == nil || b.isTrivia(child) {
+				continue
 			}
+			caseNode := b.buildNode(child)
+			if caseNode == nil {
+				continue
+			}
+			if caseNode.Type != NodeCaseClause && caseNode.Type != NodeDefaultClause {
+				continue
+			}
+			node.Cases = append(node.Cases, caseNode)
 		}
 	}
 

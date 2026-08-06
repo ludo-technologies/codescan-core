@@ -651,9 +651,150 @@ func TestCalculateComplexity_SwitchStatement(t *testing.T) {
 
 	result := CalculateComplexity(cfg)
 
-	// Switch with 4 cases should have higher complexity
-	if result.Complexity < 2 {
-		t.Errorf("Switch statement should increase complexity, got %d", result.Complexity)
+	// One decision point per case label; default adds nothing, like else.
+	if result.Complexity != 4 {
+		t.Errorf("Switch with 3 cases should have complexity 4, got %d", result.Complexity)
+	}
+	if result.SwitchCases != 3 {
+		t.Errorf("Switch with 3 cases should report 3 switch cases, got %d", result.SwitchCases)
+	}
+}
+
+// A switch and the equivalent if chain describe the same branching, so they
+// must score the same (issue #40).
+func TestCalculateComplexity_SwitchMatchesEquivalentIfChain(t *testing.T) {
+	code := `
+		function sw4(a) {
+			switch (a) {
+				case 1: return 1;
+				case 2: return 2;
+				case 3: return 3;
+				case 4: return 4;
+				default: return 0;
+			}
+		}
+
+		function ifChain(a) {
+			if (a === 1) return 1;
+			if (a === 2) return 2;
+			if (a === 3) return 3;
+			if (a === 4) return 4;
+			return 0;
+		}
+	`
+	ast := parseJS(t, code)
+
+	complexityOf := func(name string) *ComplexityResult {
+		builder := NewCFGBuilder()
+		cfg, err := builder.Build(findFunction(ast, name))
+		if err != nil {
+			t.Fatalf("Build failed for %s: %v", name, err)
+		}
+		return CalculateComplexity(cfg)
+	}
+
+	switchResult := complexityOf("sw4")
+	ifResult := complexityOf("ifChain")
+
+	if switchResult.Complexity != ifResult.Complexity {
+		t.Errorf("switch complexity %d should match if chain complexity %d",
+			switchResult.Complexity, ifResult.Complexity)
+	}
+	if switchResult.Complexity != 5 {
+		t.Errorf("switch with 4 cases should have complexity 5, got %d", switchResult.Complexity)
+	}
+	if switchResult.SwitchCases != 4 {
+		t.Errorf("switch with 4 cases should report 4 switch cases, got %d", switchResult.SwitchCases)
+	}
+	if ifResult.SwitchCases != 0 {
+		t.Errorf("if chain should report 0 switch cases, got %d", ifResult.SwitchCases)
+	}
+}
+
+func TestCalculateComplexity_SwitchWithoutDefault(t *testing.T) {
+	code := `
+		function test(x) {
+			switch (x) {
+				case 1: return "one";
+				case 2: return "two";
+			}
+			return "other";
+		}
+	`
+	ast := parseJS(t, code)
+
+	builder := NewCFGBuilder()
+	cfg, err := builder.Build(findFunction(ast, "test"))
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	result := CalculateComplexity(cfg)
+
+	if result.Complexity != 3 {
+		t.Errorf("Switch with 2 cases should have complexity 3, got %d", result.Complexity)
+	}
+	if result.SwitchCases != 2 {
+		t.Errorf("Switch with 2 cases should report 2 switch cases, got %d", result.SwitchCases)
+	}
+}
+
+func TestCalculateComplexity_EmptySwitch(t *testing.T) {
+	code := `
+		function test(x) {
+			switch (x) {
+			}
+			return x;
+		}
+	`
+	ast := parseJS(t, code)
+
+	builder := NewCFGBuilder()
+	cfg, err := builder.Build(findFunction(ast, "test"))
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	result := CalculateComplexity(cfg)
+
+	// No case labels means nothing is decided.
+	if result.Complexity != 1 {
+		t.Errorf("Empty switch should have complexity 1, got %d", result.Complexity)
+	}
+	if result.SwitchCases != 0 {
+		t.Errorf("Empty switch should report 0 switch cases, got %d", result.SwitchCases)
+	}
+}
+
+// A switch inside a nested function belongs to that function's own result.
+func TestCalculateComplexity_SwitchInNestedFunction(t *testing.T) {
+	code := `
+		function outer(a) {
+			const inner = (b) => {
+				switch (b) {
+					case 1: return 1;
+					case 2: return 2;
+				}
+				return 0;
+			};
+			return inner(a);
+		}
+	`
+	ast := parseJS(t, code)
+
+	builder := NewCFGBuilder()
+	cfg, err := builder.Build(findFunction(ast, "outer"))
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	result := CalculateComplexity(cfg)
+
+	if result.Complexity != 1 {
+		t.Errorf("outer should have complexity 1, got %d", result.Complexity)
+	}
+	if result.SwitchCases != 0 {
+		t.Errorf("outer should report 0 switch cases, got %d", result.SwitchCases)
 	}
 }
 

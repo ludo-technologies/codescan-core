@@ -29,13 +29,15 @@ type ComplexityResult struct {
 }
 
 // ComputeComplexity computes McCabe cyclomatic complexity for a CFG.
-// A decision point is a block that has at least one outgoing edge of type
-// EdgeCondTrue, EdgeCondFalse, or EdgeException. Each such block counts as
-// exactly one decision point regardless of how many decision edges it has
-// (e.g. an if-else has both EdgeCondTrue and EdgeCondFalse but is one
-// decision point). EdgeLoop is a back-edge and does not count as a decision
-// point; loop headers should use EdgeCondTrue/EdgeCondFalse for the
-// loop-body vs exit branch. McCabe = DecisionPoints + ExtraContributions + 1.
+// A block whose outgoing EdgeCondTrue/EdgeCondFalse edges lead to k distinct
+// branch targets is a k-way branch and contributes k-1 decision points: an
+// if-else (true + false) or a loop header (body + exit) contributes one, while
+// a switch/match that emits one edge per case plus a no-match edge contributes
+// one per case. A block with any EdgeException successor contributes one more,
+// for the implicit raise-or-not branch. EdgeLoop is a back-edge and does not
+// count as a decision point; loop headers should use EdgeCondTrue/EdgeCondFalse
+// for the loop-body vs exit branch.
+// McCabe = DecisionPoints + ExtraContributions + 1.
 func ComputeComplexity(c *CFG, config ComplexityConfig) (*ComplexityResult, error) {
 	result := &ComplexityResult{
 		EdgeBreakdown: make(map[EdgeType]int),
@@ -47,15 +49,23 @@ func ComputeComplexity(c *CFG, config ComplexityConfig) (*ComplexityResult, erro
 	}
 
 	for _, block := range c.Blocks {
-		isDecision := false
-		for _, edge := range block.Successors {
+		branchTargets := 0
+		hasException := false
+		for i, edge := range block.Successors {
 			result.EdgeBreakdown[edge.Type]++
 			switch edge.Type {
-			case EdgeCondTrue, EdgeCondFalse, EdgeException:
-				isDecision = true
+			case EdgeCondTrue, EdgeCondFalse:
+				if !isBranchTarget(block.Successors[:i], edge.To) {
+					branchTargets++
+				}
+			case EdgeException:
+				hasException = true
 			}
 		}
-		if isDecision {
+		if branchTargets > 1 {
+			result.DecisionPoints += branchTargets - 1
+		}
+		if hasException {
 			result.DecisionPoints++
 		}
 
@@ -73,4 +83,19 @@ func ComputeComplexity(c *CFG, config ComplexityConfig) (*ComplexityResult, erro
 
 	result.McCabe = result.DecisionPoints + result.ExtraContributions + 1
 	return result, nil
+}
+
+// isBranchTarget reports whether target is already reached by a conditional
+// edge among the successors listed, so that repeated edges to the same block
+// count as a single branch target.
+func isBranchTarget(successors []*Edge, target *BasicBlock) bool {
+	for _, edge := range successors {
+		if edge.To != target {
+			continue
+		}
+		if edge.Type == EdgeCondTrue || edge.Type == EdgeCondFalse {
+			return true
+		}
+	}
+	return false
 }

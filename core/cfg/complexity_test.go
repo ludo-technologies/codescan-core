@@ -134,6 +134,86 @@ func TestComplexityLoop(t *testing.T) {
 	}
 }
 
+func TestComplexityMultiWayBranch(t *testing.T) {
+	// A switch/match dispatch: one conditional edge per case plus a no-match
+	// edge. Four cases branch four ways beyond the fall-out path, so the
+	// dispatch is worth four decision points, like a chain of four ifs.
+	c := NewCFG("multi_way")
+	dispatch := c.CreateBlock("dispatch")
+	join := c.CreateBlock("join")
+
+	c.ConnectBlocks(c.Entry, dispatch, EdgeNormal)
+	for i := 0; i < 4; i++ {
+		caseBlock := c.CreateBlock("case")
+		c.ConnectBlocks(dispatch, caseBlock, EdgeCondTrue)
+		c.ConnectBlocks(caseBlock, join, EdgeNormal)
+	}
+	c.ConnectBlocks(dispatch, join, EdgeCondFalse)
+	c.ConnectBlocks(join, c.Exit, EdgeNormal)
+
+	result, err := ComputeComplexity(c, ComplexityConfig{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.DecisionPoints != 4 {
+		t.Fatalf("expected 4 decision points, got %d", result.DecisionPoints)
+	}
+	if result.McCabe != 5 {
+		t.Fatalf("expected McCabe=5, got %d", result.McCabe)
+	}
+}
+
+func TestComplexitySingleBranchTarget(t *testing.T) {
+	// A dispatch with no cases branches only one way, so it decides nothing.
+	c := NewCFG("empty_dispatch")
+	dispatch := c.CreateBlock("dispatch")
+	join := c.CreateBlock("join")
+
+	c.ConnectBlocks(c.Entry, dispatch, EdgeNormal)
+	c.ConnectBlocks(dispatch, join, EdgeCondFalse)
+	c.ConnectBlocks(join, c.Exit, EdgeNormal)
+
+	result, err := ComputeComplexity(c, ComplexityConfig{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.DecisionPoints != 0 {
+		t.Fatalf("expected 0 decision points, got %d", result.DecisionPoints)
+	}
+	if result.McCabe != 1 {
+		t.Fatalf("expected McCabe=1, got %d", result.McCabe)
+	}
+}
+
+func TestComplexityRepeatedBranchTarget(t *testing.T) {
+	// Several conditional edges to the same block are one branch target.
+	c := NewCFG("repeated_target")
+	cond := c.CreateBlock("cond")
+	bTrue := c.CreateBlock("true")
+	join := c.CreateBlock("join")
+
+	c.ConnectBlocks(c.Entry, cond, EdgeNormal)
+	c.ConnectBlocks(cond, bTrue, EdgeCondTrue)
+	c.ConnectBlocks(cond, bTrue, EdgeCondTrue)
+	c.ConnectBlocks(cond, join, EdgeCondFalse)
+	c.ConnectBlocks(bTrue, join, EdgeNormal)
+	c.ConnectBlocks(join, c.Exit, EdgeNormal)
+
+	result, err := ComputeComplexity(c, ComplexityConfig{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.DecisionPoints != 1 {
+		t.Fatalf("expected 1 decision point, got %d", result.DecisionPoints)
+	}
+	if result.McCabe != 2 {
+		t.Fatalf("expected McCabe=2, got %d", result.McCabe)
+	}
+}
+
 func TestComplexityException(t *testing.T) {
 	c := NewCFG("exception")
 	tryBlock := c.CreateBlock("try")
