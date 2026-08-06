@@ -227,6 +227,7 @@ func BuildAnalyzeSummary(
 			summary.ClonePairs = cloneResponse.Statistics.TotalClonePairs
 			summary.CloneGroups = cloneResponse.Statistics.TotalCloneGroups
 			summary.CodeDuplication = calculateDuplicationPercentage(cloneResponse)
+			summary.TotalLOC = cloneResponse.Statistics.LinesAnalyzed
 		}
 	}
 
@@ -258,12 +259,25 @@ func BuildAnalyzeSummary(
 	return summary
 }
 
+// FormatProjectScale renders the project scale label together with the counts it
+// was derived from, e.g. "Medium (123 files, 456 functions, 7890 LOC)". The LOC
+// part is dropped when clone analysis did not run and no line count is available.
+func FormatProjectScale(summary *domain.AnalyzeSummary) string {
+	if summary.TotalLOC > 0 {
+		return fmt.Sprintf("%s (%d files, %d functions, %d LOC)",
+			summary.ProjectScale, summary.AnalyzedFiles, summary.TotalFunctions, summary.TotalLOC)
+	}
+	return fmt.Sprintf("%s (%d files, %d functions)",
+		summary.ProjectScale, summary.AnalyzedFiles, summary.TotalFunctions)
+}
+
 // FormatCLISummary formats an AnalyzeSummary as a compact CLI string (pyscn-style)
 func FormatCLISummary(summary *domain.AnalyzeSummary, duration time.Duration) string {
 	w := &strings.Builder{}
 
 	fmt.Fprintf(w, "\n\U0001F4CA Analysis Summary:\n")
 	fmt.Fprintf(w, "Health Score: %d/100 (Grade: %s)\n", summary.HealthScore, summary.Grade)
+	fmt.Fprintf(w, "Project Scale: %s\n", FormatProjectScale(summary))
 	fmt.Fprintf(w, "Total time: %dms\n", duration.Milliseconds())
 
 	fmt.Fprintf(w, "\n\U0001F4C8 Detailed Scores:\n")
@@ -610,7 +624,8 @@ func (f *OutputFormatterImpl) writeAnalyzeText(
 
 	// Write Health Score section
 	fmt.Fprintf(writer, "\n=== Health Score ===\n\n")
-	fmt.Fprintf(writer, "Overall: %d/100 (Grade: %s)\n\n", summary.HealthScore, summary.Grade)
+	fmt.Fprintf(writer, "Overall: %d/100 (Grade: %s)\n", summary.HealthScore, summary.Grade)
+	fmt.Fprintf(writer, "Project Scale: %s\n\n", FormatProjectScale(summary))
 	fmt.Fprintf(writer, "Category Scores:\n")
 	fmt.Fprintf(writer, "  Complexity:       %3d/100\n", summary.ComplexityScore)
 	fmt.Fprintf(writer, "  Dead Code:        %3d/100\n", summary.DeadCodeScore)

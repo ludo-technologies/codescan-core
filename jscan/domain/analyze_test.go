@@ -18,6 +18,54 @@ func TestScoringConstantsAndPublicGradeWrapperUseCoreDomain(t *testing.T) {
 	}
 }
 
+func TestClassifyScale(t *testing.T) {
+	tests := []struct {
+		name          string
+		analyzedFiles int
+		wantScale     string
+	}{
+		{"zero files", 0, ScaleMicro},
+		{"9 files (upper Micro)", 9, ScaleMicro},
+		{"10 files (lower Small)", 10, ScaleSmall},
+		{"49 files (upper Small)", 49, ScaleSmall},
+		{"50 files (lower Medium)", 50, ScaleMedium},
+		{"199 files (upper Medium)", 199, ScaleMedium},
+		{"200 files (lower Large)", 200, ScaleLarge},
+		{"999 files (upper Large)", 999, ScaleLarge},
+		{"1000 files (Enterprise)", 1000, ScaleEnterprise},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &AnalyzeSummary{
+				AnalyzedFiles: tt.analyzedFiles,
+			}
+			if err := s.CalculateHealthScore(); err != nil {
+				t.Fatalf("CalculateHealthScore() error: %v", err)
+			}
+			if s.ProjectScale != tt.wantScale {
+				t.Errorf("ProjectScale = %q, want %q for %d files",
+					s.ProjectScale, tt.wantScale, tt.analyzedFiles)
+			}
+		})
+	}
+}
+
+func TestClassifyScale_SetEvenWhenValidationFails(t *testing.T) {
+	// AverageComplexity is invalid, so CalculateHealthScore bails out early.
+	// The scale only depends on the file count and must still be reported.
+	s := &AnalyzeSummary{
+		AnalyzedFiles:     120,
+		AverageComplexity: -1,
+	}
+	if err := s.CalculateHealthScore(); err == nil {
+		t.Fatal("CalculateHealthScore() = nil error, want validation failure")
+	}
+	if s.ProjectScale != ScaleMedium {
+		t.Errorf("ProjectScale = %q, want %q", s.ProjectScale, ScaleMedium)
+	}
+}
+
 func TestCalculateHealthScore_CyclePenaltyLogFloor(t *testing.T) {
 	tests := []struct {
 		name              string

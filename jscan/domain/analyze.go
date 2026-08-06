@@ -67,6 +67,25 @@ const (
 	FallbackPenalty             = coredomain.FallbackPenalty
 )
 
+// Project scale thresholds, expressed as the minimum number of analyzed files
+// a project needs to reach each scale label. Below ScaleSmallThreshold a
+// project is reported as "Micro".
+const (
+	ScaleSmallThreshold      = 10
+	ScaleMediumThreshold     = 50
+	ScaleLargeThreshold      = 200
+	ScaleEnterpriseThreshold = 1000
+)
+
+// Project scale labels reported in the analyze summary.
+const (
+	ScaleMicro      = "Micro"
+	ScaleSmall      = "Small"
+	ScaleMedium     = "Medium"
+	ScaleLarge      = "Large"
+	ScaleEnterprise = "Enterprise"
+)
+
 // AnalyzeResponse represents the combined results of all analyses
 type AnalyzeResponse struct {
 	// Analysis results
@@ -131,6 +150,12 @@ type AnalyzeSummary struct {
 	HighCouplingClasses   int     `json:"high_coupling_classes" yaml:"high_coupling_classes"`     // CBO > 7 (High Risk)
 	MediumCouplingClasses int     `json:"medium_coupling_classes" yaml:"medium_coupling_classes"` // 3 < CBO ≤ 7 (Medium Risk)
 	AverageCoupling       float64 `json:"average_coupling" yaml:"average_coupling"`
+
+	// Project scale
+	// TotalLOC is the number of lines the clone analysis read; it is 0 when
+	// clone analysis is disabled.
+	TotalLOC     int    `json:"total_loc" yaml:"total_loc"`
+	ProjectScale string `json:"project_scale" yaml:"project_scale"` // Micro, Small, Medium, Large, Enterprise
 
 	// Overall health score (0-100)
 	HealthScore int    `json:"health_score" yaml:"health_score"`
@@ -283,6 +308,10 @@ func penaltyToScore(penalty int, maxPenalty int) int {
 
 // CalculateHealthScore calculates an overall health score based on analysis results
 func (s *AnalyzeSummary) CalculateHealthScore() error {
+	// Scale only depends on the file count, so it is set even when the rest of
+	// the summary fails validation below.
+	s.ProjectScale = s.classifyScale()
+
 	// Validate input values first
 	if err := s.Validate(); err != nil {
 		// Set default values on error
@@ -359,6 +388,22 @@ func (s *AnalyzeSummary) CalculateFallbackScore() int {
 	}
 
 	return score
+}
+
+// classifyScale returns a project scale label based on the number of analyzed files
+func (s *AnalyzeSummary) classifyScale() string {
+	switch {
+	case s.AnalyzedFiles >= ScaleEnterpriseThreshold:
+		return ScaleEnterprise
+	case s.AnalyzedFiles >= ScaleLargeThreshold:
+		return ScaleLarge
+	case s.AnalyzedFiles >= ScaleMediumThreshold:
+		return ScaleMedium
+	case s.AnalyzedFiles >= ScaleSmallThreshold:
+		return ScaleSmall
+	default:
+		return ScaleMicro
+	}
 }
 
 // GetGradeFromScore maps a health score to a letter grade

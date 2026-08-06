@@ -19,6 +19,7 @@ Analyzing 2 files...
 
 📊 Analysis Summary:
 Health Score: 91/100 (Grade: A)
+Project Scale: Micro (2 files, 4 functions, 49 LOC)
 Total time: 5ms
 
 📈 Detailed Scores:
@@ -29,7 +30,7 @@ Total time: 5ms
   Dependencies:     85/100 ✅  (0 cycles, depth: 1)
 ```
 
-The health score is a single number from 0 to 100 with a letter grade attached. It starts at 100 and subtracts a penalty for each category. The [health score page](../output/health-score.md) gives the exact formula.
+The health score is a single number from 0 to 100 with a letter grade attached. It starts at 100 and subtracts a penalty for each category. The [health score page](../output/health-score.md) gives the exact formula. The project scale line below it reports the size of the repository and does not affect the score.
 
 !!! tip "Working over SSH or in a container?"
 

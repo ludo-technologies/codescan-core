@@ -73,6 +73,8 @@ This is the object most scripts want. It carries the health score, the per-categ
   "high_coupling_classes": 0,
   "medium_coupling_classes": 0,
   "average_coupling": 0.5,
+  "total_loc": 49,
+  "project_scale": "Micro",
   "health_score": 91,
   "grade": "A",
   "complexity_score": 100,
@@ -93,6 +95,8 @@ A few fields need explanation.
 `arch_enabled` is always `false` and `architecture_score` is always `0`, because architecture validation is not implemented in jscan. Ignore both.
 
 `grade` is one of `A`, `B`, `C`, `D`, `F`, or `N/A`. The last appears only when the summary failed validation, in which case `health_score` is 0 as well.
+
+`project_scale` is a size label derived from `analyzed_files`. See [Project scale](health-score.md#project-scale) for the thresholds. `total_loc` is the number of lines the clone analysis read, so it is `0` when clone analysis is turned off.
 
 ## `complexity`
 
