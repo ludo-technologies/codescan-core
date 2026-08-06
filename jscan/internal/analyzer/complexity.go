@@ -145,9 +145,27 @@ func CalculateComplexityWithConfig(cfg *CFG, complexityConfig *config.Complexity
 		result.StartLine = functionNode.Location.StartLine
 		result.StartCol = functionNode.Location.StartCol
 		result.EndLine = functionNode.Location.EndLine
+		result.SwitchCases = countSwitchCases(functionNode)
 	}
 
 	return result
+}
+
+// countSwitchCases counts the case clauses of every switch statement owned by
+// this function. Default clauses are excluded, matching the treatment of else,
+// and nested functions are skipped because they get their own CFG and result.
+func countSwitchCases(functionNode *parser.Node) int {
+	switchCases := 0
+	functionNode.Walk(func(current *parser.Node) bool {
+		if current != functionNode && isFunctionNode(current) {
+			return false
+		}
+		if current.Type == parser.NodeCaseClause {
+			switchCases++
+		}
+		return true
+	})
+	return switchCases
 }
 
 // determineRiskLevel determines the risk level based on complexity thresholds

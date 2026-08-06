@@ -79,20 +79,22 @@ It searches upward from the path you asked it to analyze, then falls back to the
 
 ### What counts toward cyclomatic complexity?
 
-Each branch adds one to a baseline of 1: `if`, `else if`, each loop, each `catch`, each ternary, and each `&&`, `||`, or `??`. Optional chaining with `?.` does not count.
+Each branch adds one to a baseline of 1: `if`, `else if`, each loop, each `catch`, each `case` label, each ternary, and each `&&`, `||`, or `??`. A `default` clause adds nothing, the same as `else`, and neither does optional chaining with `?.`.
 
 A function with no branching scores 1.
 
-`switch` is the exception, and it is worth knowing about. The whole statement adds 1 regardless of how many cases it has, so a four-case switch scores 2 while the equivalent chain of four `if` statements scores 5:
+Because every `case` label counts, a `switch` scores the same as the equivalent chain of `if` statements:
 
 ```console
 $ jscan analyze --json --select complexity src/d.ts \
   | jq -r '.complexity.functions[] | "\(.name): \(.metrics.complexity)"'
 ifChain: 5
-sw4: 2
+sw4: 5
 ```
 
-The `switch_cases` field in the JSON output is always 0 for the same reason. Switch-heavy code such as reducers and state machines is therefore scored more leniently than equivalent branching written another way. Do not read a low complexity score on a large `switch` as evidence that it is simple.
+The `switch_cases` field in the JSON output reports how many case labels the function contains, `default` excluded.
+
+Versions before this behavior landed scored the whole `switch` as a single branch, so switch-heavy code such as reducers and state machines will score higher after upgrading. The code did not get worse; it was under-measured.
 
 ### The CBO section says "classes" but my code has none. Why?
 

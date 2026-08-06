@@ -496,6 +496,23 @@ func TestParseSwitchStatement(t *testing.T) {
 			if n.Test == nil {
 				t.Error("Expected switch to have test expression")
 			}
+			// Cases must hold the clauses only, not the surrounding braces.
+			if len(n.Cases) != 3 {
+				t.Errorf("Expected 3 clauses, got %d", len(n.Cases))
+			}
+			caseClauses := 0
+			for _, clause := range n.Cases {
+				switch clause.Type {
+				case NodeCaseClause:
+					caseClauses++
+				case NodeDefaultClause:
+				default:
+					t.Errorf("Unexpected clause type in switch cases: %s", clause.Type)
+				}
+			}
+			if caseClauses != 2 {
+				t.Errorf("Expected 2 case clauses, got %d", caseClauses)
+			}
 			return false
 		}
 		return true

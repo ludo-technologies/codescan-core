@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Count one decision point per `case` label so a `switch` scores like the equivalent `if` chain instead of adding 1 no matter how many cases it has, and report the case count in the previously always-zero `switch_cases` metric. A `default` clause adds nothing, matching `else`. Switch-heavy code (reducers, dispatchers, state machines) now scores higher, so some functions cross the medium/high risk thresholds and complexity scores drop; the code did not get worse, it was under-measured. The same fix corrects a decision point that was lost when a branch sat inside a `try` block, so an `if` inside `try` now adds 1 as it does anywhere else
+- Keep the braces of a `switch` body out of its parsed case list, which also stops them from appearing as empty case branches in the control flow graph
 - Match `analysis.exclude_patterns` against whole path segments instead of any substring of a file's path, so the default entries `out` and `dist` no longer drop `src/routes/`, `src/layout/`, `src/checkout/`, or `src/utils/distance.ts`. Patterns containing a slash are matched against the path, with `**` spanning any number of directories, and patterns are now evaluated relative to the analyzed path so a parent directory named `build` no longer excludes an entire project. Affected projects will see more files analyzed and therefore different scores
 
 ## [0.9.0] - 2026-07-11

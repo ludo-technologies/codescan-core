@@ -151,6 +151,7 @@ func (s *ComplexityServiceImpl) analyzeFile(ctx context.Context, filePath string
 				IfStatements:      result.IfStatements,
 				LoopStatements:    result.LoopStatements,
 				ExceptionHandlers: result.ExceptionHandlers,
+				SwitchCases:       result.SwitchCases,
 			},
 			RiskLevel: domain.RiskLevel(result.RiskLevel),
 		}
