@@ -1997,12 +1997,8 @@
 <h2 id="the-five-analyses">The five analyses<a class="headerlink" href="#the-five-analyses" title="Permanent link">&para;</a></h2>
 <h3 id="complexity">Complexity<a class="headerlink" href="#complexity" title="Permanent link">&para;</a></h3>
 <p>Measures the cyclomatic complexity of every function, which counts the number of linearly independent paths through it. jscan builds a control flow graph for each function and derives the count from the graph, so the number reflects real branching rather than a text heuristic.</p>
-<p>Starting from a baseline of 1, each of the following adds 1: an <code>if</code> or <code>else if</code>, a loop, a <code>catch</code>, a ternary, and each <code>&amp;&amp;</code>, <code>||</code>, or <code>??</code> operator. Optional chaining with <code>?.</code> adds nothing.</p>
-<div class="admonition warning">
-<p class="admonition-title"><code>switch</code> is counted as a single branch</p>
-<p>A <code>switch</code> statement adds 1 no matter how many cases it contains. A four-case switch scores 2, while the same logic written as four <code>if</code> statements scores 5. The <code>switch_cases</code> field in the JSON output is always 0.</p>
-<p>Code built around large switch statements, such as reducers and state machines, is therefore scored more leniently than equivalent code written with <code>if</code>. A low score on a large switch is not evidence that it is simple.</p>
-</div>
+<p>Starting from a baseline of 1, each of the following adds 1: an <code>if</code> or <code>else if</code>, a loop, a <code>catch</code>, a <code>case</code> label, a ternary, and each <code>&amp;&amp;</code>, <code>||</code>, or <code>??</code> operator. A <code>default</code> clause adds nothing, the same as <code>else</code>, and neither does optional chaining with <code>?.</code>.</p>
+<p>Counting each <code>case</code> label means a <code>switch</code> scores the same as the equivalent chain of <code>if</code> statements: a four-case switch and four <code>if</code> statements both score 5. The number of case labels seen in a function is reported as <code>switch_cases</code> in the JSON output.</p>
 <p>Functions are assigned a risk level from two thresholds, both configurable:</p>
 <table>
 <thead>
