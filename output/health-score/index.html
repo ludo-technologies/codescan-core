@@ -1362,6 +1362,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#project-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project scale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#how-each-penalty-is-computed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1743,6 +1754,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#project-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project scale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#how-each-penalty-is-computed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2019,41 +2041,78 @@
 </tbody>
 </table>
 <p>These thresholds are shared with pyscn so that a grade means the same thing regardless of the language being analyzed.</p>
+<h2 id="project-scale">Project scale<a class="headerlink" href="#project-scale" title="Permanent link">&para;</a></h2>
+<p>Directly below the health score, jscan prints the size of the repository it just analyzed:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Project Scale: Medium (123 files, 456 functions, 7890 LOC)
+</span></code></pre></div>
+<p>The label comes from the number of analyzed files alone:</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Analyzed files</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Micro</td>
+<td>0 to 9</td>
+</tr>
+<tr>
+<td>Small</td>
+<td>10 to 49</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>50 to 199</td>
+</tr>
+<tr>
+<td>Large</td>
+<td>200 to 999</td>
+</tr>
+<tr>
+<td>Enterprise</td>
+<td>1000 or more</td>
+</tr>
+</tbody>
+</table>
+<p>The scale is reported for context only. It does not change the health score or the grade in any way, so two repositories of different sizes with identical metrics receive identical scores.</p>
+<p>The line count comes from the clone analysis, which is the stage that reads whole files. When clone analysis is turned off, the line count is omitted and the line reads <code>Project Scale: Medium (123 files, 456 functions)</code>.</p>
 <h2 id="how-each-penalty-is-computed">How each penalty is computed<a class="headerlink" href="#how-each-penalty-is-computed" title="Permanent link">&para;</a></h2>
 <p>Four of the categories use the same shape. A ratio is computed, and the penalty grows linearly from 0 until the ratio reaches a saturation point, beyond which the penalty stays at its maximum.</p>
 <h3 id="complexity">Complexity<a class="headerlink" href="#complexity" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ratio   = (high risk functions + 0.5 × medium risk functions) ÷ total functions
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>penalty = 20 × ratio ÷ 0.05, capped at 20
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ratio   = (high risk functions + 0.5 × medium risk functions) ÷ total functions
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>penalty = 20 × ratio ÷ 0.05, capped at 20
 </span></code></pre></div>
 <p>The penalty reaches its maximum once the weighted ratio hits 5 percent. That is a demanding target: a codebase where one function in twenty is high risk already receives the full 20 point penalty. Medium risk functions count half as much as high risk ones.</p>
 <p>Which functions count as high or medium risk depends on your configured thresholds, so raising <code>complexity.medium_threshold</code> raises the score without changing any code.</p>
 <h3 id="dead-code">Dead code<a class="headerlink" href="#dead-code" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>weighted = 1.0 × critical + 0.5 × warning + 0.2 × info
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>rate     = weighted ÷ total files
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>penalty  = 20 × rate ÷ 3.0, capped at 20
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>weighted = 1.0 × critical + 0.5 × warning + 0.2 × info
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>rate     = weighted ÷ total files
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>penalty  = 20 × rate ÷ 3.0, capped at 20
 </span></code></pre></div>
 <p>This is a per-file rate rather than a raw count, so a large codebase is not penalized simply for being large. The penalty maxes out at three weighted findings per file.</p>
 <p>Note that the divisor is the file count reported by the dead code analysis. When dead code detection is not selected, the file count is 0 and the penalty is 0.</p>
 <h3 id="duplication">Duplication<a class="headerlink" href="#duplication" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>penalty = 20 × duplication percentage ÷ 30, capped at 20
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>penalty = 20 × duplication percentage ÷ 30, capped at 20
 </span></code></pre></div>
 <p>The duplication percentage is the proportion of code fragments that participate in at least one clone pair or group. It reaches the maximum penalty at 30 percent.</p>
 <h3 id="coupling">Coupling<a class="headerlink" href="#coupling" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ratio   = (high coupling modules + 0.3 × medium coupling modules) ÷ total modules
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>penalty = 20 × ratio ÷ 0.40, capped at 20
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>ratio   = (high coupling modules + 0.3 × medium coupling modules) ÷ total modules
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>penalty = 20 × ratio ÷ 0.40, capped at 20
 </span></code></pre></div>
 <p>Medium risk modules are weighted at 0.3 rather than 0.5, which is more forgiving than the complexity weighting. The penalty saturates when the weighted ratio reaches 40 percent.</p>
 <h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
 <p>This penalty is the sum of three independent parts.</p>
 <p><strong>Cycles, up to 10 points.</strong> Two candidate values are computed and the larger wins:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>proportional = 10 × modules in cycles ÷ total modules
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>floor        = log₂(modules in cycles + 1)
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>cycle points = min(10, max(proportional, floor))
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>proportional = 10 × modules in cycles ÷ total modules
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>floor        = log₂(modules in cycles + 1)
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>cycle points = min(10, max(proportional, floor))
 </span></code></pre></div>
 <p>The logarithmic floor exists so that circular imports always cost something. Without it, three modules in a cycle inside a thousand-module repository would round away to nothing.</p>
 <p><strong>Depth, up to 3 points.</strong> jscan compares your longest import chain against the depth a healthy graph of that size would have:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>expected     = max(3, ⌈log₂(total modules + 1)⌉ + 1)
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>depth points = min(3, max(0, max depth - expected))
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>expected     = max(3, ⌈log₂(total modules + 1)⌉ + 1)
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>depth points = min(3, max(0, max depth - expected))
 </span></code></pre></div>
 <p><strong>Main sequence deviation, up to 3 points.</strong> The Martin distance from the main sequence, a value between 0 and 1, multiplied by 3 and rounded. The <a href="../../guides/dependency-graph/">dependency graph guide</a> explains what that metric means.</p>
 <h3 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h3>
@@ -2061,24 +2120,24 @@
 <h2 id="category-scores">Category scores<a class="headerlink" href="#category-scores" title="Permanent link">&para;</a></h2>
 <p>Alongside the overall number, jscan reports a 0 to 100 score per category. These are presentation values and do not feed back into the total.</p>
 <p>For complexity, dead code, duplication, and coupling the conversion is direct:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>category score = 100 - (penalty × 5)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>category score = 100 - (penalty × 5)
 </span></code></pre></div>
 <p>A penalty of 4 out of 20 therefore displays as 80 out of 100.</p>
 <p>The dependency score is normalized first, because its maximum penalty is 16 rather than 20:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>normalized     = round(penalty ÷ 16 × 20)
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>category score = 100 - (normalized × 5)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>normalized     = round(penalty ÷ 16 × 20)
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>category score = 100 - (normalized × 5)
 </span></code></pre></div>
 <p>The architecture score is the compliance ratio times 100, which in jscan is always 0. Ignore the <code>architecture_score</code> field in JSON output.</p>
 <h2 id="selecting-fewer-analyses-raises-the-score">Selecting fewer analyses raises the score<a class="headerlink" href="#selecting-fewer-analyses-raises-the-score" title="Permanent link">&para;</a></h2>
 <p>A category that did not run contributes no penalty. That makes scores from different <code>--select</code> values incomparable:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="go">100</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="go">93</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="go">91</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="go">100</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="go">93</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="go">91</span>
 </span></code></pre></div>
 <p>The code is identical in all three runs. Only the number of categories being scored changed.</p>
 <p>If you track the score over time, always run the same selection. The default, which runs all five analyses, is the right choice for a tracked metric.</p>
