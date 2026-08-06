@@ -18,6 +18,7 @@ jscan analyze --json src/ > report.json
   "clone": { },
   "cbo": { },
   "deps": { },
+  "module_quality": [ ],
   "summary": { }
 }
 ```
@@ -32,6 +33,7 @@ jscan analyze --json src/ > report.json
 | `clone` | object | Present only when clone detection ran |
 | `cbo` | object | Present only when coupling analysis ran |
 | `deps` | object | Present only when dependency analysis ran |
+| `module_quality` | array | Per-file rollups joined across the analyses that ran |
 | `summary` | object | Always present |
 
 The five analysis keys are omitted entirely when `--select` excludes them, so consumers should check for their presence rather than assume it.
@@ -105,6 +107,7 @@ A few fields need explanation.
   "version": "0.4.1",
   "generated_at": "2026-08-04T16:20:39+09:00",
   "functions": [ ],
+  "by_directory": [ ],
   "summary": { },
   "warnings": [ ],
   "errors": [ ],
@@ -135,9 +138,25 @@ Each entry in `functions` looks like this:
 }
 ```
 
-`nodes` and `edges` describe the control flow graph the complexity was derived from. `risk_level` is `low`, `medium`, or `high`, determined by your configured thresholds.
+`nodes` and `edges` describe the control flow graph the complexity was derived from. `nesting_depth` is the deepest chain of nested control structures in the function: an `else if` continues the chain its `if` opened rather than starting a deeper one, a `catch` clause stays at the level of its `try`, and nested functions are measured separately. `risk_level` is `low`, `medium`, or `high`, determined by your configured thresholds.
 
 File paths are reported exactly as jscan resolved them, which means they are absolute when you passed an absolute path and relative when you passed a relative one.
+
+`by_directory` groups the reported functions by the directory they live in, always present and empty when nothing was reported:
+
+```json
+{
+  "directory_path": "src/checkout",
+  "function_count": 12,
+  "average_complexity": 4.75,
+  "max_complexity": 14,
+  "high_risk_function_count": 1,
+  "average_nesting_depth": 1.5,
+  "max_nesting_depth": 3
+}
+```
+
+`directory_path` is relative to the deepest directory that contains every analyzed file, so the shared prefix of your selection is stripped and files sitting directly in that directory are reported as `.`. The rows are ranked worst first: high-risk functions, then maximum complexity, then average complexity. They describe the functions the report shows, so `min_complexity` shrinks them along with `functions`.
 
 ## `dead_code`
 
@@ -297,6 +316,29 @@ The `summary` object carries a `findings_by_reason` map, which is the most conve
 `graph` holds the nodes and edges. `analysis` holds the derived results, including `circular_dependencies`, `max_depth`, and `coupling_analysis`.
 
 The same structure is produced by `jscan deps --format json`, which is the better command to use when you want only this section.
+
+## `module_quality`
+
+One entry per file, joining what each analysis measured about it:
+
+```json
+{
+  "module_name": "cart",
+  "file_path": "src/cart.ts",
+  "lines_of_code": 214,
+  "analyzed_function_count": 12,
+  "average_complexity": 4.75,
+  "max_complexity": 14,
+  "high_risk_function_count": 1,
+  "exception_handler_count": 2,
+  "dead_code_finding_count": 3,
+  "dead_code_block_count": 1
+}
+```
+
+`module_name` comes from dependency analysis and is omitted when that analysis did not run. The complexity columns come from complexity analysis and the dead-code columns from dead code detection, so a run that skipped one of them leaves those columns at zero rather than dropping the file.
+
+Unlike the rest of the report, these counts are taken before the presentation filters: `min_complexity` and `min_severity` change what `complexity.functions` and `dead_code.files` show without changing what a module is measured as carrying. The entries are ranked worst first: high-risk functions, then maximum complexity, then average complexity, then dead-code findings.
 
 ## `jscan check --json`
 

@@ -40,14 +40,15 @@ func WriteJSON(writer io.Writer, data interface{}) error {
 
 // ComplexityResponseJSON wraps ComplexityResponse with JSON metadata
 type ComplexityResponseJSON struct {
-	Version     string                      `json:"version"`
-	GeneratedAt string                      `json:"generated_at"`
-	DurationMs  int64                       `json:"duration_ms,omitempty"`
-	Functions   []domain.FunctionComplexity `json:"functions"`
-	Summary     domain.ComplexitySummary    `json:"summary"`
-	Warnings    []string                    `json:"warnings,omitempty"`
-	Errors      []string                    `json:"errors,omitempty"`
-	Config      interface{}                 `json:"config,omitempty"`
+	Version     string                                `json:"version"`
+	GeneratedAt string                                `json:"generated_at"`
+	DurationMs  int64                                 `json:"duration_ms,omitempty"`
+	Functions   []domain.FunctionComplexity           `json:"functions"`
+	ByDirectory domain.DirectoryComplexityMetricsList `json:"by_directory"`
+	Summary     domain.ComplexitySummary              `json:"summary"`
+	Warnings    []string                              `json:"warnings,omitempty"`
+	Errors      []string                              `json:"errors,omitempty"`
+	Config      interface{}                           `json:"config,omitempty"`
 }
 
 // DeadCodeResponseJSON wraps DeadCodeResponse with JSON metadata
@@ -99,15 +100,101 @@ type DepsResponseJSON struct {
 
 // AnalyzeResponseJSON represents the unified analysis response for JSON output
 type AnalyzeResponseJSON struct {
-	Version     string                  `json:"version"`
-	GeneratedAt string                  `json:"generated_at"`
-	DurationMs  int64                   `json:"duration_ms"`
-	Complexity  *ComplexityResponseJSON `json:"complexity,omitempty"`
-	DeadCode    *DeadCodeResponseJSON   `json:"dead_code,omitempty"`
-	Clone       *CloneResponseJSON      `json:"clone,omitempty"`
-	CBO         *CBOResponseJSON        `json:"cbo,omitempty"`
-	Deps        *DepsResponseJSON       `json:"deps,omitempty"`
-	Summary     *domain.AnalyzeSummary  `json:"summary,omitempty"`
+	Version       string                        `json:"version"`
+	GeneratedAt   string                        `json:"generated_at"`
+	DurationMs    int64                         `json:"duration_ms"`
+	Complexity    *ComplexityResponseJSON       `json:"complexity,omitempty"`
+	DeadCode      *DeadCodeResponseJSON         `json:"dead_code,omitempty"`
+	Clone         *CloneResponseJSON            `json:"clone,omitempty"`
+	CBO           *CBOResponseJSON              `json:"cbo,omitempty"`
+	Deps          *DepsResponseJSON             `json:"deps,omitempty"`
+	ModuleQuality []domain.ModuleQualityMetrics `json:"module_quality,omitempty"`
+	Summary       *domain.AnalyzeSummary        `json:"summary,omitempty"`
+}
+
+// newComplexityResponseJSON is the single place the complexity payload is
+// shaped, so the standalone and unified outputs cannot drift apart.
+func newComplexityResponseJSON(response *domain.ComplexityResponse) *ComplexityResponseJSON {
+	return &ComplexityResponseJSON{
+		Version:     version.Version,
+		GeneratedAt: response.GeneratedAt,
+		Functions:   response.Functions,
+		ByDirectory: response.ByDirectory,
+		Summary:     response.Summary,
+		Warnings:    response.Warnings,
+		Errors:      response.Errors,
+		Config:      response.Config,
+	}
+}
+
+// newAnalyzeResponseJSON assembles the unified payload shared by the JSON and
+// YAML outputs, including the module quality join.
+func newAnalyzeResponseJSON(
+	complexityResponse *domain.ComplexityResponse,
+	deadCodeResponse *domain.DeadCodeResponse,
+	cloneResponse *domain.CloneResponse,
+	cboResponse *domain.CBOResponse,
+	depsResponse *domain.DependencyGraphResponse,
+	duration time.Duration,
+	now time.Time,
+) AnalyzeResponseJSON {
+	response := AnalyzeResponseJSON{
+		Version:       version.Version,
+		GeneratedAt:   now.Format(time.RFC3339),
+		DurationMs:    duration.Milliseconds(),
+		ModuleQuality: BuildModuleQuality(complexityResponse, deadCodeResponse, depsResponse),
+		Summary:       BuildAnalyzeSummary(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse),
+	}
+
+	if complexityResponse != nil {
+		response.Complexity = newComplexityResponseJSON(complexityResponse)
+	}
+	if deadCodeResponse != nil {
+		response.DeadCode = &DeadCodeResponseJSON{
+			Version:     version.Version,
+			GeneratedAt: deadCodeResponse.GeneratedAt,
+			Files:       deadCodeResponse.Files,
+			Summary:     deadCodeResponse.Summary,
+			Warnings:    deadCodeResponse.Warnings,
+			Errors:      deadCodeResponse.Errors,
+			Config:      deadCodeResponse.Config,
+		}
+	}
+	if cloneResponse != nil {
+		response.Clone = &CloneResponseJSON{
+			Version:     version.Version,
+			GeneratedAt: now.Format(time.RFC3339),
+			DurationMs:  cloneResponse.Duration,
+			ClonePairs:  cloneResponse.ClonePairs,
+			CloneGroups: cloneResponse.CloneGroups,
+			Statistics:  cloneResponse.Statistics,
+			Success:     cloneResponse.Success,
+			Error:       cloneResponse.Error,
+		}
+	}
+	if cboResponse != nil {
+		response.CBO = &CBOResponseJSON{
+			Version:     version.Version,
+			GeneratedAt: cboResponse.GeneratedAt,
+			Classes:     cboResponse.Classes,
+			Summary:     cboResponse.Summary,
+			Warnings:    cboResponse.Warnings,
+			Errors:      cboResponse.Errors,
+			Config:      cboResponse.Config,
+		}
+	}
+	if depsResponse != nil {
+		response.Deps = &DepsResponseJSON{
+			Version:     version.Version,
+			GeneratedAt: depsResponse.GeneratedAt,
+			Graph:       depsResponse.Graph,
+			Analysis:    depsResponse.Analysis,
+			Warnings:    depsResponse.Warnings,
+			Errors:      depsResponse.Errors,
+		}
+	}
+
+	return response
 }
 
 // Write writes the complexity response in the specified format
@@ -163,16 +250,7 @@ func (f *OutputFormatterImpl) WriteAnalyze(
 
 // writeComplexityJSON writes complexity response as JSON
 func (f *OutputFormatterImpl) writeComplexityJSON(response *domain.ComplexityResponse, writer io.Writer) error {
-	jsonResponse := ComplexityResponseJSON{
-		Version:     version.Version,
-		GeneratedAt: response.GeneratedAt,
-		Functions:   response.Functions,
-		Summary:     response.Summary,
-		Warnings:    response.Warnings,
-		Errors:      response.Errors,
-		Config:      response.Config,
-	}
-	return WriteJSON(writer, jsonResponse)
+	return WriteJSON(writer, newComplexityResponseJSON(response))
 }
 
 // writeDeadCodeJSON writes dead code response as JSON
@@ -338,74 +416,7 @@ func (f *OutputFormatterImpl) writeAnalyzeJSON(
 	writer io.Writer,
 	duration time.Duration,
 ) error {
-	now := time.Now()
-
-	response := AnalyzeResponseJSON{
-		Version:     version.Version,
-		GeneratedAt: now.Format(time.RFC3339),
-		DurationMs:  duration.Milliseconds(),
-	}
-
-	// Add individual response data
-	if complexityResponse != nil {
-		response.Complexity = &ComplexityResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: complexityResponse.GeneratedAt,
-			Functions:   complexityResponse.Functions,
-			Summary:     complexityResponse.Summary,
-			Warnings:    complexityResponse.Warnings,
-			Errors:      complexityResponse.Errors,
-			Config:      complexityResponse.Config,
-		}
-	}
-	if deadCodeResponse != nil {
-		response.DeadCode = &DeadCodeResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: deadCodeResponse.GeneratedAt,
-			Files:       deadCodeResponse.Files,
-			Summary:     deadCodeResponse.Summary,
-			Warnings:    deadCodeResponse.Warnings,
-			Errors:      deadCodeResponse.Errors,
-			Config:      deadCodeResponse.Config,
-		}
-	}
-	if cloneResponse != nil {
-		response.Clone = &CloneResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: now.Format(time.RFC3339),
-			DurationMs:  cloneResponse.Duration,
-			ClonePairs:  cloneResponse.ClonePairs,
-			CloneGroups: cloneResponse.CloneGroups,
-			Statistics:  cloneResponse.Statistics,
-			Success:     cloneResponse.Success,
-			Error:       cloneResponse.Error,
-		}
-	}
-	if cboResponse != nil {
-		response.CBO = &CBOResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: cboResponse.GeneratedAt,
-			Classes:     cboResponse.Classes,
-			Summary:     cboResponse.Summary,
-			Warnings:    cboResponse.Warnings,
-			Errors:      cboResponse.Errors,
-			Config:      cboResponse.Config,
-		}
-	}
-	if depsResponse != nil {
-		response.Deps = &DepsResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: depsResponse.GeneratedAt,
-			Graph:       depsResponse.Graph,
-			Analysis:    depsResponse.Analysis,
-			Warnings:    depsResponse.Warnings,
-			Errors:      depsResponse.Errors,
-		}
-	}
-
-	summary := BuildAnalyzeSummary(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse)
-	response.Summary = summary
-
+	response := newAnalyzeResponseJSON(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse, duration, time.Now())
 	return WriteJSON(writer, response)
 }
 
@@ -483,6 +494,8 @@ func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityRes
 	fmt.Fprintf(writer, "  Medium risk: %d\n", response.Summary.MediumRiskFunctions)
 	fmt.Fprintf(writer, "  Low risk: %d\n", response.Summary.LowRiskFunctions)
 	fmt.Fprintf(writer, "\n")
+
+	writeDirectoryComplexityText(writer, response.ByDirectory)
 
 	// Function details
 	if len(response.Functions) > 0 {
@@ -647,6 +660,8 @@ func (f *OutputFormatterImpl) writeAnalyzeText(
 		}
 	}
 
+	writeModuleQualityText(writer, BuildModuleQuality(complexityResponse, deadCodeResponse, depsResponse))
+
 	summary := BuildAnalyzeSummary(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse)
 
 	// Write Health Score section
@@ -661,6 +676,38 @@ func (f *OutputFormatterImpl) writeAnalyzeText(
 	fmt.Fprintf(writer, "  Dependencies:     %3d/100\n", summary.DependencyScore)
 
 	return nil
+}
+
+// moduleQualityTextLimit caps how many modules the text hotspot list shows.
+// The list is ranked worst-first, so the cut only ever hides healthier modules.
+const moduleQualityTextLimit = 10
+
+// writeModuleQualityText writes the per-module hotspot list as plain text.
+func writeModuleQualityText(writer io.Writer, modules []domain.ModuleQualityMetrics) {
+	if len(modules) == 0 {
+		return
+	}
+
+	fmt.Fprintf(writer, "\n=== Module Quality Hotspots ===\n\n")
+	for index, module := range modules {
+		if index >= moduleQualityTextLimit {
+			break
+		}
+
+		label := module.FilePath
+		if module.ModuleName != "" {
+			label = fmt.Sprintf("%s (%s)", module.ModuleName, module.FilePath)
+		}
+		fmt.Fprintf(writer, "  %s\n", label)
+		fmt.Fprintf(writer, "    Lines: %d, functions analyzed: %d\n", module.LinesOfCode, module.AnalyzedFunctionCount)
+		fmt.Fprintf(writer, "    Complexity: avg %.2f, max %d, high-risk %d, handlers %d\n",
+			module.AverageComplexity, module.MaxComplexity, module.HighRiskFunctionCount, module.ExceptionHandlerCount)
+		fmt.Fprintf(writer, "    Dead code: %d findings, %d blocks\n",
+			module.DeadCodeFindingCount, module.DeadCodeBlockCount)
+	}
+	if len(modules) > moduleQualityTextLimit {
+		fmt.Fprintf(writer, "  Showing top %d of %d modules\n", moduleQualityTextLimit, len(modules))
+	}
 }
 
 // writeDepsText writes dependency analysis results as plain text
@@ -788,72 +835,7 @@ func (f *OutputFormatterImpl) writeAnalyzeYAML(
 	writer io.Writer,
 	duration time.Duration,
 ) error {
-	now := time.Now()
-
-	response := AnalyzeResponseJSON{
-		Version:     version.Version,
-		GeneratedAt: now.Format(time.RFC3339),
-		DurationMs:  duration.Milliseconds(),
-	}
-
-	if complexityResponse != nil {
-		response.Complexity = &ComplexityResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: complexityResponse.GeneratedAt,
-			Functions:   complexityResponse.Functions,
-			Summary:     complexityResponse.Summary,
-			Warnings:    complexityResponse.Warnings,
-			Errors:      complexityResponse.Errors,
-			Config:      complexityResponse.Config,
-		}
-	}
-	if deadCodeResponse != nil {
-		response.DeadCode = &DeadCodeResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: deadCodeResponse.GeneratedAt,
-			Files:       deadCodeResponse.Files,
-			Summary:     deadCodeResponse.Summary,
-			Warnings:    deadCodeResponse.Warnings,
-			Errors:      deadCodeResponse.Errors,
-			Config:      deadCodeResponse.Config,
-		}
-	}
-	if cloneResponse != nil {
-		response.Clone = &CloneResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: now.Format(time.RFC3339),
-			DurationMs:  cloneResponse.Duration,
-			ClonePairs:  cloneResponse.ClonePairs,
-			CloneGroups: cloneResponse.CloneGroups,
-			Statistics:  cloneResponse.Statistics,
-			Success:     cloneResponse.Success,
-			Error:       cloneResponse.Error,
-		}
-	}
-	if cboResponse != nil {
-		response.CBO = &CBOResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: cboResponse.GeneratedAt,
-			Classes:     cboResponse.Classes,
-			Summary:     cboResponse.Summary,
-			Warnings:    cboResponse.Warnings,
-			Errors:      cboResponse.Errors,
-			Config:      cboResponse.Config,
-		}
-	}
-	if depsResponse != nil {
-		response.Deps = &DepsResponseJSON{
-			Version:     version.Version,
-			GeneratedAt: depsResponse.GeneratedAt,
-			Graph:       depsResponse.Graph,
-			Analysis:    depsResponse.Analysis,
-			Warnings:    depsResponse.Warnings,
-			Errors:      depsResponse.Errors,
-		}
-	}
-
-	summary := BuildAnalyzeSummary(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse)
-	response.Summary = summary
+	response := newAnalyzeResponseJSON(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse, duration, time.Now())
 
 	// Write YAML
 	encoder := yaml.NewEncoder(writer)
@@ -904,6 +886,34 @@ func (f *OutputFormatterImpl) writeAnalyzeCSV(
 			}
 		}
 		needsSeparator = true
+
+		if len(complexityResponse.ByDirectory) > 0 {
+			if err := csvWriter.Write([]string{}); err != nil {
+				return err
+			}
+			if err := csvWriter.Write([]string{
+				"type", "directory", "function_count", "average_complexity", "max_complexity",
+				"high_risk_functions", "average_nesting_depth", "max_nesting_depth",
+			}); err != nil {
+				return err
+			}
+
+			for _, directory := range complexityResponse.ByDirectory {
+				record := []string{
+					"directory_complexity",
+					directory.DirectoryPath,
+					strconv.Itoa(directory.FunctionCount),
+					fmt.Sprintf("%.2f", directory.AverageComplexity),
+					strconv.Itoa(directory.MaxComplexity),
+					strconv.Itoa(directory.HighRiskFunctionCount),
+					fmt.Sprintf("%.2f", directory.AverageNestingDepth),
+					strconv.Itoa(directory.MaxNestingDepth),
+				}
+				if err := csvWriter.Write(record); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	// Write dead code results
@@ -1069,6 +1079,44 @@ func (f *OutputFormatterImpl) writeAnalyzeCSV(
 				if err := csvWriter.Write(record); err != nil {
 					return err
 				}
+			}
+		}
+		needsSeparator = true
+	}
+
+	// Write the per-module join last: it restates the analyses above, so a
+	// reader who only wants raw findings can stop before it.
+	modules := BuildModuleQuality(complexityResponse, deadCodeResponse, depsResponse)
+	if len(modules) > 0 {
+		if needsSeparator {
+			if err := csvWriter.Write([]string{}); err != nil {
+				return err
+			}
+		}
+		if err := csvWriter.Write([]string{
+			"type", "module", "file", "lines_of_code", "analyzed_functions",
+			"average_complexity", "max_complexity", "high_risk_functions",
+			"exception_handlers", "dead_code_findings", "dead_code_blocks",
+		}); err != nil {
+			return err
+		}
+
+		for _, module := range modules {
+			record := []string{
+				"module_quality",
+				module.ModuleName,
+				module.FilePath,
+				strconv.Itoa(module.LinesOfCode),
+				strconv.Itoa(module.AnalyzedFunctionCount),
+				fmt.Sprintf("%.2f", module.AverageComplexity),
+				strconv.Itoa(module.MaxComplexity),
+				strconv.Itoa(module.HighRiskFunctionCount),
+				strconv.Itoa(module.ExceptionHandlerCount),
+				strconv.Itoa(module.DeadCodeFindingCount),
+				strconv.Itoa(module.DeadCodeBlockCount),
+			}
+			if err := csvWriter.Write(record); err != nil {
+				return err
 			}
 		}
 	}

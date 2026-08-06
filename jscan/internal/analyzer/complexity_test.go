@@ -413,9 +413,95 @@ func TestCalculateNestingDepth_MixedControlStructures(t *testing.T) {
 	funcNode := findFunction(ast, "test")
 
 	depth := CalculateNestingDepth(funcNode)
-	// for -> if -> try -> catch = at least 3-4 levels
-	if depth < 3 {
-		t.Errorf("Mixed control structures should have depth >= 3, got %d", depth)
+	// for -> if -> try; the catch clause belongs to the try it is part of.
+	if depth != 3 {
+		t.Errorf("Mixed control structures should have depth 3, got %d", depth)
+	}
+}
+
+func TestCalculateNestingDepth_SiblingsAreNotCumulative(t *testing.T) {
+	code := `
+		function test(x) {
+			if (x) { a(); }
+			if (x) { b(); }
+			for (const item of x) { c(item); }
+		}
+	`
+	ast := parseJS(t, code)
+	funcNode := findFunction(ast, "test")
+
+	depth := CalculateNestingDepth(funcNode)
+	if depth != 1 {
+		t.Errorf("Sibling control structures should have depth 1, got %d", depth)
+	}
+}
+
+func TestCalculateNestingDepth_ElseIfChainStaysFlat(t *testing.T) {
+	code := `
+		function test(x) {
+			if (x === 1) { a(); }
+			else if (x === 2) { b(); }
+			else if (x === 3) { c(); }
+			else { d(); }
+		}
+	`
+	ast := parseJS(t, code)
+	funcNode := findFunction(ast, "test")
+
+	depth := CalculateNestingDepth(funcNode)
+	if depth != 1 {
+		t.Errorf("else-if chain should have depth 1, got %d", depth)
+	}
+}
+
+func TestCalculateNestingDepth_ElseBlockNests(t *testing.T) {
+	code := `
+		function test(x) {
+			if (x) { a(); }
+			else { if (x > 1) { b(); } }
+		}
+	`
+	ast := parseJS(t, code)
+	funcNode := findFunction(ast, "test")
+
+	depth := CalculateNestingDepth(funcNode)
+	if depth != 2 {
+		t.Errorf("if nested in an else block should have depth 2, got %d", depth)
+	}
+}
+
+func TestCalculateNestingDepth_CatchBodyNests(t *testing.T) {
+	code := `
+		function test(x) {
+			try { a(); } catch (e) { if (x) { b(); } }
+		}
+	`
+	ast := parseJS(t, code)
+	funcNode := findFunction(ast, "test")
+
+	depth := CalculateNestingDepth(funcNode)
+	if depth != 2 {
+		t.Errorf("if inside a catch clause should have depth 2, got %d", depth)
+	}
+}
+
+func TestCalculateNestingDepth_NestedFunctionsExcluded(t *testing.T) {
+	code := `
+		function test(x) {
+			if (x) {
+				const inner = function () {
+					for (const item of x) { if (item) { a(item); } }
+				};
+				inner();
+			}
+		}
+	`
+	ast := parseJS(t, code)
+	funcNode := findFunction(ast, "test")
+
+	depth := CalculateNestingDepth(funcNode)
+	if depth != 1 {
+		t.Errorf("Nested function bodies should not count, got %d", depth)
 	}
 }
 
@@ -429,7 +515,6 @@ func TestIsControlStructure(t *testing.T) {
 		parser.NodeWhileStatement,
 		parser.NodeDoWhileStatement,
 		parser.NodeTryStatement,
-		parser.NodeCatchClause,
 	}
 
 	for _, nodeType := range controlStructures {
@@ -445,6 +530,10 @@ func TestIsControlStructure(t *testing.T) {
 		parser.NodeReturnStatement,
 		parser.NodeFunction,
 		parser.NodeArrowFunction,
+		// A catch clause belongs to the try statement that already opened a
+		// nesting level; counting it again would double the depth of every
+		// try/catch.
+		parser.NodeCatchClause,
 	}
 
 	for _, nodeType := range nonControlStructures {

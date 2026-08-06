@@ -56,6 +56,63 @@ function noDeadCode() {
 	}
 }
 
+func TestDeadCodeServiceAnalyze_ModuleRollupsPrecedeTheSeverityFilter(t *testing.T) {
+	tempDir := t.TempDir()
+	helperFile := filepath.Join(tempDir, "helper.js")
+	if err := os.WriteFile(helperFile, []byte("export function helper() { return 1; }\n"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	testFile := filepath.Join(tempDir, "test.js")
+	content := `
+import { helper } from "./helper";
+
+export function hasDeadCode() {
+    return 42;
+    console.log("never executed");
+}
+`
+	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	svc := NewDeadCodeService()
+	request := domain.DeadCodeRequest{
+		Paths:  []string{testFile, helperFile},
+		SortBy: domain.DeadCodeSortBySeverity,
+	}
+
+	request.MinSeverity = domain.DeadCodeSeverityInfo
+	reported, err := svc.Analyze(context.Background(), request)
+	if err != nil {
+		t.Fatalf("Analyze failed: %v", err)
+	}
+
+	// The same project, reported at the strictest severity: the report shrinks,
+	// the rollups must not.
+	request.MinSeverity = domain.DeadCodeSeverityCritical
+	filtered, err := svc.Analyze(context.Background(), request)
+	if err != nil {
+		t.Fatalf("Analyze failed: %v", err)
+	}
+
+	if filtered.Summary.TotalFindings >= reported.Summary.TotalFindings {
+		t.Fatalf("expected the critical-only report to drop findings, got %d of %d",
+			filtered.Summary.TotalFindings, reported.Summary.TotalFindings)
+	}
+
+	rollup, ok := filtered.ModuleRollups[testFile]
+	if !ok {
+		t.Fatalf("expected a rollup for %s, got %v", testFile, filtered.ModuleRollups)
+	}
+	if rollup != reported.ModuleRollups[testFile] {
+		t.Errorf("rollups should not depend on min_severity: %+v vs %+v", rollup, reported.ModuleRollups[testFile])
+	}
+	if rollup.DeadCodeFindingCount == 0 || rollup.DeadCodeBlockCount == 0 {
+		t.Errorf("expected the rollup to count the detected dead code, got %+v", rollup)
+	}
+}
+
 func TestDeadCodeServiceAnalyzeFile(t *testing.T) {
 	// Create a temp file with dead code
 	tempDir := t.TempDir()

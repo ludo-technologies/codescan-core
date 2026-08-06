@@ -146,6 +146,7 @@ func CalculateComplexityWithConfig(cfg *CFG, complexityConfig *config.Complexity
 		result.StartCol = functionNode.Location.StartCol
 		result.EndLine = functionNode.Location.EndLine
 		result.SwitchCases = countSwitchCases(functionNode)
+		result.NestingDepth = CalculateNestingDepth(functionNode)
 	}
 
 	return result
@@ -168,37 +169,83 @@ func countSwitchCases(functionNode *parser.Node) int {
 	return switchCases
 }
 
-// CalculateNestingDepth calculates the maximum nesting depth of a function
+// CalculateNestingDepth returns the deepest chain of nested control structures
+// inside a function. The function body itself is depth 0, so a single loop or
+// branch is depth 1.
+//
+// Nested functions are skipped because they get their own CFG and result, the
+// same boundary countSwitchCases uses.
 func CalculateNestingDepth(node *parser.Node) int {
 	if node == nil {
 		return 0
 	}
 
-	maxDepth := 0
-	currentDepth := 0
-
-	node.Walk(func(n *parser.Node) bool {
-		// Increment depth for control structures
-		if isControlStructure(n) {
-			currentDepth++
-			if currentDepth > maxDepth {
-				maxDepth = currentDepth
-			}
+	deepest := 0
+	for _, child := range parser.OrderedChildren(node) {
+		if depth := nestingDepthOf(child, 0); depth > deepest {
+			deepest = depth
 		}
-
-		return true
-	})
-
-	return maxDepth
+	}
+	return deepest
 }
 
-// isControlStructure checks if a node is a control structure
+// nestingDepthOf returns the deepest level reached inside node, which sits at
+// the given level before its own contribution is counted.
+func nestingDepthOf(node *parser.Node, level int) int {
+	if node == nil || isFunctionNode(node) {
+		return level
+	}
+
+	if isControlStructure(node) {
+		level++
+	}
+
+	deepest := level
+	for _, child := range parser.OrderedChildren(node) {
+		childLevel := level
+		// `else if` continues the chain its outer if opened rather than
+		// starting a deeper one, so the whole chain reads as one level. A
+		// plain `else { ... }` block is left alone: code nested in it really
+		// is one level deeper.
+		if node.Type == parser.NodeIfStatement && child == node.Alternate && isElseIf(child) {
+			childLevel = level - 1
+		}
+		if depth := nestingDepthOf(child, childLevel); depth > deepest {
+			deepest = depth
+		}
+	}
+	return deepest
+}
+
+// isElseIf reports whether an if statement's alternate continues an else-if
+// chain. The parser keeps the else clause as a wrapper node, so the chain is
+// recognized by the clause holding an if statement instead of a block.
+func isElseIf(alternate *parser.Node) bool {
+	if alternate == nil {
+		return false
+	}
+	if alternate.Type == parser.NodeIfStatement {
+		return true
+	}
+	for _, child := range parser.OrderedChildren(alternate) {
+		switch child.Type {
+		case parser.NodeIfStatement:
+			return true
+		case parser.NodeBlockStatement:
+			return false
+		}
+	}
+	return false
+}
+
+// isControlStructure checks if a node opens a nesting level. A catch clause
+// does not: it is part of the try statement that already opened one.
 func isControlStructure(node *parser.Node) bool {
 	switch node.Type {
 	case parser.NodeIfStatement, parser.NodeSwitchStatement,
 		parser.NodeForStatement, parser.NodeForInStatement, parser.NodeForOfStatement,
 		parser.NodeWhileStatement, parser.NodeDoWhileStatement,
-		parser.NodeTryStatement, parser.NodeCatchClause:
+		parser.NodeTryStatement:
 		return true
 	}
 	return false

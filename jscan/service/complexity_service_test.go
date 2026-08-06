@@ -307,6 +307,110 @@ function branchy(x) {
 	}
 }
 
+func TestComplexityService_Analyze_ModuleRollupsPrecedeReportFilters(t *testing.T) {
+	tempDir := t.TempDir()
+	jsFile := filepath.Join(tempDir, "mixed.js")
+	content := `
+function trivialA() { return 1; }
+function trivialB() { return 2; }
+function branchy(x) {
+  if (x > 0) { return 1; }
+  if (x < 0) { return -1; }
+  return 0;
+}
+`
+	if err := os.WriteFile(jsFile, []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	service := NewComplexityService(&config.ComplexityConfig{
+		LowThreshold:    5,
+		MediumThreshold: 10,
+		Enabled:         true,
+		ReportUnchanged: true,
+	})
+
+	resp, err := service.Analyze(context.Background(), domain.ComplexityRequest{
+		Paths:         []string{jsFile},
+		MinComplexity: 2,
+	})
+	if err != nil {
+		t.Fatalf("Analyze should not return error: %v", err)
+	}
+
+	rollup, ok := resp.ModuleRollups[jsFile]
+	if !ok {
+		t.Fatalf("expected a rollup for %s, got %v", jsFile, resp.ModuleRollups)
+	}
+	if rollup.AnalyzedFunctionCount != 3 {
+		t.Errorf("rollups should count the functions min_complexity dropped, got %d", rollup.AnalyzedFunctionCount)
+	}
+	if rollup.MaxComplexity != 3 {
+		t.Errorf("MaxComplexity should be 3, got %d", rollup.MaxComplexity)
+	}
+	if rollup.LinesOfCode != 9 {
+		t.Errorf("LinesOfCode should be 9, got %d", rollup.LinesOfCode)
+	}
+}
+
+func TestComplexityService_Analyze_ByDirectoryReportsRootRelativePaths(t *testing.T) {
+	tempDir := t.TempDir()
+	nested := filepath.Join(tempDir, "nested")
+	if err := os.MkdirAll(nested, 0755); err != nil {
+		t.Fatalf("Failed to create directory: %v", err)
+	}
+
+	rootFile := filepath.Join(tempDir, "root.js")
+	nestedFile := filepath.Join(nested, "deep.js")
+	if err := os.WriteFile(rootFile, []byte("function plain() { return 1; }\n"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+	nestedContent := `
+function branchy(x) {
+  for (const item of x) {
+    if (item) { return item; }
+  }
+  return null;
+}
+`
+	if err := os.WriteFile(nestedFile, []byte(nestedContent), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	service := NewComplexityService(&config.ComplexityConfig{
+		LowThreshold:    5,
+		MediumThreshold: 10,
+		Enabled:         true,
+		ReportUnchanged: true,
+	})
+
+	resp, err := service.Analyze(context.Background(), domain.ComplexityRequest{
+		Paths: []string{rootFile, nestedFile},
+	})
+	if err != nil {
+		t.Fatalf("Analyze should not return error: %v", err)
+	}
+
+	byPath := make(map[string]domain.DirectoryComplexityMetrics, len(resp.ByDirectory))
+	for _, directory := range resp.ByDirectory {
+		byPath[directory.DirectoryPath] = directory
+	}
+
+	if len(byPath) != 2 {
+		t.Fatalf("expected 2 directories, got %v", resp.ByDirectory)
+	}
+	if root, ok := byPath["."]; !ok || root.FunctionCount != 1 {
+		t.Errorf("expected one function directly in the root, got %+v", byPath)
+	}
+	deep, ok := byPath["nested"]
+	if !ok {
+		t.Fatalf("expected a rollup for the nested directory, got %v", resp.ByDirectory)
+	}
+	if deep.MaxNestingDepth != 2 {
+		t.Errorf("expected a max nesting depth of 2, got %d", deep.MaxNestingDepth)
+	}
+}
+
 func TestComplexityService_filterFunctions(t *testing.T) {
 	cfg := &config.ComplexityConfig{
 		LowThreshold:    5,

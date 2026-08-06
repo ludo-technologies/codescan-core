@@ -16,18 +16,19 @@ jscan analyze --output reports/quality.html --no-open src/
 
 Above the tabs, the report header carries the health score badge, and directly below it the project scale line reports how large the analyzed repository is. See [Project scale](health-score.md#project-scale) for the size labels.
 
-The report opens on a summary and has one tab per analysis. Tabs appear only for the analyses that ran, so a report produced with `--select complexity` has two tabs rather than six.
+The report opens on a summary and has one tab per analysis, plus a Modules tab that joins them. Tabs appear only for the analyses that ran, so a report produced with `--select complexity` has three tabs rather than seven.
 
 | Tab | Contents |
 | --- | --- |
 | Summary | The overall score and grade, the six category scores, and file statistics |
-| Complexity | Function count, average and maximum complexity, and a table of functions |
+| Complexity | Function count, average and maximum complexity, a table of directory rollups, and a table of functions |
 | Dead Code | Finding counts by severity and a table of every issue |
 | Clones | Clone pair and group counts and a table of the most similar pairs |
 | Coupling | Module count, average CBO, and a table ranked by coupling |
 | Dependencies | Module count, entry points, maximum depth, and any circular imports |
+| Modules | Per-file quality hotspots joined across the analyses that ran |
 
-Each tab header carries that category's score out of 100, colored by quality band, so you can see where the problem is without opening every tab.
+Each analysis tab header carries that category's score out of 100, colored by quality band, so you can see where the problem is without opening every tab. The Modules tab has no score of its own: it reports where the other categories' problems are concentrated rather than a category.
 
 ## Row limits
 
@@ -39,6 +40,8 @@ Tables are truncated so that the file stays a reasonable size on a large codebas
 | Clone pairs | 20 | A line below the table reports the true total |
 | Modules by coupling | 20 | A line below the table reports the true total |
 | Circular dependencies | 10 | A line below the table reports the true total |
+| Modules | 20 | A line below the table reports the true total |
+| Directory complexity | no limit | One row per directory that had a reported function |
 | Dead code, per function | 20 | **No line is printed**, so the truncation is silent |
 | Dead code, file level | no limit | Every file level finding is shown |
 
