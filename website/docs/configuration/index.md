@@ -51,6 +51,16 @@ Passing `--config` to `analyze` makes it print `Using config: <path>` before the
 
 This is the part worth reading carefully. jscan validates the whole configuration schema, but the commands act on only part of it. Setting a key from the second table below is accepted, and validated, and then ignored.
 
+You do not have to memorize the split. Any command that loads a file naming such a key prints a warning to stderr:
+
+```console
+$ jscan analyze src/
+Warning: /work/app/jscan.config.json sets 2 keys that no command reads: dead_code.context_lines, output.format
+  See https://jscan.codescan.dev/configuration/#which-keys-take-effect-today
+```
+
+The same warning catches misspelled keys, since a key jscan does not recognize is by definition one that no command reads. A file written by [`jscan init`](../cli/init.md) never triggers it: the generated file contains only keys that work.
+
 ### Keys that change behavior
 
 | Key | Affects | What it does |
@@ -58,34 +68,45 @@ This is the part worth reading carefully. jscan validates the whole configuratio
 | `complexity.low_threshold` | `analyze`, `check` | Upper bound of the low risk band |
 | `complexity.medium_threshold` | `analyze`, `check` | Upper bound of the medium risk band |
 | `complexity.max_complexity` | `check` | Default for `--max-complexity`, used only when the flag is absent and the value is above 0 |
+| `complexity.report_unchanged` | `analyze`, `check` | Whether functions with complexity 1 are reported at all |
+| `dead_code.min_severity` | `analyze`, `check` | Findings below this severity are dropped |
+| `dead_code.sort_by` | `analyze` | Order of the files in the dead code report. `check` reports only counts, which the order cannot change |
 | `output.min_complexity` | `analyze` | Functions below this complexity are left out of the report |
+| `output.sort_by` | `analyze`, `check` | Order of the functions in the complexity report, and of the complexity violations `check` lists |
+| `analysis.include_patterns` | `analyze`, `check`, `deps` | Which files to analyze, of those jscan can parse |
 | `analysis.exclude_patterns` | `analyze`, `check`, `deps` | Directories and filename patterns to skip |
+| `analysis.recursive` | `analyze`, `check`, `deps` | Whether a directory is walked to its leaves or only at its top level |
 
 ### Keys that are parsed but not yet applied
 
 | Key group | Status |
 | --- | --- |
-| `dead_code.*` | Dead code detection runs with fixed settings. Severity floor, sorting, context lines, the per-reason detection switches, and `ignore_patterns` have no effect. |
+| `dead_code.show_context`, `dead_code.context_lines` | Context lines are never shown. |
+| `dead_code.detect_*`, `dead_code.ignore_patterns` | All unreachable-code checks always run, and nothing is ignored. |
+| `dead_code.enabled`, `complexity.enabled` | Use `--select` to choose which analyses run. |
 | `clones.*` | Clone detection runs with the built-in defaults. |
 | `output.format` | The format comes from the `--format` flag only. |
-| `output.show_details`, `output.sort_by`, `output.directory` | Not read by any command. |
-| `analysis.include_patterns` | The set of analyzed extensions is fixed. See below. |
-| `analysis.recursive`, `analysis.follow_symlinks` | The walk is always recursive and never follows symbolic links. |
-| `complexity.enabled`, `complexity.report_unchanged` | Not read by any command. |
+| `output.show_details`, `output.directory` | Not read by any command. |
+| `analysis.follow_symlinks` | Symbolic links are never followed. |
 | `system_analysis.*`, `dependencies.*`, `architecture.*`, `module_analysis.*` | Reserved for features that are not yet implemented. All default to disabled. |
 
 This is documented rather than hidden because a configuration key that quietly does nothing is worse than one that does not exist. If a setting you need is in the second table, use the equivalent command line flag where one exists, and otherwise track the gap in the [issue tracker](https://github.com/ludo-technologies/polyscan/issues).
 
-### Why `include_patterns` does not work
+### Narrowing what gets analyzed
 
-jscan collects files by extension, using a fixed list: `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`, and `.cts`. The collector then removes anything matching `analysis.exclude_patterns`. It never consults `include_patterns`.
+`analysis.include_patterns` selects from the files jscan can parse; it cannot add file types, because the analyzed extensions are fixed at `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`, and `.cts`. Adding `**/*.vue` to the list changes nothing.
 
-The practical consequence is that you cannot narrow the analysis by writing `include_patterns`. Narrow it by passing a more specific path, or by adding to `exclude_patterns`:
+Patterns are matched the same way `exclude_patterns` are, and relative to the path you pass on the command line. Analyzing `src/` with an include pattern of `src/**/*.ts` therefore matches nothing, because the paths being matched start below `src`:
 
-```bash
-# Instead of an include pattern, pass the path you mean
-jscan analyze src/components/
+```json
+{
+  "analysis": {
+    "include_patterns": ["**/*.ts", "**/*.tsx"]
+  }
+}
 ```
+
+A file you name directly is analyzed whether or not it matches, so `jscan analyze src/legacy.js` still works under a TypeScript-only include list.
 
 ## jscan also reads your `.gitignore`
 

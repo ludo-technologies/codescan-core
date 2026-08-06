@@ -130,6 +130,9 @@ func GetStrictnessPresets() map[Strictness]StrictnessPreset {
 }
 
 // GetFullConfigTemplate returns a full config template as valid JSON.
+//
+// Both templates emit only the keys the commands read, so that a generated file
+// never promises a setting that changes nothing. See appliedKeys.
 func GetFullConfigTemplate(projectType ProjectType, strictness Strictness) string {
 	projectPresets := GetProjectPresets()
 	strictnessPresets := GetStrictnessPresets()
@@ -143,36 +146,23 @@ func GetFullConfigTemplate(projectType ProjectType, strictness Strictness) strin
 
 	return `{
   "complexity": {
-    "enabled": true,
     "low_threshold": ` + strconv.Itoa(strict.LowThreshold) + `,
     "medium_threshold": ` + strconv.Itoa(strict.MediumThreshold) + `,
     "max_complexity": ` + strconv.Itoa(strict.MaxComplexity) + `,
     "report_unchanged": false
   },
   "dead_code": {
-    "enabled": true,
-    "min_severity": "warning",
-    "show_context": false,
-    "context_lines": 3,
-    "sort_by": "severity",
-    "detect_after_return": true,
-    "detect_after_break": true,
-    "detect_after_continue": true,
-    "detect_after_throw": true,
-    "detect_unreachable_branches": true,
-    "ignore_patterns": []
+    "min_severity": "info",
+    "sort_by": "severity"
   },
   "output": {
-    "format": "text",
-    "show_details": true,
     "sort_by": "complexity",
     "min_complexity": 1
   },
   "analysis": {
     "include_patterns": ` + includePatterns + `,
     "exclude_patterns": ` + excludePatterns + `,
-    "recursive": true,
-    "follow_symlinks": false
+    "recursive": true
   }
 }
 `
@@ -182,13 +172,11 @@ func GetFullConfigTemplate(projectType ProjectType, strictness Strictness) strin
 func GetMinimalConfigTemplate() string {
 	return `{
   "complexity": {
-    "enabled": true,
     "low_threshold": 10,
     "medium_threshold": 20
   },
   "dead_code": {
-    "enabled": true,
-    "min_severity": "warning"
+    "min_severity": "info"
   },
   "analysis": {
     "include_patterns": ["**/*.js", "**/*.ts", "**/*.jsx", "**/*.tsx"],

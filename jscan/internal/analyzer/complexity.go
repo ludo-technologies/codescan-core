@@ -126,7 +126,7 @@ func CalculateComplexityWithConfig(cfg *CFG, complexityConfig *config.Complexity
 	}
 
 	// Determine risk level based on thresholds
-	riskLevel := determineRiskLevel(coreResult.McCabe, complexityConfig)
+	riskLevel := complexityConfig.AssessRiskLevel(coreResult.McCabe)
 
 	result := &ComplexityResult{
 		Complexity:        coreResult.McCabe,
@@ -166,16 +166,6 @@ func countSwitchCases(functionNode *parser.Node) int {
 		return true
 	})
 	return switchCases
-}
-
-// determineRiskLevel determines the risk level based on complexity thresholds
-func determineRiskLevel(complexity int, cfg *config.ComplexityConfig) string {
-	if complexity > cfg.MediumThreshold {
-		return "high"
-	} else if complexity > cfg.LowThreshold {
-		return "medium"
-	}
-	return "low"
 }
 
 // CalculateNestingDepth calculates the maximum nesting depth of a function

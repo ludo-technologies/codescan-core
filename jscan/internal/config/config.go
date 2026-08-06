@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/spf13/viper"
 )
@@ -29,8 +30,10 @@ const (
 
 // Default dead code detection settings
 const (
-	// DefaultDeadCodeMinSeverity defines the minimum severity level to report
-	DefaultDeadCodeMinSeverity = "warning"
+	// DefaultDeadCodeMinSeverity defines the minimum severity level to report.
+	// Reporting from info up is what the analysis has always done, and the
+	// health score is calibrated against that full set of findings.
+	DefaultDeadCodeMinSeverity = "info"
 
 	// DefaultDeadCodeContextLines defines the number of context lines to show
 	DefaultDeadCodeContextLines = 3
@@ -299,9 +302,39 @@ func DefaultConfig() *Config {
 	return config
 }
 
-// LoadConfig loads configuration from file or returns default config
-func LoadConfig(configPath string) (*Config, error) {
-	return LoadConfigWithTarget(configPath, "")
+// LoadResult is the outcome of a configuration load.
+type LoadResult struct {
+	// Config is always populated: the defaults when no file was found, the
+	// defaults with the file's values applied on top otherwise.
+	Config *Config
+
+	// Path is the file the configuration was read from, empty when no file was
+	// found and the defaults were used.
+	Path string
+
+	// IgnoredKeys are the keys the file sets that reach no behavior, sorted.
+	// They are parsed and validated like any other key, so a wrong value in one
+	// still fails the load; they simply change nothing when correct.
+	IgnoredKeys []string
+}
+
+// appliedKeys lists the configuration keys that reach behavior. Every other key
+// in the schema is parsed, validated, and then ignored, which is what
+// LoadResult.IgnoredKeys reports so that a caller can say so out loud.
+//
+// Wiring a key up means adding it here in the same change.
+var appliedKeys = map[string]bool{
+	"complexity.low_threshold":    true,
+	"complexity.medium_threshold": true,
+	"complexity.max_complexity":   true,
+	"complexity.report_unchanged": true,
+	"dead_code.min_severity":      true,
+	"dead_code.sort_by":           true,
+	"output.min_complexity":       true,
+	"output.sort_by":              true,
+	"analysis.include_patterns":   true,
+	"analysis.exclude_patterns":   true,
+	"analysis.recursive":          true,
 }
 
 // discoverConfigFile finds the appropriate config file path
@@ -312,9 +345,9 @@ func discoverConfigFile(targetPath string) string {
 
 // loadConfigFromFile reads and parses a configuration file
 // Single responsibility: file loading and parsing only
-func loadConfigFromFile(configPath string) (*Config, error) {
+func loadConfigFromFile(configPath string) (*LoadResult, error) {
 	if configPath == "" {
-		return DefaultConfig(), nil
+		return &LoadResult{Config: DefaultConfig()}, nil
 	}
 
 	// Create a new viper instance to avoid race conditions
@@ -337,12 +370,23 @@ func loadConfigFromFile(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	return config, nil
+	// No defaults are registered with viper, so AllKeys holds exactly the keys
+	// this file sets, including any that the schema does not define.
+	var ignored []string
+	for _, key := range v.AllKeys() {
+		if !appliedKeys[key] {
+			ignored = append(ignored, key)
+		}
+	}
+	sort.Strings(ignored)
+
+	return &LoadResult{Config: config, Path: configPath, IgnoredKeys: ignored}, nil
 }
 
-// LoadConfigWithTarget loads configuration with target path context
-// Orchestrates discovery and loading but delegates specific concerns
-func LoadConfigWithTarget(configPath string, targetPath string) (*Config, error) {
+// Load loads the configuration for a target path, discovering the file when
+// configPath is empty. Orchestrates discovery and loading but delegates
+// specific concerns.
+func Load(configPath string, targetPath string) (*LoadResult, error) {
 	// If no config path specified, discover one
 	if configPath == "" {
 		configPath = discoverConfigFile(targetPath)
@@ -545,40 +589,6 @@ func (c *ComplexityConfig) AssessRiskLevel(complexity int) string {
 	return "high"
 }
 
-// ShouldReport determines if a complexity result should be reported
-func (c *ComplexityConfig) ShouldReport(complexity int) bool {
-	if !c.Enabled {
-		return false
-	}
-
-	if complexity == 1 && !c.ReportUnchanged {
-		return false
-	}
-
-	return true
-}
-
-// ExceedsMaxComplexity checks if complexity exceeds the maximum allowed
-func (c *ComplexityConfig) ExceedsMaxComplexity(complexity int) bool {
-	return c.MaxComplexity > 0 && complexity > c.MaxComplexity
-}
-
-// SaveConfig saves configuration to a YAML file
-func SaveConfig(config *Config, path string) error {
-	// Create a new viper instance to avoid race conditions
-	v := viper.New()
-	v.SetConfigFile(path)
-	v.SetConfigType("yaml")
-
-	// Set all config values in viper
-	v.Set("complexity", config.Complexity)
-	v.Set("dead_code", config.DeadCode)
-	v.Set("output", config.Output)
-	v.Set("analysis", config.Analysis)
-
-	return v.WriteConfig()
-}
-
 // validateDeadCodeConfig validates the dead code configuration
 func (c *Config) validateDeadCodeConfig() error {
 	// Validate severity level
@@ -614,34 +624,6 @@ func (c *Config) validateDeadCodeConfig() error {
 	}
 
 	return nil
-}
-
-// ShouldDetectDeadCode determines if dead code detection should be performed
-func (c *DeadCodeConfig) ShouldDetectDeadCode() bool {
-	return c.Enabled
-}
-
-// GetMinSeverityLevel returns the minimum severity level as an integer for comparison
-func (c *DeadCodeConfig) GetMinSeverityLevel() int {
-	switch c.MinSeverity {
-	case "info":
-		return 1
-	case "warning":
-		return 2
-	case "critical":
-		return 3
-	default:
-		return 2 // Default to warning
-	}
-}
-
-// HasAnyDetectionEnabled checks if any detection type is enabled
-func (c *DeadCodeConfig) HasAnyDetectionEnabled() bool {
-	return c.DetectAfterReturn ||
-		c.DetectAfterBreak ||
-		c.DetectAfterContinue ||
-		c.DetectAfterThrow ||
-		c.DetectUnreachableBranches
 }
 
 // SystemAnalysisConfig holds configuration for system-level analysis

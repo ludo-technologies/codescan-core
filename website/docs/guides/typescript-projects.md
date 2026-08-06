@@ -66,7 +66,7 @@ There is an `module_analysis.alias_patterns` key in the configuration schema, de
 
 `.vue` files are not collected, so the `<script>` block inside them is never analyzed. The `.ts` and `.js` files in a Vue or Nuxt project are analyzed normally. Support is on the roadmap.
 
-Note that `jscan init --interactive` adds `**/*.vue` to `analysis.include_patterns` when you choose the Vue preset. That key is not read, so the entry has no effect either way.
+Note that `jscan init --interactive` adds `**/*.vue` to `analysis.include_patterns` when you choose the Vue preset. Include patterns select from the file types jscan can parse rather than adding new ones, so the entry has no effect either way.
 
 ## Recommended setup
 

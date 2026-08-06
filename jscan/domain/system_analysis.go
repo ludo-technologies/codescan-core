@@ -465,18 +465,6 @@ type SystemAnalysisService interface {
 	AnalyzeArchitecture(ctx context.Context, req SystemAnalysisRequest) (*ArchitectureAnalysisResult, error)
 }
 
-// SystemAnalysisConfigurationLoader defines configuration loading interface
-type SystemAnalysisConfigurationLoader interface {
-	// LoadConfig loads configuration from the specified path
-	LoadConfig(path string) (*SystemAnalysisRequest, error)
-
-	// LoadDefaultConfig loads the default configuration
-	LoadDefaultConfig() *SystemAnalysisRequest
-
-	// MergeConfig merges CLI flags with configuration file
-	MergeConfig(base *SystemAnalysisRequest, override *SystemAnalysisRequest) *SystemAnalysisRequest
-}
-
 // SystemAnalysisOutputFormatter defines formatting interface
 type SystemAnalysisOutputFormatter interface {
 	// Format formats the analysis response according to the specified format

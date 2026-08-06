@@ -19,12 +19,15 @@
 //   - A .gitignore at the root of the walked directory is honored. Only that
 //     one file is read, not nested ones and not the repository root's when a
 //     subdirectory was passed.
-//   - Exclude patterns are applied to directories by exact name or glob, but to
-//     files by glob on the base name OR by plain substring match against the
-//     whole path. The substring rule is broad: the default pattern "out"
-//     removes src/routes/api.ts and src/layout/Header.tsx, and "dist" removes
-//     src/utils/distance.ts.
+//   - Exclude patterns are matched on whole path segments, ignoring case and
+//     relative to the analysis root, so "dist" skips dist/bundle.js and leaves
+//     src/utils/distance.ts alone.
+//   - Include patterns, when a caller supplies any, keep only the files that
+//     match one, under the same matching rules. They narrow the walk; they
+//     cannot widen it, because the analyzed extensions are fixed in isJSFile.
 //
-// The include patterns parameter is accepted for interface compatibility and
-// ignored. The set of analyzed extensions is fixed in isJSFile.
+// Both pattern lists apply to directory walks. A file named directly on the
+// command line skips include filtering, since dropping a file the user asked
+// for by name would be the wrong answer, and is matched against exclude
+// patterns on its own name alone.
 package app

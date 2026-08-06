@@ -51,7 +51,6 @@ jscan/
 │   ├── parser/         # tree-sitter JavaScript/TypeScript parser
 │   ├── analyzer/       # Analysis engines (CFG, complexity, dead code, clones, deps)
 │   ├── config/         # Configuration management
-│   ├── reporter/       # Output formatting (text, JSON, HTML, CSV, DOT)
 │   ├── constants/      # Shared constants
 │   ├── testutil/       # Test utilities
 │   └── version/        # Version information

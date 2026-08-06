@@ -81,7 +81,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load configuration
-	cfg, err := config.LoadConfigWithTarget(configPath, args[0])
+	cfg, err := loadCommandConfig(configPath, args[0], os.Stderr)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
@@ -89,10 +89,10 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Using config: %s\n", configPath)
 	}
 
-	// Collect JavaScript/TypeScript files (using exclude patterns from config)
+	// Collect JavaScript/TypeScript files (using the patterns from config)
 	var files []string
 	for _, path := range args {
-		pathFiles, err := collectJSFiles(path, cfg.Analysis.ExcludePatterns)
+		pathFiles, err := collectJSFiles(path, cfg)
 		if err != nil {
 			return fmt.Errorf("failed to collect files from %s: %w", path, err)
 		}
@@ -159,7 +159,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			resp, err := runDeadCodeAnalysisInternal(files)
+			resp, err := runDeadCodeAnalysisInternal(files, cfg)
 			mu.Lock()
 			deadCodeResponse = resp
 			deadCodeErr = err
@@ -298,7 +298,7 @@ func runComplexityAnalysisInternal(files []string, cfg *config.Config) (*domain.
 		LowThreshold:    cfg.Complexity.LowThreshold,
 		MediumThreshold: cfg.Complexity.MediumThreshold,
 		MinComplexity:   cfg.Output.MinComplexity,
-		SortBy:          domain.SortByComplexity,
+		SortBy:          domain.SortCriteria(cfg.Output.SortBy),
 	}
 
 	ctx := context.Background()
@@ -307,34 +307,31 @@ func runComplexityAnalysisInternal(files []string, cfg *config.Config) (*domain.
 
 // runDeadCodeAnalysis runs dead code analysis on the given files with progress tracking
 // This is used by check.go which has its own progress management
-func runDeadCodeAnalysis(files []string, _ *config.Config, pm domain.ProgressManager) (*domain.DeadCodeResponse, error) {
+func runDeadCodeAnalysis(files []string, cfg *config.Config, pm domain.ProgressManager) (*domain.DeadCodeResponse, error) {
 	task := pm.StartTask("Detecting dead code", len(files))
 	defer task.Complete()
 
-	req := domain.DeadCodeRequest{
-		Paths:       files,
-		MinSeverity: domain.DeadCodeSeverityInfo,
-		SortBy:      domain.DeadCodeSortBySeverity,
-	}
-
-	return service.AnalyzeDeadCodeWithTask(context.Background(), req, task)
+	return service.AnalyzeDeadCodeWithTask(context.Background(), deadCodeRequest(files, cfg), task)
 }
 
 // runDeadCodeAnalysisInternal runs dead code analysis on the given files without progress tracking
-func runDeadCodeAnalysisInternal(files []string) (*domain.DeadCodeResponse, error) {
-	req := domain.DeadCodeRequest{
-		Paths:       files,
-		MinSeverity: domain.DeadCodeSeverityInfo,
-		SortBy:      domain.DeadCodeSortBySeverity,
-	}
+func runDeadCodeAnalysisInternal(files []string, cfg *config.Config) (*domain.DeadCodeResponse, error) {
+	return service.AnalyzeDeadCode(context.Background(), deadCodeRequest(files, cfg))
+}
 
-	return service.AnalyzeDeadCode(context.Background(), req)
+// deadCodeRequest builds the dead code request both entry points share.
+func deadCodeRequest(files []string, cfg *config.Config) domain.DeadCodeRequest {
+	return domain.DeadCodeRequest{
+		Paths:       files,
+		MinSeverity: domain.DeadCodeSeverity(cfg.DeadCode.MinSeverity),
+		SortBy:      domain.DeadCodeSortCriteria(cfg.DeadCode.SortBy),
+	}
 }
 
 // collectJSFiles collects JavaScript/TypeScript files from a path using FileHelper
-func collectJSFiles(path string, excludePatterns []string) ([]string, error) {
+func collectJSFiles(path string, cfg *config.Config) ([]string, error) {
 	helper := app.NewFileHelper()
-	return helper.CollectJSFiles([]string{path}, true, nil, excludePatterns)
+	return helper.CollectJSFiles([]string{path}, cfg.Analysis.Recursive, cfg.Analysis.IncludePatterns, cfg.Analysis.ExcludePatterns)
 }
 
 func contains(slice []string, item string) bool {

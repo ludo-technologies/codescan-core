@@ -229,6 +229,143 @@ func TestFileHelperCollectKeepsSubstringDirectories(t *testing.T) {
 	}
 }
 
+// TestFileHelperCollectAppliesIncludePatterns verifies that include patterns
+// narrow the walk, and that an empty list still selects everything.
+func TestFileHelperCollectAppliesIncludePatterns(t *testing.T) {
+	tempDir := t.TempDir()
+
+	all := []string{
+		"src/index.ts",
+		"src/nested/deep/widget.tsx",
+		"src/legacy.js",
+		"scripts/build.ts",
+	}
+	for _, rel := range all {
+		path := filepath.Join(tempDir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("Failed to create dir for %s: %v", rel, err)
+		}
+		if err := os.WriteFile(path, []byte("export const a = 1;"), 0644); err != nil {
+			t.Fatalf("Failed to create %s: %v", rel, err)
+		}
+	}
+
+	tests := []struct {
+		name            string
+		includePatterns []string
+		expected        []string
+	}{
+		{
+			name:            "no patterns selects everything",
+			includePatterns: nil,
+			expected:        all,
+		},
+		{
+			name:            "extension pattern at any depth",
+			includePatterns: []string{"**/*.ts"},
+			expected:        []string{"src/index.ts", "scripts/build.ts"},
+		},
+		{
+			name:            "bare glob matches the file name",
+			includePatterns: []string{"*.tsx"},
+			expected:        []string{"src/nested/deep/widget.tsx"},
+		},
+		{
+			name:            "path pattern narrows to a subtree",
+			includePatterns: []string{"src/**"},
+			expected:        []string{"src/index.ts", "src/nested/deep/widget.tsx", "src/legacy.js"},
+		},
+		{
+			name:            "several patterns are a union",
+			includePatterns: []string{"**/*.js", "scripts/**"},
+			expected:        []string{"src/legacy.js", "scripts/build.ts"},
+		},
+	}
+
+	helper := NewFileHelper()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			files, err := helper.CollectJSFiles([]string{tempDir}, true, tc.includePatterns, nil)
+			if err != nil {
+				t.Fatalf("CollectJSFiles failed: %v", err)
+			}
+
+			found := make(map[string]bool, len(files))
+			for _, f := range files {
+				rel, err := filepath.Rel(tempDir, f)
+				if err != nil {
+					t.Fatalf("Failed to relativize %s: %v", f, err)
+				}
+				found[filepath.ToSlash(rel)] = true
+			}
+
+			for _, rel := range tc.expected {
+				if !found[rel] {
+					t.Errorf("Expected %s to be analyzed, but it was not", rel)
+				}
+			}
+			if len(files) != len(tc.expected) {
+				t.Errorf("Expected %d files, got %d: %v", len(tc.expected), len(files), files)
+			}
+		})
+	}
+}
+
+// TestFileHelperCollectMatchesPatternsIgnoringCase pins that pattern matching
+// and isJSFile agree about case, so a file with an uppercase extension is not
+// dropped by the default include patterns.
+func TestFileHelperCollectMatchesPatternsIgnoringCase(t *testing.T) {
+	tempDir := t.TempDir()
+
+	for _, rel := range []string{"Widget.TS", "Legacy.JS", "Vendor/Bundle.JS"} {
+		path := filepath.Join(tempDir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("Failed to create dir for %s: %v", rel, err)
+		}
+		if err := os.WriteFile(path, []byte("export const a = 1;"), 0644); err != nil {
+			t.Fatalf("Failed to create %s: %v", rel, err)
+		}
+	}
+
+	helper := NewFileHelper()
+	files, err := helper.CollectJSFiles([]string{tempDir}, true, []string{"**/*.ts", "**/*.js"}, []string{"vendor"})
+	if err != nil {
+		t.Fatalf("CollectJSFiles failed: %v", err)
+	}
+
+	found := make(map[string]bool, len(files))
+	for _, f := range files {
+		found[filepath.Base(f)] = true
+	}
+	for _, name := range []string{"Widget.TS", "Legacy.JS"} {
+		if !found[name] {
+			t.Errorf("Expected %s to be analyzed, got %v", name, files)
+		}
+	}
+	if found["Bundle.JS"] {
+		t.Errorf("Expected the excluded directory to be skipped regardless of case, got %v", files)
+	}
+}
+
+// TestFileHelperCollectKeepsExplicitlyNamedFile verifies that include patterns
+// do not drop a file the user named on the command line.
+func TestFileHelperCollectKeepsExplicitlyNamedFile(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "widget.tsx")
+	if err := os.WriteFile(path, []byte("export const a = 1;"), 0644); err != nil {
+		t.Fatalf("Failed to create file: %v", err)
+	}
+
+	helper := NewFileHelper()
+	files, err := helper.CollectJSFiles([]string{path}, true, []string{"src/**/*.ts"}, nil)
+	if err != nil {
+		t.Fatalf("CollectJSFiles failed: %v", err)
+	}
+	if len(files) != 1 {
+		t.Errorf("Expected the named file to be analyzed, got %v", files)
+	}
+}
+
 // TestFileHelperCollectIgnoresParentDirectoryNames verifies that exclude
 // patterns are matched relative to the analysis root, so a project checked out
 // under a directory such as "build" is still analyzed.

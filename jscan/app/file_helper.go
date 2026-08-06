@@ -29,6 +29,8 @@ func (h *FileHelper) CollectJSFiles(paths []string, recursive bool, includePatte
 		if !info.IsDir() {
 			// A file named directly is only matched on its own name: the
 			// directories it happens to live under are not part of the request.
+			// Include patterns are skipped entirely here, since dropping a file
+			// the user named explicitly would be the wrong answer.
 			if h.isJSFile(path) && !h.isExcluded(filepath.Base(path), excludePatterns) {
 				files = append(files, path)
 			}
@@ -71,7 +73,7 @@ func (h *FileHelper) CollectJSFiles(paths []string, recursive bool, includePatte
 					return nil
 				}
 
-				if h.isJSFile(filePath) && !h.isExcluded(relPath, excludePatterns) {
+				if h.isJSFile(filePath) && h.isIncluded(relPath, includePatterns) && !h.isExcluded(relPath, excludePatterns) {
 					files = append(files, filePath)
 				}
 
@@ -86,7 +88,7 @@ func (h *FileHelper) CollectJSFiles(paths []string, recursive bool, includePatte
 			for _, entry := range entries {
 				if !entry.IsDir() {
 					filePath := filepath.Join(path, entry.Name())
-					if h.isJSFile(filePath) && !h.isExcluded(entry.Name(), excludePatterns) {
+					if h.isJSFile(filePath) && h.isIncluded(entry.Name(), includePatterns) && !h.isExcluded(entry.Name(), excludePatterns) {
 						files = append(files, filePath)
 					}
 				}
@@ -140,22 +142,46 @@ func (h *FileHelper) isJSFile(path string) bool {
 		ext == ".mjs" || ext == ".cjs" || ext == ".mts" || ext == ".cts"
 }
 
+// isIncluded reports whether a path is selected by the include patterns.
+//
+// An empty pattern list selects everything, so a caller that does not care
+// about include patterns can pass nil. Otherwise a path has to match at least
+// one pattern, under the same rules exclude patterns use.
+//
+// Include patterns narrow the extensions jscan already understands; they cannot
+// widen them, because a file it cannot parse is of no use to an analysis.
+func (h *FileHelper) isIncluded(path string, includePatterns []string) bool {
+	if len(includePatterns) == 0 {
+		return true
+	}
+	return matchesAnyPattern(path, includePatterns)
+}
+
 // isExcluded checks if a path matches any exclude pattern.
+func (h *FileHelper) isExcluded(path string, excludePatterns []string) bool {
+	return matchesAnyPattern(path, excludePatterns)
+}
+
+// matchesAnyPattern reports whether a path matches at least one of the patterns.
 //
 // Patterns without a slash are matched against the file name and against each
-// directory segment of the path, so "dist" excludes "dist/bundle.js" but not
+// directory segment of the path, so "dist" matches "dist/bundle.js" but not
 // "src/utils/distance.ts". Patterns with a slash are matched against the path
 // as a whole, with "**" matching any number of segments.
 //
+// Matching ignores case, on both sides, so that the default include pattern
+// "**/*.ts" selects Widget.TS exactly as isJSFile accepts it. Treating the two
+// differently would drop such a file with nothing said about it.
+//
 // Note: filepath.Match errors are ignored throughout (invalid patterns simply
 // don't match) so that the remaining valid patterns still apply.
-func (h *FileHelper) isExcluded(path string, excludePatterns []string) bool {
-	segments := strings.Split(filepath.ToSlash(path), "/")
+func matchesAnyPattern(path string, patterns []string) bool {
+	segments := strings.Split(strings.ToLower(filepath.ToSlash(path)), "/")
 	baseName := segments[len(segments)-1]
 	dirSegments := segments[:len(segments)-1]
 
-	for _, pattern := range excludePatterns {
-		pattern = strings.Trim(filepath.ToSlash(pattern), "/")
+	for _, pattern := range patterns {
+		pattern = strings.ToLower(strings.Trim(filepath.ToSlash(pattern), "/"))
 		if pattern == "" {
 			continue
 		}

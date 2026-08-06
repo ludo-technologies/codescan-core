@@ -96,7 +96,7 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	startTime := time.Now()
 
 	// Load configuration
-	cfg, err := config.LoadConfigWithTarget(checkConfigPath, args[0])
+	cfg, err := loadCommandConfig(checkConfigPath, args[0], os.Stderr)
 	if err != nil {
 		return &CheckExitError{Code: 2, Message: fmt.Sprintf("failed to load configuration: %v", err)}
 	}
@@ -106,10 +106,10 @@ func runCheck(cmd *cobra.Command, args []string) error {
 		checkMaxComplexity = cfg.Complexity.MaxComplexity
 	}
 
-	// Collect JavaScript/TypeScript files (using exclude patterns from config)
+	// Collect JavaScript/TypeScript files (using the patterns from config)
 	var files []string
 	for _, path := range args {
-		pathFiles, err := collectJSFiles(path, cfg.Analysis.ExcludePatterns)
+		pathFiles, err := collectJSFiles(path, cfg)
 		if err != nil {
 			return &CheckExitError{Code: 2, Message: fmt.Sprintf("failed to collect files from %s: %v", path, err)}
 		}
@@ -166,7 +166,7 @@ func checkComplexity(ctx context.Context, files []string, cfg *config.Config, re
 		Paths:           files,
 		LowThreshold:    cfg.Complexity.LowThreshold,
 		MediumThreshold: cfg.Complexity.MediumThreshold,
-		SortBy:          domain.SortByComplexity,
+		SortBy:          domain.SortCriteria(cfg.Output.SortBy),
 	}
 
 	resp, err := svc.Analyze(ctx, req)

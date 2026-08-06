@@ -3,25 +3,13 @@
     "low_threshold": 10,
     "medium_threshold": 20,
     "max_complexity": 0,
-    "enabled": true,
     "report_unchanged": false
   },
   "dead_code": {
-    "enabled": true,
-    "min_severity": "warning",
-    "show_context": false,
-    "context_lines": 3,
-    "sort_by": "severity",
-    "detect_after_return": true,
-    "detect_after_break": true,
-    "detect_after_continue": true,
-    "detect_after_throw": true,
-    "detect_unreachable_branches": true,
-    "ignore_patterns": []
+    "min_severity": "info",
+    "sort_by": "severity"
   },
   "output": {
-    "format": "text",
-    "show_details": true,
     "sort_by": "complexity",
     "min_complexity": 1
   },
@@ -41,7 +29,6 @@
       "*.min.js",
       "*.bundle.js"
     ],
-    "recursive": true,
-    "follow_symlinks": false
+    "recursive": true
   }
 }

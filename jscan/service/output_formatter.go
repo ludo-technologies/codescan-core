@@ -436,6 +436,33 @@ func formatFunctionCoverage(reported, parsed int) string {
 	return fmt.Sprintf("%d", reported)
 }
 
+// complexityFunctionsHeading names the criterion the functions are listed by,
+// taken from the configuration the analysis reported back so that the heading
+// cannot drift away from the actual order.
+//
+// When the criterion cannot be read back, the heading claims nothing rather
+// than guessing: a heading that names the wrong order is worse than one that
+// names none. The value arrives as a SortCriteria in process and as a plain
+// string once the response has been through JSON, so both are accepted.
+func complexityFunctionsHeading(responseConfig interface{}) string {
+	cfg, ok := responseConfig.(map[string]interface{})
+	if !ok {
+		return "Functions:"
+	}
+
+	var sortBy string
+	switch value := cfg["sort_by"].(type) {
+	case domain.SortCriteria:
+		sortBy = string(value)
+	case string:
+		sortBy = value
+	}
+	if sortBy == "" {
+		return "Functions:"
+	}
+	return fmt.Sprintf("Functions (sorted by %s):", sortBy)
+}
+
 func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityResponse, writer io.Writer) error {
 	fmt.Fprintf(writer, "\n=== Complexity Analysis ===\n\n")
 	fmt.Fprintf(writer, "Generated: %s\n", response.GeneratedAt)
@@ -459,7 +486,7 @@ func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityRes
 
 	// Function details
 	if len(response.Functions) > 0 {
-		fmt.Fprintf(writer, "Functions (sorted by complexity):\n")
+		fmt.Fprintf(writer, "%s\n", complexityFunctionsHeading(response.Config))
 		for _, fn := range response.Functions {
 			riskIndicator := ""
 			switch fn.RiskLevel {

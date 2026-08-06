@@ -54,7 +54,7 @@ Finally it asks where to write the file, offering the current directory.
 
 !!! note "The Vue preset lists a pattern jscan cannot use yet"
 
-    Choosing Vue or Nuxt adds `**/*.vue` to `analysis.include_patterns`. jscan does not parse single-file components today, and it does not read `include_patterns` at all, so the entry has no effect. Vue support is on the roadmap. The `.js` and `.ts` files in a Vue project are analyzed normally.
+    Choosing Vue or Nuxt adds `**/*.vue` to `analysis.include_patterns`. Include patterns select from the file types jscan can parse rather than adding new ones, and jscan does not parse single-file components today, so the entry has no effect. Vue support is on the roadmap. The `.js` and `.ts` files in a Vue project are analyzed normally.
 
 ## The generated file
 
@@ -63,28 +63,16 @@ Without `--interactive`, `jscan init` writes the generic project preset at stand
 ```json
 {
   "complexity": {
-    "enabled": true,
     "low_threshold": 10,
     "medium_threshold": 20,
     "max_complexity": 0,
     "report_unchanged": false
   },
   "dead_code": {
-    "enabled": true,
-    "min_severity": "warning",
-    "show_context": false,
-    "context_lines": 3,
-    "sort_by": "severity",
-    "detect_after_return": true,
-    "detect_after_break": true,
-    "detect_after_continue": true,
-    "detect_after_throw": true,
-    "detect_unreachable_branches": true,
-    "ignore_patterns": []
+    "min_severity": "info",
+    "sort_by": "severity"
   },
   "output": {
-    "format": "text",
-    "show_details": true,
     "sort_by": "complexity",
     "min_complexity": 1
   },
@@ -102,19 +90,18 @@ Without `--interactive`, `jscan init` writes the generic project preset at stand
       "*.min.js",
       "*.bundle.js"
     ],
-    "recursive": true,
-    "follow_symlinks": false
+    "recursive": true
   }
 }
 ```
 
 `--minimal` writes a much shorter file with the complexity thresholds, the dead code severity floor, and the file patterns.
 
-!!! warning "The generated file is wider than what jscan reads"
+Every key here changes behavior. The templates deliberately leave out the keys jscan parses but does not act on, so that nothing in a generated file is a promise it cannot keep; the [configuration guide](../configuration/index.md#which-keys-take-effect-today) lists those keys, and jscan warns if your file sets one.
 
-    Both templates include keys that jscan parses and validates but does not yet act on, such as everything under `dead_code`. The [configuration guide](../configuration/index.md#which-keys-take-effect-today) lists exactly which keys change behavior. Nothing in the generated file is invalid, but do not assume that editing `dead_code.min_severity` changes the output.
+!!! warning "The generated `exclude_patterns` is shorter than the default"
 
-    In particular, note that the generated `exclude_patterns` is **shorter** than the built-in default. Writing a configuration file therefore narrows what jscan skips. If you do not need custom patterns, delete the key and let the default apply.
+    Writing a configuration file therefore narrows what jscan skips, since your list replaces the built-in one rather than extending it. If you do not need custom patterns, delete the key and let the default apply.
 
 ## Which filenames jscan looks for
 

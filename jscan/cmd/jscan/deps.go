@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/ludo-technologies/polyscan/jscan/domain"
-	"github.com/ludo-technologies/polyscan/jscan/internal/config"
 	"github.com/ludo-technologies/polyscan/jscan/service"
 	"github.com/spf13/cobra"
 )
@@ -99,15 +98,15 @@ func runDeps(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	// Load configuration
-	cfg, err := config.LoadConfigWithTarget(depsConfigPath, args[0])
+	cfg, err := loadCommandConfig(depsConfigPath, args[0], os.Stderr)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	// Collect JavaScript/TypeScript files (using exclude patterns from config)
+	// Collect JavaScript/TypeScript files (using the patterns from config)
 	var files []string
 	for _, path := range args {
-		pathFiles, err := collectJSFiles(path, cfg.Analysis.ExcludePatterns)
+		pathFiles, err := collectJSFiles(path, cfg)
 		if err != nil {
 			return fmt.Errorf("failed to collect files from %s: %w", path, err)
 		}

@@ -331,32 +331,6 @@ func TestCalculateComplexityWithConfig_CustomThresholds(t *testing.T) {
 	}
 }
 
-func TestDetermineRiskLevel(t *testing.T) {
-	cfg := &config.ComplexityConfig{
-		LowThreshold:    5,
-		MediumThreshold: 10,
-	}
-
-	tests := []struct {
-		complexity int
-		expected   string
-	}{
-		{1, "low"},
-		{5, "low"},
-		{6, "medium"},
-		{10, "medium"},
-		{11, "high"},
-		{100, "high"},
-	}
-
-	for _, tc := range tests {
-		result := determineRiskLevel(tc.complexity, cfg)
-		if result != tc.expected {
-			t.Errorf("determineRiskLevel(%d) = %s, expected %s", tc.complexity, result, tc.expected)
-		}
-	}
-}
-
 func TestCalculateNestingDepth_Nil(t *testing.T) {
 	depth := CalculateNestingDepth(nil)
 	if depth != 0 {

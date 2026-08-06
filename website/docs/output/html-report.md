@@ -58,7 +58,7 @@ The **architecture score** is not shown, because architecture validation is not 
 
 Every table is sorted by the metric it is about, worst first. Functions are ordered by descending complexity, modules by descending coupling, and clone pairs by descending similarity. Since the tables are truncated at 20 rows, this means you always see the worst offenders rather than an arbitrary sample.
 
-Sorting is fixed. `output.sort_by` is not read.
+The functions table is the one exception: it follows [`output.sort_by`](../configuration/reference.md#outputsort_by). Setting that key to `name` therefore leaves you with the first 20 functions alphabetically rather than the 20 worst, which is rarely what you want in the HTML report. The other tables ignore it.
 
 ## Sharing and archiving
 
