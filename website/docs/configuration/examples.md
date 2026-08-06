@@ -190,6 +190,32 @@ The high `min_complexity` keeps the report focused on the worst functions rather
 
 Note that `legacy/generated` contains a slash, so it is matched against the path rather than against a single name. It skips that directory and everything under it, and it matches nothing else.
 
+## Mixed codebase where only part is worth analyzing
+
+A repository part-way through a TypeScript migration, or one where a whole directory is generated, is easier to narrow with `include_patterns` than with a long exclude list.
+
+```json title="jscan.config.json"
+{
+  "complexity": {
+    "low_threshold": 10,
+    "medium_threshold": 20
+  },
+  "analysis": {
+    "include_patterns": ["**/*.ts", "**/*.tsx"],
+    "exclude_patterns": [
+      "node_modules",
+      "coverage",
+      ".git",
+      "*.d.ts"
+    ]
+  }
+}
+```
+
+A file has to match an include pattern and no exclude pattern, so this analyzes the TypeScript sources and leaves both the remaining JavaScript and the generated declaration files out.
+
+Write the patterns with a leading `**/`, as above. Patterns are matched relative to the path you pass on the command line, so `src/**/*.ts` matches everything under `jscan analyze .` and nothing at all under `jscan analyze src/`.
+
 ## YAML instead of JSON
 
 The loader accepts YAML when the filename ends in `.yaml` or `.yml`. The keys are identical.

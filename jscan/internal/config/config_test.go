@@ -209,118 +209,80 @@ func TestComplexityConfig_AssessRiskLevel(t *testing.T) {
 	}
 }
 
-func TestComplexityConfig_ShouldReport(t *testing.T) {
-	// Enabled config
-	enabledConfig := &ComplexityConfig{
-		Enabled:         true,
-		ReportUnchanged: true,
-	}
-
-	if !enabledConfig.ShouldReport(5) {
-		t.Error("Should report complexity 5 when enabled")
-	}
-	if !enabledConfig.ShouldReport(1) {
-		t.Error("Should report complexity 1 when ReportUnchanged is true")
-	}
-
-	// Disabled config
-	disabledConfig := &ComplexityConfig{
-		Enabled: false,
-	}
-	if disabledConfig.ShouldReport(5) {
-		t.Error("Should not report when disabled")
-	}
-
-	// Report unchanged = false
-	noUnchangedConfig := &ComplexityConfig{
-		Enabled:         true,
-		ReportUnchanged: false,
-	}
-	if noUnchangedConfig.ShouldReport(1) {
-		t.Error("Should not report complexity 1 when ReportUnchanged is false")
-	}
-	if !noUnchangedConfig.ShouldReport(5) {
-		t.Error("Should report complexity > 1 even when ReportUnchanged is false")
-	}
-}
-
-func TestComplexityConfig_ExceedsMaxComplexity(t *testing.T) {
-	// No limit
-	noLimitConfig := &ComplexityConfig{
-		MaxComplexity: 0,
-	}
-	if noLimitConfig.ExceedsMaxComplexity(100) {
-		t.Error("Should not exceed when MaxComplexity is 0 (no limit)")
-	}
-
-	// With limit
-	limitConfig := &ComplexityConfig{
-		MaxComplexity: 20,
-	}
-	if limitConfig.ExceedsMaxComplexity(15) {
-		t.Error("15 should not exceed max of 20")
-	}
-	if limitConfig.ExceedsMaxComplexity(20) {
-		t.Error("20 should not exceed max of 20")
-	}
-	if !limitConfig.ExceedsMaxComplexity(25) {
-		t.Error("25 should exceed max of 20")
-	}
-}
-
-func TestDeadCodeConfig_ShouldDetectDeadCode(t *testing.T) {
-	enabled := &DeadCodeConfig{Enabled: true}
-	if !enabled.ShouldDetectDeadCode() {
-		t.Error("Should detect when enabled")
-	}
-
-	disabled := &DeadCodeConfig{Enabled: false}
-	if disabled.ShouldDetectDeadCode() {
-		t.Error("Should not detect when disabled")
-	}
-}
-
-func TestDeadCodeConfig_GetMinSeverityLevel(t *testing.T) {
-	tests := []struct {
-		severity string
-		level    int
-	}{
-		{"info", 1},
-		{"warning", 2},
-		{"critical", 3},
-		{"unknown", 2}, // Default to warning
-	}
-
-	for _, tc := range tests {
-		config := &DeadCodeConfig{MinSeverity: tc.severity}
-		result := config.GetMinSeverityLevel()
-		if result != tc.level {
-			t.Errorf("GetMinSeverityLevel(%s) = %d, expected %d", tc.severity, result, tc.level)
-		}
-	}
-}
-
-func TestLoadConfig_Default(t *testing.T) {
-	// Load with empty path should return default
-	config, err := LoadConfig("")
+func TestLoad_Default(t *testing.T) {
+	// Load with empty paths should return default
+	result, err := Load("", "")
 	if err != nil {
-		t.Fatalf("LoadConfig with empty path failed: %v", err)
+		t.Fatalf("Load with empty path failed: %v", err)
 	}
-	if config == nil {
+	if result.Config == nil {
 		t.Fatal("Config should not be nil")
 	}
 
 	// Verify it matches default
 	defaultCfg := DefaultConfig()
-	if config.Complexity.LowThreshold != defaultCfg.Complexity.LowThreshold {
+	if result.Config.Complexity.LowThreshold != defaultCfg.Complexity.LowThreshold {
 		t.Error("Loaded config should match default")
 	}
 }
 
-func TestLoadConfig_NonExistent(t *testing.T) {
-	_, err := LoadConfig("/nonexistent/path/config.yaml")
+func TestLoad_NonExistent(t *testing.T) {
+	_, err := Load("/nonexistent/path/config.yaml", "")
 	if err == nil {
 		t.Error("Expected error for non-existent config file")
+	}
+}
+
+func TestLoad_IgnoredKeys(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "jscan.config.json")
+	contents := `{
+  "complexity": {"low_threshold": 5, "medium_threshold": 10, "enabled": false},
+  "output": {"format": "json", "sort_by": "name"},
+  "analysis": {"exclude_patterns": ["dist"], "follow_symlinks": true},
+  "typo_group": {"whatever": 1}
+}`
+	if err := os.WriteFile(configPath, []byte(contents), 0644); err != nil {
+		t.Fatalf("Failed to write config file: %v", err)
+	}
+
+	result, err := Load(configPath, "")
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+
+	if result.Path != configPath {
+		t.Errorf("Path = %q, expected %q", result.Path, configPath)
+	}
+
+	// Keys that reach behavior are absent, keys that do not are listed, and an
+	// unknown key is reported like any other key that changes nothing.
+	expected := []string{
+		"analysis.follow_symlinks",
+		"complexity.enabled",
+		"output.format",
+		"typo_group.whatever",
+	}
+	if len(result.IgnoredKeys) != len(expected) {
+		t.Fatalf("IgnoredKeys = %v, expected %v", result.IgnoredKeys, expected)
+	}
+	for i, key := range expected {
+		if result.IgnoredKeys[i] != key {
+			t.Errorf("IgnoredKeys[%d] = %q, expected %q", i, result.IgnoredKeys[i], key)
+		}
+	}
+}
+
+func TestLoad_NoIgnoredKeysWithoutFile(t *testing.T) {
+	result, err := Load("", "")
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if result.Path != "" {
+		t.Errorf("Path = %q, expected empty when no file was found", result.Path)
+	}
+	if len(result.IgnoredKeys) != 0 {
+		t.Errorf("IgnoredKeys = %v, expected none", result.IgnoredKeys)
 	}
 }
 
@@ -371,8 +333,8 @@ func TestDefaultConstants(t *testing.T) {
 	if DefaultMaxComplexityLimit != 0 {
 		t.Errorf("DefaultMaxComplexityLimit should be 0, got %d", DefaultMaxComplexityLimit)
 	}
-	if DefaultDeadCodeMinSeverity != "warning" {
-		t.Errorf("DefaultDeadCodeMinSeverity should be 'warning', got '%s'", DefaultDeadCodeMinSeverity)
+	if DefaultDeadCodeMinSeverity != "info" {
+		t.Errorf("DefaultDeadCodeMinSeverity should be 'info', got '%s'", DefaultDeadCodeMinSeverity)
 	}
 	if DefaultDeadCodeContextLines != 3 {
 		t.Errorf("DefaultDeadCodeContextLines should be 3, got %d", DefaultDeadCodeContextLines)
@@ -431,17 +393,6 @@ func TestConfig_ValidDeadCodeSortBy(t *testing.T) {
 		if err != nil {
 			t.Errorf("DeadCode SortBy '%s' should be valid, got error: %v", sortBy, err)
 		}
-	}
-}
-
-func TestLoadConfigWithTarget_EmptyPaths(t *testing.T) {
-	// Both paths empty - should use defaults
-	config, err := LoadConfigWithTarget("", "")
-	if err != nil {
-		t.Fatalf("LoadConfigWithTarget failed: %v", err)
-	}
-	if config == nil {
-		t.Fatal("Config should not be nil")
 	}
 }
 

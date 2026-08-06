@@ -18,7 +18,7 @@ jscan uses a layered architecture inspired by **Clean Architecture**. Core analy
 │   analysis orchestration, formatting, output │
 ├──────────────────────────────────────────────┤
 │              Internal (internal/)            │
-│    parser, analyzers, config, reporter       │
+│    parser, analyzers, config                 │
 ├──────────────────────────────────────────────┤
 │               Domain (domain/)               │
 │      pure models and service interfaces       │
@@ -67,7 +67,6 @@ Business logic services that operate between the CLI and core analyzers:
 - **dot_formatter** - Generates DOT graph output for dependency visualization
 - **parallel_executor** - Manages concurrent file analysis
 - **progress_manager** - Terminal progress bar rendering
-- **config_loader** - Loads and validates jscan configuration
 - **browser** - Opens HTML reports in the system browser
 
 ### internal/parser -- Tree-sitter Integration
@@ -89,10 +88,6 @@ The heart of jscan. Contains all static analysis algorithms:
 - **Dependency graph** (`dependency_graph.go`) - Builds the full module dependency graph
 - **CBO and dependency metrics** (`cbo.go`, `coupling_metrics.go`) - Language-specific CBO analysis plus shared `core/graph` Martin metrics
 - **Circular dependency detection** (`circular_detector.go`) - Enriches `core/graph` Tarjan SCC results while excluding dynamic imports from load-time cycles
-
-### internal/reporter -- Output Formatting
-
-Formats complexity analysis results for different output targets.
 
 ### internal/config -- Configuration Management
 

@@ -144,21 +144,21 @@ Create a `jscan.config.json` or `.jscanrc.json` in your project root:
 {
   "complexity": {
     "low_threshold": 10,
-    "medium_threshold": 20,
-    "enabled": true
+    "medium_threshold": 20
   },
   "dead_code": {
-    "enabled": true,
-    "min_severity": "warning"
+    "min_severity": "info"
   },
-  "output": {
-    "format": "text",
-    "show_details": true
+  "analysis": {
+    "include_patterns": ["**/*.ts", "**/*.tsx"],
+    "exclude_patterns": ["node_modules", "dist"]
   }
 }
 ```
 
 > ⚙️ Run `jscan init` to generate a configuration file with core options
+
+Part of the schema is still validated but not yet acted on. jscan names those keys in a warning when your file sets one; the [configuration guide](https://jscan.codescan.dev/configuration/#which-keys-take-effect-today) lists them.
 
 ## Roadmap
 

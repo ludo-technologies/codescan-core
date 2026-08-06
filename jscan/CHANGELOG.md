@@ -10,10 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Report a project scale line (Micro, Small, Medium, Large, Enterprise, classified by analyzed file count) directly below the health score in the terminal summary, the text output, and the HTML report header. The `summary` object of the JSON and YAML output gains `project_scale` and `total_loc`. The scale is contextual only and does not affect the health score
+- Apply `analysis.include_patterns`, `analysis.recursive`, `complexity.report_unchanged`, `dead_code.min_severity`, `dead_code.sort_by`, and `output.sort_by`, which until now were validated and then ignored. Include patterns select from the file types jscan can parse, using the same matching rules as `exclude_patterns`; a file named directly on the command line is analyzed whether or not it matches
+- Warn on stderr, naming each key, when a configuration file sets keys that no command reads. Misspelled keys are reported the same way
 
 ### Changed
 
 - Adopt `core/clone` for grouping strategies, group dedup, Type-1/2 similarity gates, pair classification, and AST feature extraction; keep JS/TS adapters (fragment extraction, comment stripping, cost model, LSH orchestration)
+- Generate configuration files containing only keys that change behavior, so `jscan init` no longer produces a file that is mostly inert. The default for `dead_code.min_severity` becomes `info`, which is the severity floor the analysis has always used
+- Remove the unreachable `internal/reporter` package and `service/config_loader.go`, neither of which any command called
 
 ### Fixed
 

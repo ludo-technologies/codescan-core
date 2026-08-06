@@ -436,6 +436,21 @@ func formatFunctionCoverage(reported, parsed int) string {
 	return fmt.Sprintf("%d", reported)
 }
 
+// complexitySortLabel names the criterion the functions are listed by, taken
+// from the configuration the analysis reported back so that the heading cannot
+// drift away from the actual order.
+func complexitySortLabel(responseConfig interface{}) string {
+	cfg, ok := responseConfig.(map[string]interface{})
+	if !ok {
+		return string(domain.SortByComplexity)
+	}
+	sortBy, ok := cfg["sort_by"].(domain.SortCriteria)
+	if !ok || sortBy == "" {
+		return string(domain.SortByComplexity)
+	}
+	return string(sortBy)
+}
+
 func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityResponse, writer io.Writer) error {
 	fmt.Fprintf(writer, "\n=== Complexity Analysis ===\n\n")
 	fmt.Fprintf(writer, "Generated: %s\n", response.GeneratedAt)
@@ -459,7 +474,7 @@ func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityRes
 
 	// Function details
 	if len(response.Functions) > 0 {
-		fmt.Fprintf(writer, "Functions (sorted by complexity):\n")
+		fmt.Fprintf(writer, "Functions (sorted by %s):\n", complexitySortLabel(response.Config))
 		for _, fn := range response.Functions {
 			riskIndicator := ""
 			switch fn.RiskLevel {

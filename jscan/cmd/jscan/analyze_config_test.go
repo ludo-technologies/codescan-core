@@ -3,8 +3,10 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
+	"github.com/ludo-technologies/polyscan/jscan/domain"
 	"github.com/ludo-technologies/polyscan/jscan/internal/config"
 )
 
@@ -42,6 +44,55 @@ func writeComplexityFixture(t *testing.T) string {
 		t.Fatalf("failed to write fixture: %v", err)
 	}
 	return path
+}
+
+// TestRunComplexityAnalysisInternal_SortByFromConfig ensures output.sort_by from
+// the configuration file reaches the complexity request (part of #41).
+func TestRunComplexityAnalysisInternal_SortByFromConfig(t *testing.T) {
+	file := writeComplexityFixture(t)
+
+	cfg := config.DefaultConfig()
+	cfg.Output.SortBy = "name"
+
+	resp, err := runComplexityAnalysisInternal([]string{file}, cfg)
+	if err != nil {
+		t.Fatalf("analysis failed: %v", err)
+	}
+
+	names := make([]string, 0, len(resp.Functions))
+	for _, fn := range resp.Functions {
+		names = append(names, fn.Name)
+	}
+	if !sort.StringsAreSorted(names) {
+		t.Errorf("output.sort_by=name should sort by name, got %v", names)
+	}
+}
+
+// TestDeadCodeRequestFromConfig ensures the dead code keys that the analysis
+// honors reach the request rather than being replaced by fixed values (#41).
+func TestDeadCodeRequestFromConfig(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.DeadCode.MinSeverity = "critical"
+	cfg.DeadCode.SortBy = "file"
+
+	req := deadCodeRequest([]string{"a.ts"}, cfg)
+
+	if req.MinSeverity != domain.DeadCodeSeverityCritical {
+		t.Errorf("MinSeverity = %q, expected %q", req.MinSeverity, domain.DeadCodeSeverityCritical)
+	}
+	if req.SortBy != domain.DeadCodeSortByFile {
+		t.Errorf("SortBy = %q, expected %q", req.SortBy, domain.DeadCodeSortByFile)
+	}
+}
+
+// TestDeadCodeRequestDefaultsToInfo pins the default severity floor: the report
+// and the health score have always counted info-level findings.
+func TestDeadCodeRequestDefaultsToInfo(t *testing.T) {
+	req := deadCodeRequest([]string{"a.ts"}, config.DefaultConfig())
+
+	if req.MinSeverity != domain.DeadCodeSeverityInfo {
+		t.Errorf("MinSeverity = %q, expected %q", req.MinSeverity, domain.DeadCodeSeverityInfo)
+	}
 }
 
 // TestRunComplexityAnalysisInternal_MinComplexityFromConfig ensures output.min_complexity

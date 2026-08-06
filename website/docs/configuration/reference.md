@@ -2,7 +2,7 @@
 
 Every key jscan accepts, with its type, its default, and whether it currently changes anything.
 
-Keys marked :material-check-circle:{ title="Applied" } **Applied** affect the analysis. Keys marked :material-minus-circle:{ title="Not applied" } **Not applied** are parsed and validated, then ignored. The [configuration guide](index.md#which-keys-take-effect-today) explains why that distinction exists.
+Keys marked :material-check-circle:{ title="Applied" } **Applied** affect the analysis. Keys marked :material-minus-circle:{ title="Not applied" } **Not applied** are parsed and validated, then ignored, and jscan warns on stderr when your file sets one. The [configuration guide](index.md#which-keys-take-effect-today) explains why that distinction exists.
 
 All examples use JSON. YAML and TOML files accept the same keys with the same names.
 
@@ -54,9 +54,11 @@ Intended to switch complexity analysis off. No command reads it. Use `--select` 
 
 ### `complexity.report_unchanged`
 
-:material-minus-circle: **Not applied** &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default `true`
+:material-check-circle: **Applied** &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default `true`
 
-Intended to hide functions whose complexity is exactly 1. No command reads it. Set `output.min_complexity` to 2 for the same effect.
+Set it to `false` to leave out functions whose complexity is exactly 1, which on most codebases is the majority of them.
+
+This differs from setting `output.min_complexity` to 2 in what the counts say afterwards. A function dropped by `min_complexity` is still counted as parsed, so the report shows `12 reported / 340 parsed`; a function dropped by `report_unchanged` is not counted at all, because it was never meant to be part of the report.
 
 ---
 
@@ -94,9 +96,17 @@ Validated against `text`, `json`, `yaml`, `csv`, and `html`, then ignored. The o
 
 ### `output.sort_by`
 
-:material-minus-circle: **Not applied** &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default `"complexity"`
+:material-check-circle: **Applied** &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default `"complexity"`
 
-Validated against `name`, `complexity`, and `risk`, then ignored. Reports are always sorted by complexity, descending.
+Order of the functions in the complexity report. One of:
+
+| Value | Order |
+| --- | --- |
+| `complexity` | Complexity, highest first |
+| `name` | Function name, alphabetical |
+| `risk` | Risk band, high risk first |
+
+Functions the criterion cannot separate are ordered by source location, so the report is stable across runs. The text report names the criterion in its `Functions (sorted by ...)` heading.
 
 ### `output.directory`
 
@@ -167,15 +177,40 @@ Because your list replaces the default, start from the list above and append to 
 
 ### `analysis.include_patterns`
 
-:material-minus-circle: **Not applied** &nbsp;&middot;&nbsp; array of strings
+:material-check-circle: **Applied** &nbsp;&middot;&nbsp; array of strings
 
-The analyzed extensions are fixed at `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`, and `.cts`. This key is validated only to the extent that it must not be an empty array, which means you cannot delete it from a file that already has one.
+Which files to analyze, of those jscan can parse. A file is analyzed when it matches at least one pattern here and no pattern in `exclude_patterns`.
+
+The default is every extension jscan understands:
+
+```json
+{
+  "analysis": {
+    "include_patterns": [
+      "**/*.js",
+      "**/*.ts",
+      "**/*.jsx",
+      "**/*.tsx",
+      "**/*.mjs",
+      "**/*.cjs",
+      "**/*.mts",
+      "**/*.cts"
+    ]
+  }
+}
+```
+
+Patterns use the same matching rules as [`exclude_patterns`](#analysisexclude_patterns), including the part that catches people out: they are matched relative to the path you pass on the command line, so `src/**/*.ts` matches nothing when you run `jscan analyze src/`. Prefer a leading `**/` unless you mean to depend on where the command is run from.
+
+This key cannot widen the analysis. The analyzed extensions are fixed at `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`, and `.cts`, so adding `**/*.vue` changes nothing. It also must not be an empty array, which would select no files at all.
+
+A file you name directly on the command line is analyzed whether or not it matches, on the grounds that naming it is a clearer statement of intent than the config file is.
 
 ### `analysis.recursive`
 
-:material-minus-circle: **Not applied** &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default `true`
+:material-check-circle: **Applied** &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default `true`
 
-Directory walks are always recursive.
+Set it to `false` to analyze only the files directly inside each directory you pass, without descending into subdirectories. Files named directly on the command line are unaffected.
 
 ### `analysis.follow_symlinks`
 
@@ -187,17 +222,31 @@ Symbolic links are never followed.
 
 ## `dead_code`
 
-Every key in this group is :material-minus-circle: **not applied**. Dead code detection currently runs with a fixed configuration: it reports at info severity and above, sorts by severity, and enables all six unreachable-code checks.
+Two keys in this group reach the analysis. The rest are validated and ignored: every unreachable-code check always runs, context lines are never shown, and nothing is ignored.
 
-The keys are still validated, so an invalid value fails the run.
+### `dead_code.min_severity`
+
+:material-check-circle: **Applied** &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default `"info"`
+
+Findings below this severity are dropped before anything is reported or counted. One of `critical`, `warning`, or `info`.
+
+The default of `info` keeps every finding, which is what the health score is calibrated against. Raising it to `warning` also raises the score, so compare scores only between runs that used the same floor.
+
+Raising it changes `jscan check` as well: a run whose only findings fall below the floor passes.
+
+### `dead_code.sort_by`
+
+:material-check-circle: **Applied** &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default `"severity"`
+
+Order of the files in the dead code report. One of `severity`, `line`, `file`, or `function`. Files that the criterion cannot separate are ordered by path, so the report is stable across runs.
+
+### Not applied
 
 | Key | Type | Default | Validation |
 | --- | --- | --- | --- |
 | `dead_code.enabled` | boolean | `true` | |
-| `dead_code.min_severity` | string | `"warning"` | One of `critical`, `warning`, `info` |
 | `dead_code.show_context` | boolean | `false` | |
 | `dead_code.context_lines` | integer | `3` | From 0 to 20 |
-| `dead_code.sort_by` | string | `"severity"` | One of `severity`, `line`, `file`, `function` |
 | `dead_code.detect_after_return` | boolean | `true` | |
 | `dead_code.detect_after_break` | boolean | `true` | |
 | `dead_code.detect_after_continue` | boolean | `true` | |
