@@ -13,20 +13,22 @@ import (
 
 // HTMLData represents the data for HTML template
 type HTMLData struct {
-	GeneratedAt   string
-	Duration      int64
-	Version       string
-	Complexity    *domain.ComplexityResponse
-	DeadCode      *domain.DeadCodeResponse
-	Clone         *domain.CloneResponse
-	CBO           *domain.CBOResponse
-	Deps          *domain.DependencyGraphResponse
-	Summary       *domain.AnalyzeSummary
-	HasComplexity bool
-	HasDeadCode   bool
-	HasClone      bool
-	HasCBO        bool
-	HasDeps       bool
+	GeneratedAt      string
+	Duration         int64
+	Version          string
+	Complexity       *domain.ComplexityResponse
+	DeadCode         *domain.DeadCodeResponse
+	Clone            *domain.CloneResponse
+	CBO              *domain.CBOResponse
+	Deps             *domain.DependencyGraphResponse
+	ModuleQuality    []domain.ModuleQualityMetrics
+	Summary          *domain.AnalyzeSummary
+	HasComplexity    bool
+	HasDeadCode      bool
+	HasClone         bool
+	HasCBO           bool
+	HasDeps          bool
+	HasModuleQuality bool
 }
 
 // WriteHTML writes the analysis result as HTML
@@ -56,22 +58,25 @@ func (f *OutputFormatterImpl) WriteHTML(
 
 	// Build summary (reuse shared logic to avoid score divergence across output formats)
 	summary := BuildAnalyzeSummary(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse)
+	moduleQuality := BuildModuleQuality(complexityResponse, deadCodeResponse, depsResponse)
 
 	data := HTMLData{
-		GeneratedAt:   now.Format("2006-01-02 15:04:05"),
-		Duration:      duration.Milliseconds(),
-		Version:       version.Version,
-		Complexity:    complexityResponse,
-		DeadCode:      deadCodeResponse,
-		Clone:         cloneResponse,
-		CBO:           cboResponse,
-		Deps:          depsResponse,
-		Summary:       summary,
-		HasComplexity: complexityResponse != nil,
-		HasDeadCode:   deadCodeResponse != nil,
-		HasClone:      cloneResponse != nil,
-		HasCBO:        cboResponse != nil,
-		HasDeps:       depsResponse != nil,
+		GeneratedAt:      now.Format("2006-01-02 15:04:05"),
+		Duration:         duration.Milliseconds(),
+		Version:          version.Version,
+		Complexity:       complexityResponse,
+		DeadCode:         deadCodeResponse,
+		Clone:            cloneResponse,
+		CBO:              cboResponse,
+		Deps:             depsResponse,
+		ModuleQuality:    moduleQuality,
+		Summary:          summary,
+		HasComplexity:    complexityResponse != nil,
+		HasDeadCode:      deadCodeResponse != nil,
+		HasClone:         cloneResponse != nil,
+		HasCBO:           cboResponse != nil,
+		HasDeps:          depsResponse != nil,
+		HasModuleQuality: len(moduleQuality) > 0,
 	}
 
 	funcMap := template.FuncMap{
@@ -347,6 +352,9 @@ const htmlTemplate = `<!DOCTYPE html>
                 {{if .HasDeps}}
                 <button class="tab-button" onclick="showTab('deps', this)">Dependencies</button>
                 {{end}}
+                {{if .HasModuleQuality}}
+                <button class="tab-button" onclick="showTab('modules', this)">Modules</button>
+                {{end}}
             </div>
 
             <div id="summary" class="tab-content active">
@@ -468,6 +476,38 @@ const htmlTemplate = `<!DOCTYPE html>
                         <div class="metric-label">Maximum</div>
                     </div>
                 </div>
+
+                {{if .Complexity.ByDirectory}}
+                <h3>Directory Complexity</h3>
+                <div style="overflow-x: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Directory</th>
+                                <th>Functions</th>
+                                <th>Avg CC</th>
+                                <th>Max CC</th>
+                                <th>High Risk</th>
+                                <th>Avg Nesting</th>
+                                <th>Max Nesting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .Complexity.ByDirectory}}
+                            <tr>
+                                <td>{{.DirectoryPath}}</td>
+                                <td>{{.FunctionCount}}</td>
+                                <td>{{printf "%.2f" .AverageComplexity}}</td>
+                                <td>{{.MaxComplexity}}</td>
+                                <td>{{.HighRiskFunctionCount}}</td>
+                                <td>{{printf "%.2f" .AverageNestingDepth}}</td>
+                                <td>{{.MaxNestingDepth}}</td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
 
                 <h3>Functions</h3>
                 <table class="table">
@@ -750,6 +790,52 @@ const htmlTemplate = `<!DOCTYPE html>
                 <p style="color: #4caf50; font-weight: bold; margin-top: 20px;">✓ No circular dependencies detected</p>
                 {{end}}
                 {{end}}
+                {{end}}
+            </div>
+            {{end}}
+
+            {{if .HasModuleQuality}}
+            <div id="modules" class="tab-content">
+                <h2>Module Quality Hotspots</h2>
+                <p style="color: #666; margin-bottom: 20px;">Per-module metrics ranked by high-risk functions, maximum complexity, average complexity, and dead-code findings</p>
+                <div style="overflow-x: auto;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Module</th>
+                                <th>File</th>
+                                <th>LOC</th>
+                                <th>Analyzed</th>
+                                <th>Avg CC</th>
+                                <th>Max CC</th>
+                                <th>High Risk</th>
+                                <th>Handlers</th>
+                                <th>Dead Findings</th>
+                                <th>Dead Blocks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range $i, $module := .ModuleQuality}}
+                            {{if lt $i 20}}
+                            <tr>
+                                <td>{{if $module.ModuleName}}{{$module.ModuleName}}{{else}}&mdash;{{end}}</td>
+                                <td>{{$module.FilePath}}</td>
+                                <td>{{$module.LinesOfCode}}</td>
+                                <td>{{$module.AnalyzedFunctionCount}}</td>
+                                <td>{{printf "%.2f" $module.AverageComplexity}}</td>
+                                <td>{{$module.MaxComplexity}}</td>
+                                <td>{{$module.HighRiskFunctionCount}}</td>
+                                <td>{{$module.ExceptionHandlerCount}}</td>
+                                <td>{{$module.DeadCodeFindingCount}}</td>
+                                <td>{{$module.DeadCodeBlockCount}}</td>
+                            </tr>
+                            {{end}}
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{if gt (len .ModuleQuality) 20}}
+                <p style="color: #666; margin-top: 10px;">Showing top 20 of {{len .ModuleQuality}} modules</p>
                 {{end}}
             </div>
             {{end}}

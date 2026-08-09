@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -40,7 +41,8 @@ func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.Complexi
 	var allFunctions []domain.FunctionComplexity
 	var warnings []string
 	var errors []string
-	filesProcessed := 0
+	var analyzedPaths []string
+	linesOfCode := make(map[string]int, len(req.Paths))
 
 	// Set up progress tracking (use no-op if progress manager not set)
 	var task domain.TaskProgress = &NoOpTaskProgress{}
@@ -50,45 +52,82 @@ func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.Complexi
 	defer task.Complete()
 
 	results := analyzeFilesConcurrently(ctx, req.Paths, task,
-		func(ctx context.Context, filePath string) fileAnalysis[[]domain.FunctionComplexity] {
-			functions, fileWarnings, fileErrors := s.analyzeFile(ctx, filePath, req)
-			return fileAnalysis[[]domain.FunctionComplexity]{value: functions, warnings: fileWarnings, errors: fileErrors}
+		func(ctx context.Context, filePath string) fileAnalysis[fileComplexity] {
+			file, fileWarnings, fileErrors := s.analyzeFile(ctx, filePath, req)
+			return fileAnalysis[fileComplexity]{value: file, warnings: fileWarnings, errors: fileErrors}
 		})
 	if ctx.Err() != nil {
 		return nil, fmt.Errorf("complexity analysis cancelled: %w", ctx.Err())
 	}
 
-	for _, result := range results {
+	for index, result := range results {
 		if len(result.errors) > 0 {
 			errors = append(errors, result.errors...)
 			continue // Skip this file but continue with others
 		}
 
-		allFunctions = append(allFunctions, result.value...)
+		allFunctions = append(allFunctions, result.value.functions...)
 		warnings = append(warnings, result.warnings...)
-		filesProcessed++
+		filePath := req.Paths[index]
+		analyzedPaths = append(analyzedPaths, filePath)
+		linesOfCode[filepath.Clean(filePath)] = result.value.linesOfCode
 	}
 
 	if len(allFunctions) == 0 {
 		return nil, domain.NewAnalysisError("no functions found to analyze", nil)
 	}
 
+	// Roll up per module before filtering: the rollups describe the analyzed
+	// population, not the subset min/max complexity leaves visible.
+	moduleRollups := moduleComplexityRollups(allFunctions, linesOfCode)
+
 	// Filter and sort results
 	filteredFunctions, functionsParsed := s.filterFunctions(allFunctions, req)
 	sortedFunctions := s.sortFunctions(filteredFunctions, req.SortBy)
 
+	byDirectory, err := aggregateDirectoryComplexity(sortedFunctions, analyzedPaths)
+	if err != nil {
+		return nil, domain.NewAnalysisError("failed to aggregate directory complexity", err)
+	}
+
 	// Generate summary
-	summary := s.generateSummary(sortedFunctions, filesProcessed, req, functionsParsed)
+	summary := s.generateSummary(sortedFunctions, len(analyzedPaths), req, functionsParsed)
 
 	return &domain.ComplexityResponse{
-		Functions:   sortedFunctions,
-		Summary:     summary,
-		Warnings:    warnings,
-		Errors:      errors,
-		GeneratedAt: time.Now().Format(time.RFC3339),
-		Version:     version.Version,
-		Config:      s.buildConfigForResponse(req),
+		Functions:     sortedFunctions,
+		ByDirectory:   byDirectory,
+		Summary:       summary,
+		ModuleRollups: moduleRollups,
+		Warnings:      warnings,
+		Errors:        errors,
+		GeneratedAt:   time.Now().Format(time.RFC3339),
+		Version:       version.Version,
+		Config:        s.buildConfigForResponse(req),
 	}, nil
+}
+
+// moduleComplexityRollups joins the per-module complexity aggregation with the
+// line counts only this service holds. Files that parsed without yielding a
+// single function still get an entry, so the module report can show a large
+// file that has no functions to blame.
+func moduleComplexityRollups(functions []domain.FunctionComplexity, linesOfCode map[string]int) map[string]domain.ModuleComplexityMetrics {
+	rollups := domain.AggregateComplexityByModule(functions)
+	for path, lines := range linesOfCode {
+		metrics := rollups[path]
+		metrics.LinesOfCode = lines
+		rollups[path] = metrics
+	}
+	return rollups
+}
+
+// aggregateDirectoryComplexity reports the directory rollups relative to the
+// deepest directory that contains every analyzed file.
+func aggregateDirectoryComplexity(functions []domain.FunctionComplexity, analyzedPaths []string) (domain.DirectoryComplexityMetricsList, error) {
+	projectRoot, err := domain.ComplexityDirectoryRoot(analyzedPaths)
+	if err != nil {
+		return nil, err
+	}
+	return domain.AggregateComplexityByDirectory(functions, projectRoot)
 }
 
 // AnalyzeFile analyzes a single JavaScript/TypeScript file
@@ -100,9 +139,29 @@ func (s *ComplexityServiceImpl) AnalyzeFile(ctx context.Context, filePath string
 	return s.Analyze(ctx, singleFileReq)
 }
 
+// fileComplexity is everything complexity analysis derives from one file: the
+// per-function results plus the file-level size the module rollups report.
+type fileComplexity struct {
+	functions   []domain.FunctionComplexity
+	linesOfCode int
+}
+
+// countSourceLines counts the physical lines of a source file. The last line
+// counts whether or not it ends in a newline, matching pyscn so module line
+// counts mean the same thing in both tools' reports.
+func countSourceLines(content []byte) int {
+	lines := 1
+	for _, b := range content {
+		if b == '\n' {
+			lines++
+		}
+	}
+	return lines
+}
+
 // analyzeFile performs complexity analysis on a single file
-func (s *ComplexityServiceImpl) analyzeFile(ctx context.Context, filePath string, req domain.ComplexityRequest) ([]domain.FunctionComplexity, []string, []string) {
-	var functions []domain.FunctionComplexity
+func (s *ComplexityServiceImpl) analyzeFile(ctx context.Context, filePath string, req domain.ComplexityRequest) (fileComplexity, []string, []string) {
+	var file fileComplexity
 	var warnings []string
 	var errors []string
 
@@ -110,14 +169,15 @@ func (s *ComplexityServiceImpl) analyzeFile(ctx context.Context, filePath string
 	content, err := s.readFile(filePath)
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("[%s] Failed to read file: %v", filePath, err))
-		return functions, warnings, errors
+		return file, warnings, errors
 	}
+	file.linesOfCode = countSourceLines(content)
 
 	// Parse JavaScript/TypeScript
 	ast, err := parser.ParseForLanguage(filePath, content)
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("[%s] Failed to parse: %v", filePath, err))
-		return functions, warnings, errors
+		return file, warnings, errors
 	}
 
 	// Build CFGs for all functions
@@ -125,7 +185,7 @@ func (s *ComplexityServiceImpl) analyzeFile(ctx context.Context, filePath string
 	cfgs, err := builder.BuildAll(ast)
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("[%s] Failed to build CFG: %v", filePath, err))
-		return functions, warnings, errors
+		return file, warnings, errors
 	}
 
 	// Analyze complexity for each function
@@ -156,10 +216,10 @@ func (s *ComplexityServiceImpl) analyzeFile(ctx context.Context, filePath string
 			RiskLevel: domain.RiskLevel(result.RiskLevel),
 		}
 
-		functions = append(functions, funcComplexity)
+		file.functions = append(file.functions, funcComplexity)
 	}
 
-	return functions, warnings, errors
+	return file, warnings, errors
 }
 
 // filterFunctions returns the visible functions plus the count of functions that

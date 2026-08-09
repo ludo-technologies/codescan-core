@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -66,6 +67,24 @@ func scanFileForDeadCode(moduleAnalyzer *analyzer.ModuleAnalyzer, filePath strin
 	return scan
 }
 
+// moduleDeadCodeRollup accumulates the per-module dead-code counts the unified
+// analyze report joins with complexity. It is fed from the detector output
+// rather than from the response, so raising min_severity hides findings from
+// the report without shrinking a module's measured dead-code weight.
+type moduleDeadCodeRollup map[string]domain.ModuleDeadCodeMetrics
+
+func newModuleDeadCodeRollup() moduleDeadCodeRollup {
+	return make(moduleDeadCodeRollup)
+}
+
+func (r moduleDeadCodeRollup) add(filePath string, findings, blocks int) {
+	key := filepath.Clean(filePath)
+	metrics := r[key]
+	metrics.DeadCodeFindingCount += findings
+	metrics.DeadCodeBlockCount += blocks
+	r[key] = metrics
+}
+
 // AnalyzeDeadCode runs dead code analysis using the shared aggregation path.
 func AnalyzeDeadCode(ctx context.Context, req domain.DeadCodeRequest) (*domain.DeadCodeResponse, error) {
 	return AnalyzeDeadCodeWithTask(ctx, req, nil)
@@ -105,6 +124,13 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 	allModuleInfos := make(map[string]*domain.ModuleInfo)
 	analyzedFiles := make(map[string]bool)
 	unusedFuncDedup := make(map[string]map[int]bool) // filePath -> startLine -> true
+	// The module rollups count what the detectors produced, so they need their
+	// own dedup of the same locations: unusedFuncDedup only remembers findings
+	// that passed the severity filter, which is the right rule for the report
+	// (a hidden finding must not suppress the one remaining report of that
+	// location) but would let a dropped finding be counted twice here.
+	rollup := newModuleDeadCodeRollup()
+	rollupFuncDedup := make(map[string]map[int]bool)
 
 	addFileLevelFinding := func(f domain.DeadCodeFinding) {
 		if !f.Severity.IsAtLeast(minSeverity) {
@@ -170,6 +196,8 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 		fileDeadBlocks := 0
 		fileTotalBlocks := 0
 
+		rollup.add(filePath, len(scan.value.unusedImports), 0)
+
 		for _, finding := range scan.value.unusedImports {
 			f := domain.DeadCodeFinding{
 				Location: domain.DeadCodeLocation{
@@ -215,6 +243,7 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 			totalFunctions++
 			fileTotalBlocks += result.TotalBlocks
 			fileDeadBlocks += result.DeadBlocks
+			rollup.add(filePath, len(result.Findings), result.DeadBlocks)
 
 			var findings []domain.DeadCodeFinding
 			for _, finding := range result.Findings {
@@ -315,6 +344,12 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 			Description: finding.Description,
 		}
 
+		rollup.add(finding.FilePath, 1, 0)
+		if rollupFuncDedup[finding.FilePath] == nil {
+			rollupFuncDedup[finding.FilePath] = make(map[int]bool)
+		}
+		rollupFuncDedup[finding.FilePath][finding.StartLine] = true
+
 		addFileLevelFinding(f)
 		if f.Severity.IsAtLeast(minSeverity) {
 			if unusedFuncDedup[finding.FilePath] == nil {
@@ -330,6 +365,10 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 		case <-ctx.Done():
 			return nil, fmt.Errorf("dead code analysis cancelled: %w", ctx.Err())
 		default:
+		}
+
+		if lines, ok := rollupFuncDedup[finding.FilePath]; !ok || !lines[finding.StartLine] {
+			rollup.add(finding.FilePath, 1, 0)
 		}
 
 		if lines, ok := unusedFuncDedup[finding.FilePath]; ok && lines[finding.StartLine] {
@@ -365,6 +404,7 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 			Severity:    domain.DeadCodeSeverity(finding.Severity),
 			Description: finding.Description,
 		}
+		rollup.add(finding.FilePath, 1, 0)
 		addFileLevelFinding(f)
 	}
 
@@ -423,12 +463,13 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 	}
 
 	return &domain.DeadCodeResponse{
-		Files:       files,
-		Summary:     summary,
-		Warnings:    warnings,
-		Errors:      errors,
-		GeneratedAt: time.Now().Format(time.RFC3339),
-		Version:     version.Version,
+		Files:         files,
+		Summary:       summary,
+		ModuleRollups: rollup,
+		Warnings:      warnings,
+		Errors:        errors,
+		GeneratedAt:   time.Now().Format(time.RFC3339),
+		Version:       version.Version,
 		Config: map[string]interface{}{
 			"min_severity":   minSeverity,
 			"sort_by":        sortBy,
