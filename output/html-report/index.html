@@ -1785,7 +1785,7 @@
 </span></code></pre></div>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
 <p>Above the tabs, the report header carries the health score badge, and directly below it the project scale line reports how large the analyzed repository is. See <a href="../health-score/#project-scale">Project scale</a> for the size labels.</p>
-<p>The report opens on a summary and has one tab per analysis. Tabs appear only for the analyses that ran, so a report produced with <code>--select complexity</code> has two tabs rather than six.</p>
+<p>The report opens on a summary and has one tab per analysis, plus a Modules tab that joins them. Tabs appear only for the analyses that ran, so a report produced with <code>--select complexity</code> has three tabs rather than seven.</p>
 <table>
 <thead>
 <tr>
@@ -1800,7 +1800,7 @@
 </tr>
 <tr>
 <td>Complexity</td>
-<td>Function count, average and maximum complexity, and a table of functions</td>
+<td>Function count, average and maximum complexity, a table of directory rollups, and a table of functions</td>
 </tr>
 <tr>
 <td>Dead Code</td>
@@ -1818,9 +1818,13 @@
 <td>Dependencies</td>
 <td>Module count, entry points, maximum depth, and any circular imports</td>
 </tr>
+<tr>
+<td>Modules</td>
+<td>Per-file quality hotspots joined across the analyses that ran</td>
+</tr>
 </tbody>
 </table>
-<p>Each tab header carries that category's score out of 100, colored by quality band, so you can see where the problem is without opening every tab.</p>
+<p>Each analysis tab header carries that category's score out of 100, colored by quality band, so you can see where the problem is without opening every tab. The Modules tab has no score of its own: it reports where the other categories' problems are concentrated rather than a category.</p>
 <h2 id="row-limits">Row limits<a class="headerlink" href="#row-limits" title="Permanent link">&para;</a></h2>
 <p>Tables are truncated so that the file stays a reasonable size on a large codebase.</p>
 <table>
@@ -1851,6 +1855,16 @@
 <td>Circular dependencies</td>
 <td>10</td>
 <td>A line below the table reports the true total</td>
+</tr>
+<tr>
+<td>Modules</td>
+<td>20</td>
+<td>A line below the table reports the true total</td>
+</tr>
+<tr>
+<td>Directory complexity</td>
+<td>no limit</td>
+<td>One row per directory that had a reported function</td>
 </tr>
 <tr>
 <td>Dead code, per function</td>
