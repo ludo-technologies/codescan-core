@@ -34,7 +34,10 @@ func NewComplexityServiceWithProgress(cfg *config.ComplexityConfig, pm domain.Pr
 	}
 }
 
-// Analyze performs complexity analysis on multiple files
+// Analyze performs complexity analysis on multiple files. Each file is read,
+// parsed, and analyzed inside the fan-out and released as soon as its results
+// are extracted, so peak memory holds only as many parse trees as there are
+// workers — use AnalyzeSnapshot when several analyses should share the trees.
 func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.ComplexityRequest) (*domain.ComplexityResponse, error) {
 	// Set up progress tracking (use no-op if progress manager not set)
 	var task domain.TaskProgress = &NoOpTaskProgress{}
@@ -43,30 +46,37 @@ func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.Complexi
 	}
 	defer task.Complete()
 
-	snapshot := BuildProjectSnapshot(ctx, req.Paths, task)
-	return s.AnalyzeSnapshot(ctx, snapshot, req)
+	results := analyzeProjectFilesFromPaths(ctx, req.Paths, task, s.analyzeProjectFile)
+	return s.buildResponse(ctx, results, req.Paths, req)
 }
 
 // AnalyzeSnapshot performs complexity analysis on already parsed project files.
+// The snapshot defines the analyzed file set; req.Paths, when set, must name
+// the same files.
 func (s *ComplexityServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.ComplexityRequest) (*domain.ComplexityResponse, error) {
-	if snapshot == nil {
-		return nil, domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+		return nil, err
+	}
+
+	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[fileComplexity] {
+			return s.analyzeProjectFile(file)
+		})
+	return s.buildResponse(ctx, results, snapshot.Paths(), req)
+}
+
+// buildResponse aggregates per-file results, in input order, into the response
+// both entry points share. paths must parallel results.
+func (s *ComplexityServiceImpl) buildResponse(ctx context.Context, results []fileAnalysis[fileComplexity], paths []string, req domain.ComplexityRequest) (*domain.ComplexityResponse, error) {
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("complexity analysis cancelled: %w", ctx.Err())
 	}
 
 	var allFunctions []domain.FunctionComplexity
 	var warnings []string
 	var errors []string
 	var analyzedPaths []string
-	linesOfCode := make(map[string]int, len(snapshot.Files))
-
-	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
-		func(_ context.Context, file *ProjectFile) fileAnalysis[fileComplexity] {
-			value, fileWarnings, fileErrors := s.analyzeProjectFile(file)
-			return fileAnalysis[fileComplexity]{value: value, warnings: fileWarnings, errors: fileErrors}
-		})
-	if ctx.Err() != nil {
-		return nil, fmt.Errorf("complexity analysis cancelled: %w", ctx.Err())
-	}
+	linesOfCode := make(map[string]int, len(paths))
 
 	for index, result := range results {
 		if len(result.errors) > 0 {
@@ -76,7 +86,7 @@ func (s *ComplexityServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *P
 
 		allFunctions = append(allFunctions, result.value.functions...)
 		warnings = append(warnings, result.warnings...)
-		filePath := snapshot.Files[index].Path
+		filePath := paths[index]
 		analyzedPaths = append(analyzedPaths, filePath)
 		linesOfCode[filepath.Clean(filePath)] = result.value.linesOfCode
 	}
@@ -168,28 +178,31 @@ func countSourceLines(content []byte) int {
 }
 
 // analyzeProjectFile performs complexity analysis on a single parsed file.
-func (s *ComplexityServiceImpl) analyzeProjectFile(projectFile *ProjectFile) (fileComplexity, []string, []string) {
+func (s *ComplexityServiceImpl) analyzeProjectFile(projectFile *ProjectFile) fileAnalysis[fileComplexity] {
 	var file fileComplexity
-	var warnings []string
-	var errors []string
 
 	filePath := projectFile.Path
 	if projectFile.ReadErr != nil {
-		errors = append(errors, fmt.Sprintf("[%s] Failed to read file: %v", filePath, projectFile.ReadErr))
-		return file, warnings, errors
+		return fileAnalysis[fileComplexity]{
+			errors: []string{fmt.Sprintf("[%s] Failed to read file: %v", filePath, projectFile.ReadErr)},
+		}
 	}
 	file.linesOfCode = countSourceLines(projectFile.Content)
 
 	if projectFile.ParseErr != nil {
-		errors = append(errors, fmt.Sprintf("[%s] Failed to parse: %v", filePath, projectFile.ParseErr))
-		return file, warnings, errors
+		return fileAnalysis[fileComplexity]{
+			value:  file,
+			errors: []string{fmt.Sprintf("[%s] Failed to parse: %v", filePath, projectFile.ParseErr)},
+		}
 	}
 
 	// Build (or reuse) the CFGs for all functions
 	cfgs, err := projectFile.CFGs()
 	if err != nil {
-		errors = append(errors, fmt.Sprintf("[%s] Failed to build CFG: %v", filePath, err))
-		return file, warnings, errors
+		return fileAnalysis[fileComplexity]{
+			value:  file,
+			errors: []string{fmt.Sprintf("[%s] Failed to build CFG: %v", filePath, err)},
+		}
 	}
 
 	// Analyze complexity for each function
@@ -223,7 +236,7 @@ func (s *ComplexityServiceImpl) analyzeProjectFile(projectFile *ProjectFile) (fi
 		file.functions = append(file.functions, funcComplexity)
 	}
 
-	return file, warnings, errors
+	return fileAnalysis[fileComplexity]{value: file}
 }
 
 // filterFunctions returns the visible functions plus the count of functions that

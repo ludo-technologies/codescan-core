@@ -64,19 +64,19 @@ is the median of three runs on an otherwise idle machine.
 | `packages/reactivity/src` | 3.9k | 0.04 s | ~98k LOC/s | 44 MB |
 | `packages/compiler-core/src` | 11k | 0.13 s | ~85k LOC/s | 95 MB |
 | `packages/runtime-core/src` | 21k | 0.18 s | ~117k LOC/s | 154 MB |
-| `packages/` (whole repo) | 147k | 7.2 s | ~20k LOC/s | 1.14 GB |
+| `packages/` (whole repo) | 147k | 7.4 s | ~20k LOC/s | 1.05 GB |
 
 Throughput drops on the largest corpus because clone detection's candidate set
 grows faster than the source does — the other four analyses stay flat.
 
 For scale, the same machine and corpus before the shared snapshot (each
 analysis parsing independently) measured 8.5 s and 1.86 GB peak RSS on the
-whole repo: sharing one set of parse trees cut peak memory by ~39% and, on the
+whole repo: sharing one set of parse trees cut peak memory by ~44% and, on the
 parse-bound smaller corpora, wall time by a third or more.
 
 Per-analysis figures on the full 147k-line corpus, measured in isolation
-(`BenchmarkPipeline*`, same machine; each standalone run builds its own
-snapshot, so these include one parse pass):
+(`BenchmarkPipeline*`, same machine; a standalone run reads and parses inline,
+so these include one parse pass):
 
 | Analysis | Wall time | Throughput |
 |---|---|---|
@@ -96,19 +96,26 @@ fragment set, which are both held for the whole run:
 
 - Roughly **7–11 MB per 1k lines** of TypeScript at default settings, with the
   ratio improving as the corpus grows.
-- 147k lines peaks around 1.14 GB.
-- All analyses share one set of parse trees through `service.ProjectSnapshot`;
-  the snapshot lives until the last analysis finishes, so peak memory carries
-  one parse tree per file regardless of how many analyses run. What `--select`
-  still changes is everything past parsing — clone fragments and APTED trees
-  are the largest single block.
+- 147k lines peaks around 1.05 GB.
+- A run with several analyses selected shares one set of parse trees through
+  `service.ProjectSnapshot`; the snapshot lives until the last analysis
+  finishes, so peak memory carries one parse tree per file regardless of how
+  many analyses run. What `--select` then changes is everything past parsing —
+  clone fragments and APTED trees are the largest single block.
+- A run with a single analysis selected has nobody to share with and skips the
+  snapshot: each file is read, parsed, and analyzed inside the fan-out and
+  released as soon as its results are extracted, so only about one parse tree
+  per worker is live at a time. On the 147k-line corpus a complexity-only or
+  deadcode-only run peaks under 140 MB. The exceptions hold whole-project
+  state by nature: `deps` needs every module's AST at once to build the graph,
+  and `clone` keeps every fragment's AST until it is converted for APTED.
 - Clone detection releases each fragment's parser AST reference as soon as its
-  APTED tree is built. Before the shared snapshot this let clone-only runs
-  free parse trees during fragment preparation; now the snapshot owns the
-  trees and holds them for the run, and the release's remaining job is to keep
-  fragments from pinning them beyond it. It depends on the tree converter not
-  copying parser nodes into `TreeNode.OriginalNode`: parser nodes carry a
-  parent pointer, so retaining one pins the whole file's AST.
+  APTED tree is built, so in a clone-only run parse trees are freed during
+  fragment preparation, before the APTED sweep that dominates the run. In a
+  shared-snapshot run the snapshot owns the trees instead, and the release's
+  job is to keep fragments from pinning them beyond it. It depends on the tree
+  converter not copying parser nodes into `TreeNode.OriginalNode`: parser
+  nodes carry a parent pointer, so retaining one pins the whole file's AST.
 
 Memory scales with source size, not with project history or file count.
 

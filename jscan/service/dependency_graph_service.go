@@ -45,16 +45,21 @@ func NewDependencyGraphServiceWithDefaults() *DependencyGraphServiceImpl {
 	}
 }
 
-// Analyze performs complete dependency graph analysis
+// Analyze performs complete dependency graph analysis. Unlike the other
+// analyses there is no per-file streaming variant: graph construction needs
+// every module's AST at once, so a single-analysis run holds the same one set
+// of parse trees a shared snapshot would.
 func (s *DependencyGraphServiceImpl) Analyze(ctx context.Context, req domain.DependencyGraphRequest) (*domain.DependencyGraphResponse, error) {
 	snapshot := BuildProjectSnapshot(ctx, req.Paths, nil)
 	return s.AnalyzeSnapshot(ctx, snapshot, req)
 }
 
-// AnalyzeSnapshot performs dependency graph analysis on already parsed project files.
+// AnalyzeSnapshot performs dependency graph analysis on already parsed project
+// files. The snapshot defines the analyzed file set; req.Paths, when set, must
+// name the same files.
 func (s *DependencyGraphServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.DependencyGraphRequest) (*domain.DependencyGraphResponse, error) {
-	if snapshot == nil {
-		return nil, domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+		return nil, err
 	}
 
 	var warnings []string
@@ -277,11 +282,10 @@ func (s *DependencyGraphServiceImpl) AnalyzeSingleFile(ctx context.Context, file
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	// Parse file
-	p := parser.NewParser()
-	defer p.Close()
-
-	ast, err := p.ParseString(string(content))
+	// Parse with the language-appropriate grammar and the real file name, the
+	// same way the snapshot parses for Analyze, so both entry points report
+	// identical locations and module contents.
+	ast, err := parser.ParseForLanguage(filePath, content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse file: %w", err)
 	}

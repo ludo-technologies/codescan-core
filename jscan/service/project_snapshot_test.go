@@ -171,6 +171,31 @@ function branching(a) {
 	}
 }
 
+// TestAnalyzeSnapshot_RejectsMismatchedPaths pins the snapshot entry points'
+// contract: the snapshot defines the analyzed file set, so a request naming
+// different files must fail instead of silently analyzing the snapshot.
+func TestAnalyzeSnapshot_RejectsMismatchedPaths(t *testing.T) {
+	path := writeSnapshotFixture(t, "a.js", `function a() { return 1; }`)
+	snapshot := BuildProjectSnapshot(context.Background(), []string{path}, nil)
+
+	svc := NewComplexityService(complexityTestConfig())
+	req := domain.ComplexityRequest{Paths: []string{"other.js"}}
+
+	if _, err := svc.AnalyzeSnapshot(context.Background(), snapshot, req); err == nil {
+		t.Error("paths not in the snapshot should be rejected")
+	}
+
+	tooMany := domain.ComplexityRequest{Paths: []string{path, "extra.js"}}
+	if _, err := svc.AnalyzeSnapshot(context.Background(), snapshot, tooMany); err == nil {
+		t.Error("a request naming more paths than the snapshot holds should be rejected")
+	}
+
+	matching := domain.ComplexityRequest{Paths: []string{path}}
+	if _, err := svc.AnalyzeSnapshot(context.Background(), snapshot, matching); err != nil {
+		t.Errorf("matching paths should be accepted: %v", err)
+	}
+}
+
 func TestAnalyzeSnapshot_NilSnapshot(t *testing.T) {
 	svc := NewComplexityService(complexityTestConfig())
 

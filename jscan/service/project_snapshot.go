@@ -61,6 +61,62 @@ func BuildProjectSnapshot(ctx context.Context, paths []string, progress domain.T
 	return &ProjectSnapshot{Files: files}
 }
 
+// analyzeProjectFilesFromPaths reads, parses, and analyzes each path inside the
+// fan-out, so every analysis sees the same *ProjectFile shape as the snapshot
+// path while each file's parse tree is released as soon as analyze returns.
+// This is the memory-lean pipeline for a single analysis; a run that shares
+// files across several analyses builds a ProjectSnapshot instead.
+func analyzeProjectFilesFromPaths[T any](
+	ctx context.Context,
+	paths []string,
+	progress domain.TaskProgress,
+	analyze func(*ProjectFile) fileAnalysis[T],
+) []fileAnalysis[T] {
+	return analyzeFilesConcurrently(ctx, paths, progress,
+		func(_ context.Context, path string) fileAnalysis[T] {
+			return analyze(buildProjectFile(path))
+		})
+}
+
+// Paths returns the snapshot's file paths in analysis order.
+func (s *ProjectSnapshot) Paths() []string {
+	paths := make([]string, len(s.Files))
+	for index, file := range s.Files {
+		paths[index] = file.Path
+	}
+	return paths
+}
+
+// validateRequestPaths guards the AnalyzeSnapshot entry points: the snapshot
+// defines the analyzed file set, so a request that names paths must name the
+// snapshot's files — anything else means the caller built the snapshot from a
+// different selection than it thinks it is analyzing. An empty path list
+// defers to the snapshot entirely.
+func (s *ProjectSnapshot) validateRequestPaths(paths []string) error {
+	if s == nil {
+		return domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	}
+	if len(paths) == 0 {
+		return nil
+	}
+	if len(paths) != len(s.Files) {
+		return domain.NewInvalidInputError(
+			fmt.Sprintf("request names %d paths but the project snapshot holds %d files", len(paths), len(s.Files)), nil)
+	}
+
+	inSnapshot := make(map[string]bool, len(s.Files))
+	for _, file := range s.Files {
+		inSnapshot[file.Path] = true
+	}
+	for _, path := range paths {
+		if !inSnapshot[path] {
+			return domain.NewInvalidInputError(
+				fmt.Sprintf("request path %s is not in the project snapshot", path), nil)
+		}
+	}
+	return nil
+}
+
 func buildProjectFile(path string) *ProjectFile {
 	file := &ProjectFile{Path: path}
 

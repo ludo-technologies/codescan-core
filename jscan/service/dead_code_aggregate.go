@@ -59,7 +59,7 @@ func scanFileForDeadCode(moduleAnalyzer *analyzer.ModuleAnalyzer, file *ProjectF
 		scan.value.moduleInfo = moduleInfo
 	}
 	if moduleInfo != nil {
-		scan.value.unusedImports = analyzer.DetectUnusedImports(ast, moduleInfo, filePath)
+		scan.value.unusedImports = analyzer.DetectUnusedImports(ast, moduleInfo, filePath, file.Content)
 	}
 
 	return scan
@@ -88,23 +88,47 @@ func AnalyzeDeadCode(ctx context.Context, req domain.DeadCodeRequest) (*domain.D
 	return AnalyzeDeadCodeWithTask(ctx, req, nil)
 }
 
-// AnalyzeDeadCodeWithTask runs dead code analysis with optional progress reporting.
+// AnalyzeDeadCodeWithTask runs dead code analysis with optional progress
+// reporting. Each file is read, parsed, and scanned inside the fan-out and
+// released as soon as its scan is extracted — use AnalyzeDeadCodeSnapshot when
+// several analyses should share the parse trees.
 func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, task domain.TaskProgress) (*domain.DeadCodeResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	snapshot := BuildProjectSnapshot(ctx, req.Paths, task)
-	return AnalyzeDeadCodeSnapshot(ctx, snapshot, req)
+	moduleAnalyzer := analyzer.NewModuleAnalyzer(nil)
+	scanned := analyzeProjectFilesFromPaths(ctx, req.Paths, task,
+		func(file *ProjectFile) fileAnalysis[*scannedFile] {
+			return scanFileForDeadCode(moduleAnalyzer, file)
+		})
+	return aggregateDeadCodeScans(ctx, scanned, req.Paths, req)
 }
 
-// AnalyzeDeadCodeSnapshot runs dead code analysis on already parsed project files.
+// AnalyzeDeadCodeSnapshot runs dead code analysis on already parsed project
+// files. The snapshot defines the analyzed file set; req.Paths, when set, must
+// name the same files.
 func AnalyzeDeadCodeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.DeadCodeRequest) (*domain.DeadCodeResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if snapshot == nil {
-		return nil, domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+		return nil, err
+	}
+
+	moduleAnalyzer := analyzer.NewModuleAnalyzer(nil)
+	scanned := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[*scannedFile] {
+			return scanFileForDeadCode(moduleAnalyzer, file)
+		})
+	return aggregateDeadCodeScans(ctx, scanned, snapshot.Paths(), req)
+}
+
+// aggregateDeadCodeScans joins per-file scans, in input order, into the
+// project-wide response both entry points share. paths must parallel scanned.
+func aggregateDeadCodeScans(ctx context.Context, scanned []fileAnalysis[*scannedFile], paths []string, req domain.DeadCodeRequest) (*domain.DeadCodeResponse, error) {
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("dead code analysis cancelled: %w", ctx.Err())
 	}
 
 	minSeverity := req.MinSeverity
@@ -131,7 +155,6 @@ func AnalyzeDeadCodeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req
 	var totalFunctions, functionsWithDeadCode int
 	var totalBlocks, deadBlocks int
 
-	moduleAnalyzer := analyzer.NewModuleAnalyzer(nil)
 	allModuleInfos := make(map[string]*domain.ModuleInfo)
 	analyzedFiles := make(map[string]bool)
 	unusedFuncDedup := make(map[string]map[int]bool) // filePath -> startLine -> true
@@ -177,16 +200,8 @@ func AnalyzeDeadCodeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req
 		totalFindings++
 	}
 
-	scanned := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
-		func(_ context.Context, file *ProjectFile) fileAnalysis[*scannedFile] {
-			return scanFileForDeadCode(moduleAnalyzer, file)
-		})
-	if ctx.Err() != nil {
-		return nil, fmt.Errorf("dead code analysis cancelled: %w", ctx.Err())
-	}
-
 	for index, scan := range scanned {
-		filePath := snapshot.Files[index].Path
+		filePath := paths[index]
 		warnings = append(warnings, scan.warnings...)
 		errors = append(errors, scan.errors...)
 
@@ -457,7 +472,7 @@ func AnalyzeDeadCodeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req
 	}
 
 	summary := domain.DeadCodeSummary{
-		TotalFiles:            len(snapshot.Files),
+		TotalFiles:            len(paths),
 		TotalFunctions:        totalFunctions,
 		TotalFindings:         totalFindings,
 		FilesWithDeadCode:     len(files),
@@ -485,7 +500,7 @@ func AnalyzeDeadCodeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req
 			"min_severity":   minSeverity,
 			"sort_by":        sortBy,
 			"cross_file":     true,
-			"files_analyzed": len(snapshot.Files),
+			"files_analyzed": len(paths),
 		},
 	}, nil
 }

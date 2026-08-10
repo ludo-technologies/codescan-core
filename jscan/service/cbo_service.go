@@ -35,24 +35,41 @@ func NewCBOServiceWithDefaults() *CBOServiceImpl {
 	}
 }
 
-// Analyze performs CBO analysis on multiple files
+// Analyze performs CBO analysis on multiple files. Each file is read, parsed,
+// and analyzed inside the fan-out and released as soon as its coupling is
+// extracted — use AnalyzeSnapshot when several analyses should share the
+// parse trees.
 func (s *CBOServiceImpl) Analyze(ctx context.Context, req domain.CBORequest) (*domain.CBOResponse, error) {
-	snapshot := BuildProjectSnapshot(ctx, req.Paths, nil)
-	return s.AnalyzeSnapshot(ctx, snapshot, req)
+	config := s.effectiveConfig(req)
+	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
+
+	results := analyzeProjectFilesFromPaths(ctx, req.Paths, nil,
+		func(file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
+			return s.analyzeProjectFile(cboAnalyzer, file)
+		})
+	return s.buildResponse(ctx, results, &config, req)
 }
 
-// AnalyzeSnapshot performs CBO analysis on already parsed project files.
+// AnalyzeSnapshot performs CBO analysis on already parsed project files. The
+// snapshot defines the analyzed file set; req.Paths, when set, must name the
+// same files.
 func (s *CBOServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.CBORequest) (*domain.CBOResponse, error) {
-	if snapshot == nil {
-		return nil, domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+		return nil, err
 	}
 
-	var allClasses []domain.ClassCoupling
-	var warnings []string
-	var errors []string
-	filesProcessed := 0
+	config := s.effectiveConfig(req)
+	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
 
-	// Apply request thresholds to config
+	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
+			return s.analyzeProjectFile(cboAnalyzer, file)
+		})
+	return s.buildResponse(ctx, results, &config, req)
+}
+
+// effectiveConfig applies request thresholds on top of the service config.
+func (s *CBOServiceImpl) effectiveConfig(req domain.CBORequest) analyzer.CBOAnalyzerConfig {
 	config := *s.config
 	if req.LowThreshold > 0 {
 		config.LowThreshold = req.LowThreshold
@@ -63,17 +80,20 @@ func (s *CBOServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectS
 	if req.IncludeBuiltins != nil {
 		config.IncludeBuiltins = *req.IncludeBuiltins
 	}
+	return config
+}
 
-	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
-
-	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
-		func(_ context.Context, file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
-			classCoupling, fileWarnings, fileErrors := s.analyzeProjectFile(cboAnalyzer, file)
-			return fileAnalysis[*domain.ClassCoupling]{value: classCoupling, warnings: fileWarnings, errors: fileErrors}
-		})
+// buildResponse aggregates per-file couplings, in input order, into the
+// response both entry points share.
+func (s *CBOServiceImpl) buildResponse(ctx context.Context, results []fileAnalysis[*domain.ClassCoupling], config *analyzer.CBOAnalyzerConfig, req domain.CBORequest) (*domain.CBOResponse, error) {
 	if ctx.Err() != nil {
 		return nil, fmt.Errorf("CBO analysis cancelled: %w", ctx.Err())
 	}
+
+	var allClasses []domain.ClassCoupling
+	var warnings []string
+	var errors []string
+	filesProcessed := 0
 
 	for _, result := range results {
 		if len(result.errors) > 0 {
@@ -106,7 +126,7 @@ func (s *CBOServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectS
 		Errors:      errors,
 		GeneratedAt: time.Now().Format(time.RFC3339),
 		Version:     version.Version,
-		Config:      s.buildConfigForResponse(&config, req),
+		Config:      s.buildConfigForResponse(config, req),
 	}, nil
 }
 
@@ -118,29 +138,29 @@ func (s *CBOServiceImpl) AnalyzeFile(ctx context.Context, filePath string, req d
 }
 
 // analyzeProjectFile performs CBO analysis on a single parsed file
-func (s *CBOServiceImpl) analyzeProjectFile(cboAnalyzer *analyzer.CBOAnalyzer, file *ProjectFile) (*domain.ClassCoupling, []string, []string) {
-	var warnings []string
-	var errors []string
-
+func (s *CBOServiceImpl) analyzeProjectFile(cboAnalyzer *analyzer.CBOAnalyzer, file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
 	filePath := file.Path
 	if file.ReadErr != nil {
-		errors = append(errors, fmt.Sprintf("[%s] Failed to read file: %v", filePath, file.ReadErr))
-		return nil, warnings, errors
+		return fileAnalysis[*domain.ClassCoupling]{
+			errors: []string{fmt.Sprintf("[%s] Failed to read file: %v", filePath, file.ReadErr)},
+		}
 	}
 
 	if file.ParseErr != nil {
-		errors = append(errors, fmt.Sprintf("[%s] Failed to parse: %v", filePath, file.ParseErr))
-		return nil, warnings, errors
+		return fileAnalysis[*domain.ClassCoupling]{
+			errors: []string{fmt.Sprintf("[%s] Failed to parse: %v", filePath, file.ParseErr)},
+		}
 	}
 
 	// Analyze CBO
 	classCoupling, err := cboAnalyzer.AnalyzeFile(file.AST, filePath)
 	if err != nil {
-		errors = append(errors, fmt.Sprintf("[%s] Failed to analyze CBO: %v", filePath, err))
-		return nil, warnings, errors
+		return fileAnalysis[*domain.ClassCoupling]{
+			errors: []string{fmt.Sprintf("[%s] Failed to analyze CBO: %v", filePath, err)},
+		}
 	}
 
-	return classCoupling, warnings, errors
+	return fileAnalysis[*domain.ClassCoupling]{value: classCoupling}
 }
 
 // filterClasses filters classes based on request criteria

@@ -59,7 +59,7 @@ const [count, setCount] = useState(0);
 useEffect(() => {}, []);
 `
 	ast, info := parseAndAnalyze(t, source)
-	findings := DetectUnusedImports(ast, info, "test.js")
+	findings := DetectUnusedImports(ast, info, "test.js", []byte(source))
 
 	if len(findings) != 0 {
 		t.Errorf("Expected 0 findings when all imports are used, got %d", len(findings))
@@ -76,7 +76,7 @@ import { useState, useEffect } from 'react';
 const [count, setCount] = useState(0);
 `
 	ast, info := parseAndAnalyze(t, source)
-	findings := DetectUnusedImports(ast, info, "test.js")
+	findings := DetectUnusedImports(ast, info, "test.js", []byte(source))
 
 	if len(findings) != 1 {
 		t.Fatalf("Expected 1 finding for unused useEffect, got %d", len(findings))
@@ -98,7 +98,7 @@ import { useState } from 'react';
 const x = useState(0);
 `
 	ast, info := parseAndAnalyze(t, source)
-	findings := DetectUnusedImports(ast, info, "test.js")
+	findings := DetectUnusedImports(ast, info, "test.js", []byte(source))
 
 	// React (default import) should be unused
 	found := false
@@ -119,7 +119,7 @@ import 'polyfill';
 console.log('hello');
 `
 	ast, info := parseAndAnalyze(t, source)
-	findings := DetectUnusedImports(ast, info, "test.js")
+	findings := DetectUnusedImports(ast, info, "test.js", []byte(source))
 
 	if len(findings) != 0 {
 		t.Errorf("Expected 0 findings for side-effect import, got %d", len(findings))
@@ -154,7 +154,7 @@ func TestDetectUnusedImports_TypeOnlySkipped(t *testing.T) {
 		},
 	}
 
-	findings := DetectUnusedImports(ast, info, "test.ts")
+	findings := DetectUnusedImports(ast, info, "test.ts", nil)
 
 	if len(findings) != 0 {
 		t.Errorf("Expected 0 findings for type-only import, got %d", len(findings))
@@ -171,7 +171,7 @@ import { Metadata } from "next";
 type PageMeta = Metadata;
 `
 	ast, info := parseAndAnalyzeTS(t, source)
-	findings := DetectUnusedImports(ast, info, "test.ts")
+	findings := DetectUnusedImports(ast, info, "test.ts", []byte(source))
 
 	if len(findings) != 0 {
 		t.Fatalf("Expected 0 findings when import is used in type position, got %d", len(findings))
@@ -185,7 +185,11 @@ func TestDetectUnusedImports_ImportTypeLineSkipped(t *testing.T) {
 export async function getScanResult(id: string): Promise<ScanResult> {
 	return {} as ScanResult;
 }`
-	if err := os.WriteFile(filePath, []byte(source), 0o600); err != nil {
+	// Write a plain (non-type-only) import to disk: the detection must judge the
+	// content it is handed, never re-read the file, so the finding count below
+	// also pins that the analysis reads each file exactly once.
+	stale := `import { ScanResult } from "@/types/scan";`
+	if err := os.WriteFile(filePath, []byte(stale), 0o600); err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)
 	}
 
@@ -203,14 +207,14 @@ export async function getScanResult(id: string): Promise<ScanResult> {
 		t.Fatalf("Failed to analyze module: %v", err)
 	}
 
-	findings := DetectUnusedImports(ast, info, filePath)
+	findings := DetectUnusedImports(ast, info, filePath, []byte(source))
 	if len(findings) != 0 {
 		t.Fatalf("Expected 0 findings for `import type` line, got %d", len(findings))
 	}
 }
 
 func TestDetectUnusedImports_NilInputs(t *testing.T) {
-	findings := DetectUnusedImports(nil, nil, "test.js")
+	findings := DetectUnusedImports(nil, nil, "test.js", nil)
 	if findings != nil {
 		t.Errorf("Expected nil findings for nil inputs, got %d", len(findings))
 	}
@@ -222,7 +226,7 @@ const x = 1;
 const y = 2;
 `
 	ast, info := parseAndAnalyze(t, source)
-	findings := DetectUnusedImports(ast, info, "test.js")
+	findings := DetectUnusedImports(ast, info, "test.js", []byte(source))
 
 	if len(findings) != 0 {
 		t.Errorf("Expected 0 findings when no imports, got %d", len(findings))
@@ -586,7 +590,7 @@ import { foo } from './a';
 export { foo };
 `
 	ast, info := parseAndAnalyze(t, source)
-	findings := DetectUnusedImports(ast, info, "test.js")
+	findings := DetectUnusedImports(ast, info, "test.js", []byte(source))
 
 	if len(findings) != 0 {
 		t.Errorf("Expected 0 findings when import is re-exported, got %d", len(findings))
@@ -602,7 +606,7 @@ import { foo } from './a';
 export default foo;
 `
 	ast, info := parseAndAnalyze(t, source)
-	findings := DetectUnusedImports(ast, info, "test.js")
+	findings := DetectUnusedImports(ast, info, "test.js", []byte(source))
 
 	if len(findings) != 0 {
 		t.Errorf("Expected 0 findings when import is used in export default, got %d", len(findings))

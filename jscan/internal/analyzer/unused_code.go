@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -103,14 +102,15 @@ func BuildImportGraph(allModuleInfos map[string]*domain.ModuleInfo, analyzedFile
 
 // DetectUnusedImports detects imported names that are never referenced in the file.
 // It walks the AST to collect all identifier references (excluding import/export declarations)
-// and compares them against the locally-bound import names.
-func DetectUnusedImports(ast *parser.Node, moduleInfo *domain.ModuleInfo, filePath string) []*DeadCodeFinding {
+// and compares them against the locally-bound import names. content is the source
+// the AST was parsed from; both must describe the same version of the file.
+func DetectUnusedImports(ast *parser.Node, moduleInfo *domain.ModuleInfo, filePath string, content []byte) []*DeadCodeFinding {
 	if ast == nil || moduleInfo == nil {
 		return nil
 	}
 
 	// Collect local names from imports (skip side-effect, type-only, dynamic)
-	typeOnlyImportLines := detectTypeOnlyImportLines(filePath)
+	typeOnlyImportLines := detectTypeOnlyImportLines(content)
 	type importEntry struct {
 		localName string
 		line      int
@@ -201,14 +201,9 @@ func DetectUnusedImports(ast *parser.Node, moduleInfo *domain.ModuleInfo, filePa
 
 // detectTypeOnlyImportLines returns source line numbers where import declarations are
 // explicitly type-only (e.g. `import type { Foo } from 'bar'`).
-func detectTypeOnlyImportLines(filePath string) map[int]bool {
+func detectTypeOnlyImportLines(content []byte) map[int]bool {
 	lines := make(map[int]bool)
-	if filePath == "" {
-		return lines
-	}
-
-	content, err := os.ReadFile(filePath)
-	if err != nil {
+	if len(content) == 0 {
 		return lines
 	}
 

@@ -69,25 +69,48 @@ func extractFileFragments(detector *analyzer.CloneDetector, file *ProjectFile) f
 	return fileAnalysis[*extractedFragments]{value: extracted}
 }
 
-// DetectClones performs clone detection on the given request
+// DetectClones performs clone detection on the given request. Each file is
+// read, parsed, and its fragments extracted inside the fan-out; a file's parse
+// tree stays reachable only through its fragments, which drop their AST
+// references once converted for APTED, so trees are released as detection
+// proceeds — use DetectClonesInSnapshot when several analyses should share
+// the parse trees.
 func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRequest) (*domain.CloneResponse, error) {
-	snapshot := BuildProjectSnapshot(ctx, req.Paths, nil)
-	return s.DetectClonesInSnapshot(ctx, snapshot, req)
+	startTime := time.Now()
+	config := s.effectiveConfig(req)
+	detector := analyzer.NewCloneDetector(&config)
+
+	results := analyzeProjectFilesFromPaths(ctx, req.Paths, nil,
+		func(file *ProjectFile) fileAnalysis[*extractedFragments] {
+			return extractFileFragments(detector, file)
+		})
+	return s.detectFromExtraction(ctx, results, detector, &config, req, startTime)
 }
 
 // DetectClonesInSnapshot performs clone detection on already parsed project
-// files. Fragments reference the snapshot's ASTs only until the detector
-// converts them to APTED trees; after that the snapshot is the trees' sole
-// owner, so they stay collectable once every analysis sharing the snapshot has
-// finished.
+// files. The snapshot defines the analyzed file set; req.Paths, when set,
+// must name the same files. Fragments reference the snapshot's ASTs only
+// until the detector converts them to APTED trees; after that the snapshot is
+// the trees' sole owner, so they stay collectable once every analysis sharing
+// the snapshot has finished.
 func (s *CloneServiceImpl) DetectClonesInSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req *domain.CloneRequest) (*domain.CloneResponse, error) {
-	if snapshot == nil {
-		return nil, domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+		return nil, err
 	}
 
 	startTime := time.Now()
+	config := s.effectiveConfig(req)
+	detector := analyzer.NewCloneDetector(&config)
 
-	// Apply request-specific thresholds to config
+	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[*extractedFragments] {
+			return extractFileFragments(detector, file)
+		})
+	return s.detectFromExtraction(ctx, results, detector, &config, req, startTime)
+}
+
+// effectiveConfig applies request-specific thresholds on top of the service config.
+func (s *CloneServiceImpl) effectiveConfig(req *domain.CloneRequest) analyzer.CloneDetectorConfig {
 	config := *s.config
 	if req.MinLines > 0 {
 		config.MinLines = req.MinLines
@@ -127,24 +150,21 @@ func (s *CloneServiceImpl) DetectClonesInSnapshot(ctx context.Context, snapshot 
 	}
 	config.IgnoreLiterals = req.IgnoreLiterals
 	config.IgnoreIdentifiers = req.IgnoreIdentifiers
+	return config
+}
 
-	// Create clone detector with configured settings
-	detector := analyzer.NewCloneDetector(&config)
+// detectFromExtraction runs detection over per-file extraction results, in
+// input order, and assembles the response both entry points share.
+func (s *CloneServiceImpl) detectFromExtraction(ctx context.Context, results []fileAnalysis[*extractedFragments], detector *analyzer.CloneDetector, config *analyzer.CloneDetectorConfig, req *domain.CloneRequest, startTime time.Time) (*domain.CloneResponse, error) {
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("clone detection cancelled: %w", ctx.Err())
+	}
 
-	// Extract fragments from all files
 	var allFragments []*analyzer.CodeFragment
 	filesAnalyzed := 0
 	linesAnalyzed := 0
 	nodesAnalyzed := 0
 	var errors []string
-
-	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
-		func(_ context.Context, file *ProjectFile) fileAnalysis[*extractedFragments] {
-			return extractFileFragments(detector, file)
-		})
-	if ctx.Err() != nil {
-		return nil, fmt.Errorf("clone detection cancelled: %w", ctx.Err())
-	}
 
 	for _, result := range results {
 		errors = append(errors, result.errors...)

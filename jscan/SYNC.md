@@ -44,7 +44,7 @@ No row currently uses **sync**: every area that was language-independent enough 
 
 | pyscn | jscan | Classification | Notes |
 |---|---|---|---|
-| `service/project_snapshot.go` | `service/project_snapshot.go` | case-by-case | Same design (parse once in parallel, path-ordered, lazily shared CFGs via `sync.Once`), ported in [polyscan#37](https://github.com/ludo-technologies/polyscan/issues/37). Divergences: jscan keeps `Content` (line counts, clone Type-1 source) instead of pyscn's `RawMetrics` cache; jscan has no `ProjectSnapshotOptions`; jscan's standalone service entry points build a snapshot internally rather than keeping a separate non-snapshot path |
+| `service/project_snapshot.go` | `service/project_snapshot.go` | case-by-case | Same design (parse once in parallel, path-ordered, lazily shared CFGs via `sync.Once`), ported in [polyscan#37](https://github.com/ludo-technologies/polyscan/issues/37). Divergences: jscan keeps `Content` (line counts, clone Type-1 source, unused-import type-only lines) instead of pyscn's `RawMetrics` cache; jscan has no `ProjectSnapshotOptions`; jscan's snapshot entry points validate `req.Paths` against the snapshot instead of ignoring it; single-analysis runs stream per-file `ProjectFile`s through the same analysis code (`analyzeProjectFilesFromPaths`) instead of pyscn's separate parse-inline `Analyze` bodies, so a lone analysis never holds every parse tree at once |
 
 ### domain (scoring, type definitions)
 

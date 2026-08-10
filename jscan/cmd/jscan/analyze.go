@@ -143,12 +143,18 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	var mu sync.Mutex
 	ctx := context.Background()
 
-	// Parse every file once and share the parse trees across the analyses.
-	// Nothing references the snapshot after the goroutines below finish, so the
-	// shared trees become collectable as soon as the analyses are done with
-	// them — clone detection drops its per-fragment AST references itself once
-	// fragments are converted for APTED.
-	snapshot := service.BuildProjectSnapshot(ctx, files, nil)
+	// With several analyses selected, parse every file once and share the parse
+	// trees across them. Nothing references the snapshot after the goroutines
+	// below finish, so the shared trees become collectable as soon as the
+	// analyses are done with them — clone detection drops its per-fragment AST
+	// references itself once fragments are converted for APTED. A single
+	// selected analysis has nobody to share with and skips the snapshot: the
+	// services' own entry points then release each file as they go, which
+	// holds far fewer parse trees at once.
+	var snapshot *service.ProjectSnapshot
+	if countSelected(runComplexity, runDeadCode, runClone, runCBO, runDeps) > 1 {
+		snapshot = service.BuildProjectSnapshot(ctx, files, nil)
+	}
 
 	if runComplexity {
 		wg.Add(1)
@@ -296,7 +302,19 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// runComplexityAnalysisInternal runs complexity analysis on the shared snapshot without progress tracking
+// countSelected reports how many analyses the run will execute.
+func countSelected(selected ...bool) int {
+	count := 0
+	for _, s := range selected {
+		if s {
+			count++
+		}
+	}
+	return count
+}
+
+// runComplexityAnalysisInternal runs complexity analysis without progress
+// tracking, over the shared snapshot when one exists.
 func runComplexityAnalysisInternal(ctx context.Context, snapshot *service.ProjectSnapshot, files []string, cfg *config.Config) (*domain.ComplexityResponse, error) {
 	svc := service.NewComplexityService(&cfg.Complexity)
 
@@ -308,7 +326,10 @@ func runComplexityAnalysisInternal(ctx context.Context, snapshot *service.Projec
 		SortBy:          domain.SortCriteria(cfg.Output.SortBy),
 	}
 
-	return svc.AnalyzeSnapshot(ctx, snapshot, req)
+	if snapshot != nil {
+		return svc.AnalyzeSnapshot(ctx, snapshot, req)
+	}
+	return svc.Analyze(ctx, req)
 }
 
 // runDeadCodeAnalysis runs dead code analysis on the given files with progress tracking
@@ -320,9 +341,13 @@ func runDeadCodeAnalysis(files []string, cfg *config.Config, pm domain.ProgressM
 	return service.AnalyzeDeadCodeWithTask(context.Background(), deadCodeRequest(files, cfg), task)
 }
 
-// runDeadCodeAnalysisInternal runs dead code analysis on the shared snapshot without progress tracking
+// runDeadCodeAnalysisInternal runs dead code analysis without progress
+// tracking, over the shared snapshot when one exists.
 func runDeadCodeAnalysisInternal(ctx context.Context, snapshot *service.ProjectSnapshot, files []string, cfg *config.Config) (*domain.DeadCodeResponse, error) {
-	return service.AnalyzeDeadCodeSnapshot(ctx, snapshot, deadCodeRequest(files, cfg))
+	if snapshot != nil {
+		return service.AnalyzeDeadCodeSnapshot(ctx, snapshot, deadCodeRequest(files, cfg))
+	}
+	return service.AnalyzeDeadCode(ctx, deadCodeRequest(files, cfg))
 }
 
 // deadCodeRequest builds the dead code request both entry points share.
@@ -436,17 +461,22 @@ func startTimeBasedProgressUpdater(task domain.TaskProgress, estimatedDuration t
 	return done
 }
 
-// runCloneAnalysisInternal runs clone detection on the shared snapshot without progress tracking
+// runCloneAnalysisInternal runs clone detection without progress tracking,
+// over the shared snapshot when one exists.
 func runCloneAnalysisInternal(ctx context.Context, snapshot *service.ProjectSnapshot, files []string) (*domain.CloneResponse, error) {
 	svc := service.NewCloneServiceWithDefaults()
 
 	req := domain.DefaultCloneRequest()
 	req.Paths = files
 
-	return svc.DetectClonesInSnapshot(ctx, snapshot, req)
+	if snapshot != nil {
+		return svc.DetectClonesInSnapshot(ctx, snapshot, req)
+	}
+	return svc.DetectClones(ctx, req)
 }
 
-// runCBOAnalysisInternal runs CBO analysis on the shared snapshot without progress tracking
+// runCBOAnalysisInternal runs CBO analysis without progress tracking, over the
+// shared snapshot when one exists.
 func runCBOAnalysisInternal(ctx context.Context, snapshot *service.ProjectSnapshot, files []string) (*domain.CBOResponse, error) {
 	svc := service.NewCBOServiceWithDefaults()
 
@@ -454,10 +484,14 @@ func runCBOAnalysisInternal(ctx context.Context, snapshot *service.ProjectSnapsh
 		Paths: files,
 	}
 
-	return svc.AnalyzeSnapshot(ctx, snapshot, req)
+	if snapshot != nil {
+		return svc.AnalyzeSnapshot(ctx, snapshot, req)
+	}
+	return svc.Analyze(ctx, req)
 }
 
-// runDepsAnalysisInternal runs dependency analysis on the shared snapshot without progress tracking
+// runDepsAnalysisInternal runs dependency analysis without progress tracking,
+// over the shared snapshot when one exists.
 func runDepsAnalysisInternal(ctx context.Context, snapshot *service.ProjectSnapshot, files []string) (*domain.DependencyGraphResponse, error) {
 	svc := service.NewDependencyGraphServiceWithDefaults()
 
@@ -466,5 +500,8 @@ func runDepsAnalysisInternal(ctx context.Context, snapshot *service.ProjectSnaps
 		DetectCycles: domain.BoolPtr(true),
 	}
 
-	return svc.AnalyzeSnapshot(ctx, snapshot, req)
+	if snapshot != nil {
+		return svc.AnalyzeSnapshot(ctx, snapshot, req)
+	}
+	return svc.Analyze(ctx, req)
 }
