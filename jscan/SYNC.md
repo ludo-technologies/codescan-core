@@ -40,6 +40,12 @@ No row currently uses **sync**: every area that was language-independent enough 
 | `internal/analyzer/textual_similarity.go` | *(adopted `core/clone`)* | case-by-case | Type-1 gate in `core/clone.TextualSimilarityAnalyzer`; jscan injects `removeJSComments` as `CommentStripper` (`javascript_comments.go`) |
 | `internal/analyzer/module_analyzer.go` | `internal/analyzer/module_analyzer.go` | reference-only | Import resolution is language-specific (`__init__.py` vs ESM/CJS/Node builtins) |
 
+### service
+
+| pyscn | jscan | Classification | Notes |
+|---|---|---|---|
+| `service/project_snapshot.go` | `service/project_snapshot.go` | case-by-case | Same design (parse once in parallel, path-ordered, lazily shared CFGs via `sync.Once`), ported in [polyscan#37](https://github.com/ludo-technologies/polyscan/issues/37). Divergences: jscan keeps `Content` (line counts, clone Type-1 source) instead of pyscn's `RawMetrics` cache; jscan has no `ProjectSnapshotOptions`; jscan's standalone service entry points build a snapshot internally rather than keeping a separate non-snapshot path |
+
 ### domain (scoring, type definitions)
 
 | pyscn | jscan | Classification | Notes |

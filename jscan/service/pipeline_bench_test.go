@@ -75,7 +75,7 @@ func reportThroughput(b *testing.B, paths []string) {
 		if err != nil {
 			continue
 		}
-		lines += countLines(content)
+		lines += countSourceLines(content)
 	}
 	b.ReportMetric(float64(lines*b.N)/b.Elapsed().Seconds(), "LOC/s")
 }

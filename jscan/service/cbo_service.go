@@ -3,13 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"time"
 
 	"github.com/ludo-technologies/polyscan/jscan/domain"
 	"github.com/ludo-technologies/polyscan/jscan/internal/analyzer"
-	"github.com/ludo-technologies/polyscan/jscan/internal/parser"
 	"github.com/ludo-technologies/polyscan/jscan/internal/version"
 )
 
@@ -39,6 +37,16 @@ func NewCBOServiceWithDefaults() *CBOServiceImpl {
 
 // Analyze performs CBO analysis on multiple files
 func (s *CBOServiceImpl) Analyze(ctx context.Context, req domain.CBORequest) (*domain.CBOResponse, error) {
+	snapshot := BuildProjectSnapshot(ctx, req.Paths, nil)
+	return s.AnalyzeSnapshot(ctx, snapshot, req)
+}
+
+// AnalyzeSnapshot performs CBO analysis on already parsed project files.
+func (s *CBOServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.CBORequest) (*domain.CBOResponse, error) {
+	if snapshot == nil {
+		return nil, domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	}
+
 	var allClasses []domain.ClassCoupling
 	var warnings []string
 	var errors []string
@@ -58,9 +66,9 @@ func (s *CBOServiceImpl) Analyze(ctx context.Context, req domain.CBORequest) (*d
 
 	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
 
-	results := analyzeFilesConcurrently(ctx, req.Paths, nil,
-		func(ctx context.Context, filePath string) fileAnalysis[*domain.ClassCoupling] {
-			classCoupling, fileWarnings, fileErrors := s.analyzeFile(ctx, cboAnalyzer, filePath)
+	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
+			classCoupling, fileWarnings, fileErrors := s.analyzeProjectFile(cboAnalyzer, file)
 			return fileAnalysis[*domain.ClassCoupling]{value: classCoupling, warnings: fileWarnings, errors: fileErrors}
 		})
 	if ctx.Err() != nil {
@@ -109,27 +117,24 @@ func (s *CBOServiceImpl) AnalyzeFile(ctx context.Context, filePath string, req d
 	return s.Analyze(ctx, singleFileReq)
 }
 
-// analyzeFile performs CBO analysis on a single file
-func (s *CBOServiceImpl) analyzeFile(ctx context.Context, cboAnalyzer *analyzer.CBOAnalyzer, filePath string) (*domain.ClassCoupling, []string, []string) {
+// analyzeProjectFile performs CBO analysis on a single parsed file
+func (s *CBOServiceImpl) analyzeProjectFile(cboAnalyzer *analyzer.CBOAnalyzer, file *ProjectFile) (*domain.ClassCoupling, []string, []string) {
 	var warnings []string
 	var errors []string
 
-	// Read the file
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		errors = append(errors, fmt.Sprintf("[%s] Failed to read file: %v", filePath, err))
+	filePath := file.Path
+	if file.ReadErr != nil {
+		errors = append(errors, fmt.Sprintf("[%s] Failed to read file: %v", filePath, file.ReadErr))
 		return nil, warnings, errors
 	}
 
-	// Parse JavaScript/TypeScript
-	ast, err := parser.ParseForLanguage(filePath, content)
-	if err != nil {
-		errors = append(errors, fmt.Sprintf("[%s] Failed to parse: %v", filePath, err))
+	if file.ParseErr != nil {
+		errors = append(errors, fmt.Sprintf("[%s] Failed to parse: %v", filePath, file.ParseErr))
 		return nil, warnings, errors
 	}
 
 	// Analyze CBO
-	classCoupling, err := cboAnalyzer.AnalyzeFile(ast, filePath)
+	classCoupling, err := cboAnalyzer.AnalyzeFile(file.AST, filePath)
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("[%s] Failed to analyze CBO: %v", filePath, err))
 		return nil, warnings, errors

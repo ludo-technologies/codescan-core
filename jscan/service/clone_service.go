@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -41,30 +40,29 @@ type extractedFragments struct {
 	nodes     int
 }
 
-// extractFileFragments reads, parses, and extracts clone fragments from one
-// file. Fragment extraction only reads the detector's configuration, so this is
-// safe to run for several files at once.
-func extractFileFragments(detector *analyzer.CloneDetector, filePath string) fileAnalysis[*extractedFragments] {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
+// extractFileFragments extracts clone fragments from one parsed file. Fragment
+// extraction only reads the detector's configuration, so this is safe to run
+// for several files at once.
+func extractFileFragments(detector *analyzer.CloneDetector, file *ProjectFile) fileAnalysis[*extractedFragments] {
+	filePath := file.Path
+	if file.ReadErr != nil {
 		return fileAnalysis[*extractedFragments]{
-			errors: []string{fmt.Sprintf("[%s] Failed to read file: %v", filePath, err)},
+			errors: []string{fmt.Sprintf("[%s] Failed to read file: %v", filePath, file.ReadErr)},
 		}
 	}
 
-	ast, err := parser.ParseForLanguage(filePath, content)
-	if err != nil {
+	if file.ParseErr != nil {
 		return fileAnalysis[*extractedFragments]{
-			errors: []string{fmt.Sprintf("[%s] Failed to parse: %v", filePath, err)},
+			errors: []string{fmt.Sprintf("[%s] Failed to parse: %v", filePath, file.ParseErr)},
 		}
 	}
 
 	extracted := &extractedFragments{
 		// Source content is carried along for Type-1 textual gating.
-		fragments: detector.ExtractFragmentsWithSource(ast.Body, filePath, content),
-		lines:     countLines(content),
+		fragments: detector.ExtractFragmentsWithSource(file.AST.Body, filePath, file.Content),
+		lines:     countSourceLines(file.Content),
 	}
-	for _, node := range ast.Body {
+	for _, node := range file.AST.Body {
 		extracted.nodes += countASTNodes(node)
 	}
 
@@ -73,6 +71,20 @@ func extractFileFragments(detector *analyzer.CloneDetector, filePath string) fil
 
 // DetectClones performs clone detection on the given request
 func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRequest) (*domain.CloneResponse, error) {
+	snapshot := BuildProjectSnapshot(ctx, req.Paths, nil)
+	return s.DetectClonesInSnapshot(ctx, snapshot, req)
+}
+
+// DetectClonesInSnapshot performs clone detection on already parsed project
+// files. Fragments reference the snapshot's ASTs only until the detector
+// converts them to APTED trees; after that the snapshot is the trees' sole
+// owner, so they stay collectable once every analysis sharing the snapshot has
+// finished.
+func (s *CloneServiceImpl) DetectClonesInSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req *domain.CloneRequest) (*domain.CloneResponse, error) {
+	if snapshot == nil {
+		return nil, domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	}
+
 	startTime := time.Now()
 
 	// Apply request-specific thresholds to config
@@ -126,9 +138,9 @@ func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRe
 	nodesAnalyzed := 0
 	var errors []string
 
-	results := analyzeFilesConcurrently(ctx, req.Paths, nil,
-		func(_ context.Context, filePath string) fileAnalysis[*extractedFragments] {
-			return extractFileFragments(detector, filePath)
+	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[*extractedFragments] {
+			return extractFileFragments(detector, file)
 		})
 	if ctx.Err() != nil {
 		return nil, fmt.Errorf("clone detection cancelled: %w", ctx.Err())
@@ -393,17 +405,6 @@ func countASTNodes(node *parser.Node) int {
 	count := 1
 	for _, child := range parser.OrderedChildren(node) {
 		count += countASTNodes(child)
-	}
-	return count
-}
-
-// countLines counts the number of lines in content
-func countLines(content []byte) int {
-	count := 1
-	for _, b := range content {
-		if b == '\n' {
-			count++
-		}
 	}
 	return count
 }

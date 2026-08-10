@@ -3,14 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"time"
 
 	"github.com/ludo-technologies/polyscan/jscan/domain"
 	"github.com/ludo-technologies/polyscan/jscan/internal/analyzer"
-	"github.com/ludo-technologies/polyscan/jscan/internal/parser"
 	"github.com/ludo-technologies/polyscan/jscan/internal/version"
 )
 
@@ -22,24 +20,24 @@ type scannedFile struct {
 	unusedImports []*analyzer.DeadCodeFinding
 }
 
-// scanFileForDeadCode reads, parses, and analyzes one file. The module analyzer
+// scanFileForDeadCode analyzes one already parsed file. The module analyzer
 // only reads its configuration, so several files can be scanned at once.
-func scanFileForDeadCode(moduleAnalyzer *analyzer.ModuleAnalyzer, filePath string) fileAnalysis[*scannedFile] {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
+func scanFileForDeadCode(moduleAnalyzer *analyzer.ModuleAnalyzer, file *ProjectFile) fileAnalysis[*scannedFile] {
+	filePath := file.Path
+	if file.ReadErr != nil {
 		return fileAnalysis[*scannedFile]{
-			errors: []string{fmt.Sprintf("[%s] failed to read file: %v", filePath, err)},
+			errors: []string{fmt.Sprintf("[%s] failed to read file: %v", filePath, file.ReadErr)},
 		}
 	}
 
-	ast, err := parser.ParseForLanguage(filePath, content)
-	if err != nil {
+	if file.ParseErr != nil {
 		return fileAnalysis[*scannedFile]{
-			errors: []string{fmt.Sprintf("[%s] failed to parse file: %v", filePath, err)},
+			errors: []string{fmt.Sprintf("[%s] failed to parse file: %v", filePath, file.ParseErr)},
 		}
 	}
+	ast := file.AST
 
-	cfgs, err := analyzer.NewCFGBuilder().BuildAll(ast)
+	cfgs, err := file.CFGs()
 	if err != nil {
 		return fileAnalysis[*scannedFile]{
 			errors: []string{fmt.Sprintf("[%s] failed to build CFG: %v", filePath, err)},
@@ -94,6 +92,19 @@ func AnalyzeDeadCode(ctx context.Context, req domain.DeadCodeRequest) (*domain.D
 func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, task domain.TaskProgress) (*domain.DeadCodeResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+
+	snapshot := BuildProjectSnapshot(ctx, req.Paths, task)
+	return AnalyzeDeadCodeSnapshot(ctx, snapshot, req)
+}
+
+// AnalyzeDeadCodeSnapshot runs dead code analysis on already parsed project files.
+func AnalyzeDeadCodeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.DeadCodeRequest) (*domain.DeadCodeResponse, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if snapshot == nil {
+		return nil, domain.NewInvalidInputError("project snapshot cannot be nil", nil)
 	}
 
 	minSeverity := req.MinSeverity
@@ -166,16 +177,16 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 		totalFindings++
 	}
 
-	scanned := analyzeFilesConcurrently(ctx, req.Paths, task,
-		func(_ context.Context, filePath string) fileAnalysis[*scannedFile] {
-			return scanFileForDeadCode(moduleAnalyzer, filePath)
+	scanned := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[*scannedFile] {
+			return scanFileForDeadCode(moduleAnalyzer, file)
 		})
 	if ctx.Err() != nil {
 		return nil, fmt.Errorf("dead code analysis cancelled: %w", ctx.Err())
 	}
 
 	for index, scan := range scanned {
-		filePath := req.Paths[index]
+		filePath := snapshot.Files[index].Path
 		warnings = append(warnings, scan.warnings...)
 		errors = append(errors, scan.errors...)
 
@@ -446,7 +457,7 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 	}
 
 	summary := domain.DeadCodeSummary{
-		TotalFiles:            len(req.Paths),
+		TotalFiles:            len(snapshot.Files),
 		TotalFunctions:        totalFunctions,
 		TotalFindings:         totalFindings,
 		FilesWithDeadCode:     len(files),
@@ -474,7 +485,7 @@ func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, ta
 			"min_severity":   minSeverity,
 			"sort_by":        sortBy,
 			"cross_file":     true,
-			"files_analyzed": len(req.Paths),
+			"files_analyzed": len(snapshot.Files),
 		},
 	}, nil
 }
