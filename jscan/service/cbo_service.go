@@ -11,6 +11,9 @@ import (
 	"github.com/ludo-technologies/polyscan/jscan/internal/version"
 )
 
+// mostCoupledClassesLimit caps the summary's most-coupled-classes ranking.
+const mostCoupledClassesLimit = 10
+
 // CBOServiceImpl implements the CBOService interface
 type CBOServiceImpl struct {
 	config *analyzer.CBOAnalyzerConfig
@@ -194,28 +197,54 @@ func (s *CBOServiceImpl) sortClasses(classes []domain.ClassCoupling, sortBy doma
 	sorted := make([]domain.ClassCoupling, len(classes))
 	copy(sorted, classes)
 
+	// Every comparator falls back to source location so that classes the
+	// primary criterion cannot separate still come out in the same order on
+	// every run.
 	switch sortBy {
-	case domain.SortByCoupling:
-		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].Metrics.CouplingCount > sorted[j].Metrics.CouplingCount
-		})
 	case domain.SortByName:
 		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].Name < sorted[j].Name
+			if sorted[i].Name != sorted[j].Name {
+				return sorted[i].Name < sorted[j].Name
+			}
+			return classPrecedes(sorted[i], sorted[j])
 		})
 	case domain.SortByRisk:
 		riskOrder := map[domain.RiskLevel]int{domain.RiskLevelHigh: 0, domain.RiskLevelMedium: 1, domain.RiskLevelLow: 2}
 		sort.Slice(sorted, func(i, j int) bool {
-			return riskOrder[sorted[i].RiskLevel] < riskOrder[sorted[j].RiskLevel]
+			if riskOrder[sorted[i].RiskLevel] != riskOrder[sorted[j].RiskLevel] {
+				return riskOrder[sorted[i].RiskLevel] < riskOrder[sorted[j].RiskLevel]
+			}
+			return classPrecedes(sorted[i], sorted[j])
 		})
 	default:
-		// Default: sort by coupling descending
+		// Default and domain.SortByCoupling: coupling descending.
 		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].Metrics.CouplingCount > sorted[j].Metrics.CouplingCount
+			return couplingPrecedes(sorted[i], sorted[j])
 		})
 	}
 
 	return sorted
+}
+
+// couplingPrecedes orders classes by coupling count descending, falling back
+// to source location for classes with equal coupling.
+func couplingPrecedes(a, b domain.ClassCoupling) bool {
+	if a.Metrics.CouplingCount != b.Metrics.CouplingCount {
+		return a.Metrics.CouplingCount > b.Metrics.CouplingCount
+	}
+	return classPrecedes(a, b)
+}
+
+// classPrecedes is the deterministic tie-break ordering: by source location,
+// then name.
+func classPrecedes(a, b domain.ClassCoupling) bool {
+	if a.FilePath != b.FilePath {
+		return a.FilePath < b.FilePath
+	}
+	if a.StartLine != b.StartLine {
+		return a.StartLine < b.StartLine
+	}
+	return a.Name < b.Name
 }
 
 // generateSummary generates a summary of the CBO analysis
@@ -266,14 +295,15 @@ func (s *CBOServiceImpl) generateSummary(classes []domain.ClassCoupling, filesPr
 	summary.MaxCBO = maxCBO
 	summary.MinCBO = minCBO
 
-	// Get most coupled classes (top 10)
+	// Get most coupled classes. The tie-break in couplingPrecedes keeps the
+	// ranking's membership stable when classes tie at the cutoff.
 	sortedByCoupling := make([]domain.ClassCoupling, len(classes))
 	copy(sortedByCoupling, classes)
 	sort.Slice(sortedByCoupling, func(i, j int) bool {
-		return sortedByCoupling[i].Metrics.CouplingCount > sortedByCoupling[j].Metrics.CouplingCount
+		return couplingPrecedes(sortedByCoupling[i], sortedByCoupling[j])
 	})
 
-	maxMostCoupled := min(10, len(sortedByCoupling))
+	maxMostCoupled := min(mostCoupledClassesLimit, len(sortedByCoupling))
 	summary.MostCoupledClasses = sortedByCoupling[:maxMostCoupled]
 
 	return summary
