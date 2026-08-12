@@ -5,19 +5,25 @@ knobs change that behaviour, and how to reproduce the numbers.
 
 ## Where the time goes
 
-A default `jscan analyze` run executes five analyses concurrently:
+A default `jscan analyze` run reads and parses every file once into a shared
+`service.ProjectSnapshot`, then executes five analyses concurrently over the
+shared parse trees. Complexity and deadcode also share per-file CFG
+construction through the snapshot — the CFGs are built by whichever analysis
+reaches a file first.
 
 | Analysis | Dominant cost | Scaling |
 |---|---|---|
-| complexity | parse + CFG construction | linear in source size |
-| deadcode | parse + CFG construction + reachability | linear in source size |
-| cbo | parse + import/dependency extraction | linear in source size |
-| deps | parse + graph construction, SCC, chain search | linear in modules + edges |
+| (snapshot) | read + parse, once for all analyses | linear in source size |
+| complexity | CFG construction (shared with deadcode) | linear in source size |
+| deadcode | CFG construction + reachability + module analysis | linear in source size |
+| cbo | import/dependency extraction | linear in source size |
+| deps | graph construction, SCC, chain search | linear in modules + edges |
 | clone | APTED tree edit distance over fragment pairs | **superlinear** — see below |
 
 Clone detection dominates every other analysis combined on any codebase past a
 few thousand lines. The other four are effectively "parse the files", and their
-throughput tracks parsing speed.
+combined throughput tracks parsing speed — which is why parsing once instead of
+five times collapsed their cost.
 
 ### Clone detection is the one superlinear stage
 
@@ -51,29 +57,34 @@ single very large function cannot dominate a run.
 Measured on an Apple M4 (10 cores) against
 [vuejs/core](https://github.com/vuejs/core) `packages/`, 147k lines of
 TypeScript across 452 files, all five analyses enabled, JSON output. Each figure
-is the median of three runs. The machine carried unrelated background load
-during measurement, so treat these as a floor rather than a best case.
+is the median of three runs on an otherwise idle machine.
 
 | Corpus | Lines | Wall time | Throughput | Peak RSS |
 |---|---|---|---|---|
-| `packages/reactivity/src` | 3.9k | 0.13 s | ~30k LOC/s | 83 MB |
-| `packages/compiler-core/src` | 11k | 0.32 s | ~34k LOC/s | 197 MB |
-| `packages/runtime-core/src` | 21k | 0.47 s | ~45k LOC/s | 300 MB |
-| `packages/` (whole repo) | 147k | 14.8 s | ~10k LOC/s | 1.84 GB |
+| `packages/reactivity/src` | 3.9k | 0.04 s | ~98k LOC/s | 44 MB |
+| `packages/compiler-core/src` | 11k | 0.13 s | ~85k LOC/s | 95 MB |
+| `packages/runtime-core/src` | 21k | 0.18 s | ~117k LOC/s | 154 MB |
+| `packages/` (whole repo) | 147k | 7.4 s | ~20k LOC/s | 1.05 GB |
 
 Throughput drops on the largest corpus because clone detection's candidate set
 grows faster than the source does — the other four analyses stay flat.
 
+For scale, the same machine and corpus before the shared snapshot (each
+analysis parsing independently) measured 8.5 s and 1.86 GB peak RSS on the
+whole repo: sharing one set of parse trees cut peak memory by ~44% and, on the
+parse-bound smaller corpora, wall time by a third or more.
+
 Per-analysis figures on the full 147k-line corpus, measured in isolation
-(`BenchmarkPipeline*`, same loaded machine):
+(`BenchmarkPipeline*`, same machine; a standalone run reads and parses inline,
+so these include one parse pass):
 
 | Analysis | Wall time | Throughput |
 |---|---|---|
-| complexity | 0.51 s | 291k LOC/s |
-| cbo | 0.77 s | 192k LOC/s |
-| deadcode | 0.76 s | 194k LOC/s |
-| deps | 0.89 s | 167k LOC/s |
-| clone | 11.6 s | 13k LOC/s |
+| complexity | 0.31 s | 485k LOC/s |
+| cbo | 0.40 s | 371k LOC/s |
+| deadcode | 0.42 s | 357k LOC/s |
+| deps | 0.63 s | 238k LOC/s |
+| clone | 6.6 s | 22k LOC/s |
 
 Clone detection is 90% of a default run. Dropping it with `--select` puts a
 147k-line codebase comfortably under two seconds.
@@ -83,18 +94,28 @@ Clone detection is 90% of a default run. Dropping it with `--select` puts a
 Peak resident memory is driven by the parse trees and the clone-detection
 fragment set, which are both held for the whole run:
 
-- Roughly **12–20 MB per 1k lines** of TypeScript at default settings, with the
+- Roughly **7–11 MB per 1k lines** of TypeScript at default settings, with the
   ratio improving as the corpus grows.
-- 147k lines peaks around 1.84 GB; 100k lines fits under 2 GB.
-- Each analysis parses independently, so all five hold parse trees at the same
-  time. Restricting `--select` to fewer analyses reduces peak memory roughly in
-  proportion.
-- Clone detection releases each fragment's parser AST as soon as its APTED tree
-  is built, so parse trees do not survive fragment preparation. This depends on
-  the tree converter not copying parser nodes into `TreeNode.OriginalNode`:
-  parser nodes carry a parent pointer, so retaining one pins the whole file's
-  AST. Clone-only peak memory over the 147k-line corpus is 709 MB with the
-  release effective, 942 MB without.
+- 147k lines peaks around 1.05 GB.
+- A run with several analyses selected shares one set of parse trees through
+  `service.ProjectSnapshot`; the snapshot lives until the last analysis
+  finishes, so peak memory carries one parse tree per file regardless of how
+  many analyses run. What `--select` then changes is everything past parsing —
+  clone fragments and APTED trees are the largest single block.
+- A run with a single analysis selected has nobody to share with and skips the
+  snapshot: each file is read, parsed, and analyzed inside the fan-out and
+  released as soon as its results are extracted, so only about one parse tree
+  per worker is live at a time. On the 147k-line corpus a complexity-only or
+  deadcode-only run peaks under 140 MB. The exceptions hold whole-project
+  state by nature: `deps` needs every module's AST at once to build the graph,
+  and `clone` keeps every fragment's AST until it is converted for APTED.
+- Clone detection releases each fragment's parser AST reference as soon as its
+  APTED tree is built, so in a clone-only run parse trees are freed during
+  fragment preparation, before the APTED sweep that dominates the run. In a
+  shared-snapshot run the snapshot owns the trees instead, and the release's
+  job is to keep fragments from pinning them beyond it. It depends on the tree
+  converter not copying parser nodes into `TreeNode.OriginalNode`: parser
+  nodes carry a parent pointer, so retaining one pins the whole file's AST.
 
 Memory scales with source size, not with project history or file count.
 
@@ -110,11 +131,12 @@ consumed them. On small inputs this shows up as a higher peak (83 MB rather than
 
 Work is parallelized at two levels, both bounded by `runtime.NumCPU()`:
 
-- **Across analyses.** The five analyses run concurrently
-  (`service.ParallelExecutorImpl`).
-- **Within an analysis.** Per-file read, parse, and analysis fan out across
-  workers (`service.analyzeFilesConcurrently`), and clone detection verifies
-  LSH candidate pairs across workers.
+- **Across analyses.** The five analyses run concurrently over the shared
+  snapshot.
+- **Within an analysis.** Snapshot construction fans per-file read and parse
+  out across workers, each analysis fans its per-file work over the parsed
+  files the same way (`service.analyzeFilesConcurrently`), and clone detection
+  verifies LSH candidate pairs across workers.
 
 Clone detection's verification is parallel only on the LSH path. Below the LSH
 auto-threshold the exhaustive sweep still runs on a single goroutine, so a

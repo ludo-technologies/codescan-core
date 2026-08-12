@@ -653,37 +653,6 @@ func TestComplexityService_buildConfigForResponse(t *testing.T) {
 	}
 }
 
-func TestComplexityService_readFile(t *testing.T) {
-	tempDir := t.TempDir()
-	testFile := filepath.Join(tempDir, "test.txt")
-	content := "test content"
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to create test file: %v", err)
-	}
-
-	cfg := &config.ComplexityConfig{}
-	service := NewComplexityService(cfg)
-
-	data, err := service.readFile(testFile)
-	if err != nil {
-		t.Fatalf("readFile should not return error: %v", err)
-	}
-
-	if string(data) != content {
-		t.Errorf("Content should be '%s', got '%s'", content, string(data))
-	}
-}
-
-func TestComplexityService_readFile_NonExistent(t *testing.T) {
-	cfg := &config.ComplexityConfig{}
-	service := NewComplexityService(cfg)
-
-	_, err := service.readFile("/nonexistent/file.txt")
-	if err == nil {
-		t.Error("readFile should return error for nonexistent file")
-	}
-}
-
 func TestComplexityService_Analyze_WithProgress(t *testing.T) {
 	// Create a temp JS file
 	tempDir := t.TempDir()

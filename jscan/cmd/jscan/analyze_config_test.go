@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"sort"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/ludo-technologies/polyscan/jscan/domain"
 	"github.com/ludo-technologies/polyscan/jscan/internal/config"
+	"github.com/ludo-technologies/polyscan/jscan/service"
 )
 
 // complexityFixture defines three functions with complexity 1, 2 and 3 so that
@@ -54,7 +56,9 @@ func TestRunComplexityAnalysisInternal_SortByFromConfig(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Output.SortBy = "name"
 
-	resp, err := runComplexityAnalysisInternal([]string{file}, cfg)
+	files := []string{file}
+	snapshot := service.BuildProjectSnapshot(context.Background(), files, nil)
+	resp, err := runComplexityAnalysisInternal(context.Background(), snapshot, files, cfg)
 	if err != nil {
 		t.Fatalf("analysis failed: %v", err)
 	}
@@ -103,7 +107,9 @@ func TestRunComplexityAnalysisInternal_MinComplexityFromConfig(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Complexity.ReportUnchanged = true
 
-	baseline, err := runComplexityAnalysisInternal([]string{file}, cfg)
+	files := []string{file}
+	snapshot := service.BuildProjectSnapshot(context.Background(), files, nil)
+	baseline, err := runComplexityAnalysisInternal(context.Background(), snapshot, files, cfg)
 	if err != nil {
 		t.Fatalf("baseline analysis failed: %v", err)
 	}
@@ -112,7 +118,7 @@ func TestRunComplexityAnalysisInternal_MinComplexityFromConfig(t *testing.T) {
 	}
 
 	cfg.Output.MinComplexity = 3
-	filtered, err := runComplexityAnalysisInternal([]string{file}, cfg)
+	filtered, err := runComplexityAnalysisInternal(context.Background(), snapshot, files, cfg)
 	if err != nil {
 		t.Fatalf("filtered analysis failed: %v", err)
 	}

@@ -45,8 +45,23 @@ func NewDependencyGraphServiceWithDefaults() *DependencyGraphServiceImpl {
 	}
 }
 
-// Analyze performs complete dependency graph analysis
+// Analyze performs complete dependency graph analysis. Unlike the other
+// analyses there is no per-file streaming variant: graph construction needs
+// every module's AST at once, so a single-analysis run holds the same one set
+// of parse trees a shared snapshot would.
 func (s *DependencyGraphServiceImpl) Analyze(ctx context.Context, req domain.DependencyGraphRequest) (*domain.DependencyGraphResponse, error) {
+	snapshot := BuildProjectSnapshot(ctx, req.Paths, nil)
+	return s.AnalyzeSnapshot(ctx, snapshot, req)
+}
+
+// AnalyzeSnapshot performs dependency graph analysis on already parsed project
+// files. The snapshot defines the analyzed file set; req.Paths, when set, must
+// name the same files.
+func (s *DependencyGraphServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.DependencyGraphRequest) (*domain.DependencyGraphResponse, error) {
+	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+		return nil, err
+	}
+
 	var warnings []string
 	var errors []string
 
@@ -59,8 +74,8 @@ func (s *DependencyGraphServiceImpl) Analyze(ctx context.Context, req domain.Dep
 		config.IncludeTypeImports = *req.IncludeTypeImports
 	}
 
-	// Parse all files
-	asts, parseWarnings, parseErrors := s.parseFiles(ctx, req.Paths)
+	// Collect the parsed files
+	asts, parseWarnings, parseErrors := collectSnapshotASTs(ctx, snapshot)
 	warnings = append(warnings, parseWarnings...)
 	errors = append(errors, parseErrors...)
 
@@ -131,42 +146,24 @@ func (s *DependencyGraphServiceImpl) Analyze(ctx context.Context, req domain.Dep
 	}, nil
 }
 
-// parseFiles parses all input files and returns their ASTs
-func (s *DependencyGraphServiceImpl) parseFiles(ctx context.Context, paths []string) (map[string]*parser.Node, []string, []string) {
-	asts := make(map[string]*parser.Node, len(paths))
+// collectSnapshotASTs gathers the snapshot's parsed files, reporting read
+// failures as errors and parse failures as warnings, matching how this
+// analysis has always classified them.
+func collectSnapshotASTs(ctx context.Context, snapshot *ProjectSnapshot) (map[string]*parser.Node, []string, []string) {
+	asts := make(map[string]*parser.Node, len(snapshot.Files))
 	var warnings []string
 	var errors []string
 
-	results := analyzeFilesConcurrently(ctx, paths, nil,
-		func(_ context.Context, filePath string) fileAnalysis[*parser.Node] {
-			content, err := os.ReadFile(filePath)
-			if err != nil {
-				return fileAnalysis[*parser.Node]{
-					errors: []string{fmt.Sprintf("Failed to read %s: %v", filePath, err)},
-				}
-			}
-
-			// Each call builds its own parser: tree-sitter parsers are not safe
-			// for concurrent use.
-			p := parser.NewParser()
-			defer p.Close()
-
-			ast, err := p.ParseString(string(content))
-			if err != nil {
-				return fileAnalysis[*parser.Node]{
-					warnings: []string{fmt.Sprintf("Failed to parse %s: %v", filePath, err)},
-				}
-			}
-
-			return fileAnalysis[*parser.Node]{value: ast}
-		})
-
-	for index, result := range results {
-		warnings = append(warnings, result.warnings...)
-		errors = append(errors, result.errors...)
-		if result.value != nil {
-			asts[paths[index]] = result.value
+	for _, file := range snapshot.Files {
+		if file.ReadErr != nil {
+			errors = append(errors, fmt.Sprintf("Failed to read %s: %v", file.Path, file.ReadErr))
+			continue
 		}
+		if file.ParseErr != nil {
+			warnings = append(warnings, fmt.Sprintf("Failed to parse %s: %v", file.Path, file.ParseErr))
+			continue
+		}
+		asts[file.Path] = file.AST
 	}
 
 	if ctx.Err() != nil {
@@ -285,11 +282,10 @@ func (s *DependencyGraphServiceImpl) AnalyzeSingleFile(ctx context.Context, file
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	// Parse file
-	p := parser.NewParser()
-	defer p.Close()
-
-	ast, err := p.ParseString(string(content))
+	// Parse with the language-appropriate grammar and the real file name, the
+	// same way the snapshot parses for Analyze, so both entry points report
+	// identical locations and module contents.
+	ast, err := parser.ParseForLanguage(filePath, content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse file: %w", err)
 	}

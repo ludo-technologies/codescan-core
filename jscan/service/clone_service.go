@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -41,41 +40,77 @@ type extractedFragments struct {
 	nodes     int
 }
 
-// extractFileFragments reads, parses, and extracts clone fragments from one
-// file. Fragment extraction only reads the detector's configuration, so this is
-// safe to run for several files at once.
-func extractFileFragments(detector *analyzer.CloneDetector, filePath string) fileAnalysis[*extractedFragments] {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
+// extractFileFragments extracts clone fragments from one parsed file. Fragment
+// extraction only reads the detector's configuration, so this is safe to run
+// for several files at once.
+func extractFileFragments(detector *analyzer.CloneDetector, file *ProjectFile) fileAnalysis[*extractedFragments] {
+	filePath := file.Path
+	if file.ReadErr != nil {
 		return fileAnalysis[*extractedFragments]{
-			errors: []string{fmt.Sprintf("[%s] Failed to read file: %v", filePath, err)},
+			errors: []string{fmt.Sprintf("[%s] Failed to read file: %v", filePath, file.ReadErr)},
 		}
 	}
 
-	ast, err := parser.ParseForLanguage(filePath, content)
-	if err != nil {
+	if file.ParseErr != nil {
 		return fileAnalysis[*extractedFragments]{
-			errors: []string{fmt.Sprintf("[%s] Failed to parse: %v", filePath, err)},
+			errors: []string{fmt.Sprintf("[%s] Failed to parse: %v", filePath, file.ParseErr)},
 		}
 	}
 
 	extracted := &extractedFragments{
 		// Source content is carried along for Type-1 textual gating.
-		fragments: detector.ExtractFragmentsWithSource(ast.Body, filePath, content),
-		lines:     countLines(content),
+		fragments: detector.ExtractFragmentsWithSource(file.AST.Body, filePath, file.Content),
+		lines:     countSourceLines(file.Content),
 	}
-	for _, node := range ast.Body {
+	for _, node := range file.AST.Body {
 		extracted.nodes += countASTNodes(node)
 	}
 
 	return fileAnalysis[*extractedFragments]{value: extracted}
 }
 
-// DetectClones performs clone detection on the given request
+// DetectClones performs clone detection on the given request. Each file is
+// read, parsed, and its fragments extracted inside the fan-out; a file's parse
+// tree stays reachable only through its fragments, which drop their AST
+// references once converted for APTED, so trees are released as detection
+// proceeds — use DetectClonesInSnapshot when several analyses should share
+// the parse trees.
 func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRequest) (*domain.CloneResponse, error) {
 	startTime := time.Now()
+	config := s.effectiveConfig(req)
+	detector := analyzer.NewCloneDetector(&config)
 
-	// Apply request-specific thresholds to config
+	results := analyzeProjectFilesFromPaths(ctx, req.Paths, nil,
+		func(file *ProjectFile) fileAnalysis[*extractedFragments] {
+			return extractFileFragments(detector, file)
+		})
+	return s.detectFromExtraction(ctx, results, detector, &config, req, startTime)
+}
+
+// DetectClonesInSnapshot performs clone detection on already parsed project
+// files. The snapshot defines the analyzed file set; req.Paths, when set,
+// must name the same files. Fragments reference the snapshot's ASTs only
+// until the detector converts them to APTED trees; after that the snapshot is
+// the trees' sole owner, so they stay collectable once every analysis sharing
+// the snapshot has finished.
+func (s *CloneServiceImpl) DetectClonesInSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req *domain.CloneRequest) (*domain.CloneResponse, error) {
+	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+		return nil, err
+	}
+
+	startTime := time.Now()
+	config := s.effectiveConfig(req)
+	detector := analyzer.NewCloneDetector(&config)
+
+	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[*extractedFragments] {
+			return extractFileFragments(detector, file)
+		})
+	return s.detectFromExtraction(ctx, results, detector, &config, req, startTime)
+}
+
+// effectiveConfig applies request-specific thresholds on top of the service config.
+func (s *CloneServiceImpl) effectiveConfig(req *domain.CloneRequest) analyzer.CloneDetectorConfig {
 	config := *s.config
 	if req.MinLines > 0 {
 		config.MinLines = req.MinLines
@@ -115,24 +150,21 @@ func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRe
 	}
 	config.IgnoreLiterals = req.IgnoreLiterals
 	config.IgnoreIdentifiers = req.IgnoreIdentifiers
+	return config
+}
 
-	// Create clone detector with configured settings
-	detector := analyzer.NewCloneDetector(&config)
+// detectFromExtraction runs detection over per-file extraction results, in
+// input order, and assembles the response both entry points share.
+func (s *CloneServiceImpl) detectFromExtraction(ctx context.Context, results []fileAnalysis[*extractedFragments], detector *analyzer.CloneDetector, config *analyzer.CloneDetectorConfig, req *domain.CloneRequest, startTime time.Time) (*domain.CloneResponse, error) {
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("clone detection cancelled: %w", ctx.Err())
+	}
 
-	// Extract fragments from all files
 	var allFragments []*analyzer.CodeFragment
 	filesAnalyzed := 0
 	linesAnalyzed := 0
 	nodesAnalyzed := 0
 	var errors []string
-
-	results := analyzeFilesConcurrently(ctx, req.Paths, nil,
-		func(_ context.Context, filePath string) fileAnalysis[*extractedFragments] {
-			return extractFileFragments(detector, filePath)
-		})
-	if ctx.Err() != nil {
-		return nil, fmt.Errorf("clone detection cancelled: %w", ctx.Err())
-	}
 
 	for _, result := range results {
 		errors = append(errors, result.errors...)
@@ -393,17 +425,6 @@ func countASTNodes(node *parser.Node) int {
 	count := 1
 	for _, child := range parser.OrderedChildren(node) {
 		count += countASTNodes(child)
-	}
-	return count
-}
-
-// countLines counts the number of lines in content
-func countLines(content []byte) int {
-	count := 1
-	for _, b := range content {
-		if b == '\n' {
-			count++
-		}
 	}
 	return count
 }
