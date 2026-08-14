@@ -17,9 +17,7 @@
 // importers were never part of the input.
 //
 // Output is handled by OutputFormatterImpl for text, JSON, YAML, CSV, and HTML,
-// and by DOTFormatter for Graphviz. Note that the CLI reaches only the text,
-// JSON, HTML, and DOT paths today; analyze maps any --format value other than
-// json or text to HTML, leaving the YAML and CSV writers unreachable.
+// and by DOTFormatter for Graphviz.
 //
 // BuildAnalyzeSummary combines the five responses into a domain.AnalyzeSummary
 // and computes the health score. Because a nil response is treated as an

@@ -42,6 +42,8 @@ Examples:
   jscan analyze --select cbo src/                 # CBO coupling analysis only
   jscan analyze --json src/                       # Output JSON to stdout
   jscan analyze --text src/                       # Output text to stdout
+  jscan analyze --format yaml src/                # Output YAML to stdout
+  jscan analyze --format csv src/                 # Output CSV to stdout
   jscan analyze --no-open src/                    # Generate HTML without opening browser
   jscan analyze -o report.html src/               # Custom output path`,
 		RunE: runAnalyze,
@@ -50,7 +52,7 @@ Examples:
 	cmd.Flags().StringSliceVarP(&selectAnalyses, "select", "s", []string{"complexity", "deadcode", "clone", "cbo", "deps"},
 		"Analyses to run (comma-separated): complexity,deadcode,clone,cbo,deps")
 	cmd.Flags().StringVarP(&outputFormat, "format", "f", "html",
-		"Output format: html, json, text (default: html)")
+		"Output format: html, json, text, yaml, csv (default: html)")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false,
 		"Output results as JSON to stdout")
 	cmd.Flags().BoolVar(&textOutput, "text", false,
@@ -72,20 +74,39 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no paths specified")
 	}
 
-	// Determine output format (default: HTML)
-	format := domain.OutputFormatHTML
-	if jsonOutput || outputFormat == "json" {
-		format = domain.OutputFormatJSON
-	} else if textOutput || outputFormat == "text" {
-		format = domain.OutputFormatText
+	if cmd.Flags().Changed("format") {
+		switch outputFormat {
+		case "html", "json", "text", "yaml", "csv":
+		default:
+			return fmt.Errorf("invalid format %q, must be one of: html, json, text, yaml, csv", outputFormat)
+		}
 	}
+
+	// Determine output format (default: HTML)
+	var format domain.OutputFormat
+	switch {
+	case jsonOutput, outputFormat == "json":
+		format = domain.OutputFormatJSON
+	case textOutput, outputFormat == "text":
+		format = domain.OutputFormatText
+	case htmlOutput, outputFormat == "html":
+		format = domain.OutputFormatHTML
+	case outputFormat == "yaml":
+		format = domain.OutputFormatYAML
+	case outputFormat == "csv":
+		format = domain.OutputFormatCSV
+	default:
+		return fmt.Errorf("invalid format %q, must be one of: html, json, text, yaml, csv", outputFormat)
+	}
+
+	isStructured := format == domain.OutputFormatJSON || format == domain.OutputFormatYAML || format == domain.OutputFormatCSV
 
 	// Load configuration
 	cfg, err := loadCommandConfig(configPath, args[0], os.Stderr)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
-	if configPath != "" && format != domain.OutputFormatJSON {
+	if configPath != "" && !isStructured {
 		fmt.Printf("Using config: %s\n", configPath)
 	}
 
@@ -103,12 +124,12 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no JavaScript/TypeScript files found")
 	}
 
-	if format != domain.OutputFormatJSON {
+	if !isStructured {
 		fmt.Printf("Analyzing %d files...\n", len(files))
 	}
 
-	// Create progress manager (auto-disabled for JSON output or non-TTY)
-	pm := service.NewProgressManager(format != domain.OutputFormatJSON)
+	// Create progress manager (auto-disabled for structured output or non-TTY)
+	pm := service.NewProgressManager(!isStructured)
 	defer pm.Close()
 
 	// Start timing
@@ -226,19 +247,19 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	}
 
 	// Handle errors
-	if complexityErr != nil && format != domain.OutputFormatJSON {
+	if complexityErr != nil && !isStructured {
 		fmt.Fprintf(os.Stderr, "Complexity analysis error: %v\n", complexityErr)
 	}
-	if deadCodeErr != nil && format != domain.OutputFormatJSON {
+	if deadCodeErr != nil && !isStructured {
 		fmt.Fprintf(os.Stderr, "Dead code analysis error: %v\n", deadCodeErr)
 	}
-	if cloneErr != nil && format != domain.OutputFormatJSON {
+	if cloneErr != nil && !isStructured {
 		fmt.Fprintf(os.Stderr, "Clone analysis error: %v\n", cloneErr)
 	}
-	if cboErr != nil && format != domain.OutputFormatJSON {
+	if cboErr != nil && !isStructured {
 		fmt.Fprintf(os.Stderr, "CBO analysis error: %v\n", cboErr)
 	}
-	if depsErr != nil && format != domain.OutputFormatJSON {
+	if depsErr != nil && !isStructured {
 		fmt.Fprintf(os.Stderr, "Dependency analysis error: %v\n", depsErr)
 	}
 
