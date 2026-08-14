@@ -282,6 +282,31 @@ func TestCalculateMaxDepthWithCycle(t *testing.T) {
 	}
 }
 
+// TestCalculateMaxDepthExcludesDynamicImports pins depth to the same load-time
+// contract cycle detection uses: a dynamic import() runs when it is called, so
+// it cannot deepen the layering the modules are loaded in.
+func TestCalculateMaxDepthExcludesDynamicImports(t *testing.T) {
+	// a -> b statically, b -> c only through a dynamic import().
+	graph := domain.NewDependencyGraph()
+	graph.AddNode(&domain.ModuleNode{ID: "a"})
+	graph.AddNode(&domain.ModuleNode{ID: "b"})
+	graph.AddNode(&domain.ModuleNode{ID: "c"})
+	graph.AddEdge(&domain.DependencyEdge{From: "a", To: "b", Weight: 1})
+	graph.AddEdge(&domain.DependencyEdge{From: "b", To: "c", Weight: 1, EdgeType: domain.EdgeTypeDynamic})
+
+	calc := NewCouplingMetricsCalculator(nil)
+
+	if depth := calc.CalculateMaxDepth(graph); depth != 1 {
+		t.Errorf("the dynamic edge must not count toward depth: got %d, want 1", depth)
+	}
+
+	// Promoting the same pair to a static import restores the layer.
+	graph.AddEdge(&domain.DependencyEdge{From: "b", To: "c", Weight: 1})
+	if depth := calc.CalculateMaxDepth(graph); depth != 2 {
+		t.Errorf("a static edge alongside the dynamic one is a load-time dependency: got %d, want 2", depth)
+	}
+}
+
 func TestGetCouplingBucket(t *testing.T) {
 	calc := NewCouplingMetricsCalculator(nil)
 
