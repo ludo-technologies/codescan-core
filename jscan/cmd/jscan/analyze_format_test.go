@@ -255,3 +255,92 @@ func TestAnalyzeCmd_FormatText(t *testing.T) {
 		t.Errorf("expected text output on stdout, got:\n%s", stdout)
 	}
 }
+
+func TestAnalyzeCmd_ExplicitFormatOverridesShorthandFlags(t *testing.T) {
+	tests := []struct {
+		name          string
+		args          []string
+		expectedCheck func(t *testing.T, stdout, stderr string)
+	}{
+		{
+			name: "html flag overridden by format yaml",
+			args: []string{"--html", "--format", "yaml"},
+			expectedCheck: func(t *testing.T, stdout, stderr string) {
+				var parsed map[string]interface{}
+				if err := yaml.Unmarshal([]byte(stdout), &parsed); err != nil {
+					t.Fatalf("expected valid YAML output, got: %s", stdout)
+				}
+				if _, ok := parsed["version"]; !ok {
+					t.Errorf("missing version in YAML output: %s", stdout)
+				}
+			},
+		},
+		{
+			name: "html flag overridden by format csv",
+			args: []string{"--html", "--format", "csv"},
+			expectedCheck: func(t *testing.T, stdout, stderr string) {
+				if !strings.Contains(stdout, "type,file,function,start_line,end_line") {
+					t.Errorf("expected CSV header on stdout, got: %s", stdout)
+				}
+			},
+		},
+		{
+			name: "html flag overridden by format text",
+			args: []string{"--html", "--format", "text"},
+			expectedCheck: func(t *testing.T, stdout, stderr string) {
+				if !strings.Contains(stdout, "Complexity Analysis") {
+					t.Errorf("expected text output on stdout, got: %s", stdout)
+				}
+			},
+		},
+		{
+			name: "html flag overridden by format json",
+			args: []string{"--html", "--format", "json"},
+			expectedCheck: func(t *testing.T, stdout, stderr string) {
+				if !strings.Contains(stdout, `"complexity"`) {
+					t.Errorf("expected JSON output on stdout, got: %s", stdout)
+				}
+			},
+		},
+		{
+			name: "text flag overridden by format yaml",
+			args: []string{"--text", "--format", "yaml"},
+			expectedCheck: func(t *testing.T, stdout, stderr string) {
+				var parsed map[string]interface{}
+				if err := yaml.Unmarshal([]byte(stdout), &parsed); err != nil {
+					t.Fatalf("expected valid YAML output, got: %s", stdout)
+				}
+			},
+		},
+		{
+			name: "json flag overridden by format csv",
+			args: []string{"--json", "--format", "csv"},
+			expectedCheck: func(t *testing.T, stdout, stderr string) {
+				if !strings.Contains(stdout, "type,file,function,start_line,end_line") {
+					t.Errorf("expected CSV header on stdout, got: %s", stdout)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetAnalyzeFlags()
+			dir, _ := writeSampleJSFile(t)
+
+			cmd := analyzeCmd()
+			fullArgs := append(tt.args, dir)
+			cmd.SetArgs(fullArgs)
+
+			stdout, stderr, err := captureStdoutAndStderr(func() error {
+				return cmd.Execute()
+			})
+
+			if err != nil {
+				t.Fatalf("unexpected error for args %v: %v", fullArgs, err)
+			}
+
+			tt.expectedCheck(t, stdout, stderr)
+		})
+	}
+}

@@ -74,29 +74,32 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no paths specified")
 	}
 
+	// Determine output format (default: HTML)
+	var format domain.OutputFormat
 	if cmd.Flags().Changed("format") {
 		switch outputFormat {
-		case "html", "json", "text", "yaml", "csv":
+		case "html":
+			format = domain.OutputFormatHTML
+		case "json":
+			format = domain.OutputFormatJSON
+		case "text":
+			format = domain.OutputFormatText
+		case "yaml":
+			format = domain.OutputFormatYAML
+		case "csv":
+			format = domain.OutputFormatCSV
 		default:
 			return fmt.Errorf("invalid format %q, must be one of: html, json, text, yaml, csv", outputFormat)
 		}
-	}
-
-	// Determine output format (default: HTML)
-	var format domain.OutputFormat
-	switch {
-	case jsonOutput, outputFormat == "json":
-		format = domain.OutputFormatJSON
-	case textOutput, outputFormat == "text":
-		format = domain.OutputFormatText
-	case htmlOutput, outputFormat == "html":
-		format = domain.OutputFormatHTML
-	case outputFormat == "yaml":
-		format = domain.OutputFormatYAML
-	case outputFormat == "csv":
-		format = domain.OutputFormatCSV
-	default:
-		return fmt.Errorf("invalid format %q, must be one of: html, json, text, yaml, csv", outputFormat)
+	} else {
+		switch {
+		case jsonOutput:
+			format = domain.OutputFormatJSON
+		case textOutput:
+			format = domain.OutputFormatText
+		default:
+			format = domain.OutputFormatHTML
+		}
 	}
 
 	isStructured := format == domain.OutputFormatJSON || format == domain.OutputFormatYAML || format == domain.OutputFormatCSV
