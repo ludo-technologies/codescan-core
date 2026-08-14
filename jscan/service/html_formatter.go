@@ -436,8 +436,8 @@ const htmlTemplate = `<!DOCTYPE html>
                     </div>
                     {{if .HasComplexity}}
                     <div class="metric-card">
-                        <div class="metric-value">{{if and (gt .Summary.FunctionsParsed 0) (ne .Summary.FunctionsParsed .Summary.TotalFunctions)}}{{.Summary.TotalFunctions}} / {{.Summary.FunctionsParsed}}{{else}}{{.Summary.TotalFunctions}}{{end}}</div>
-                        <div class="metric-label">{{if and (gt .Summary.FunctionsParsed 0) (ne .Summary.FunctionsParsed .Summary.TotalFunctions)}}Reported / Parsed{{else}}Total Functions{{end}}</div>
+                        <div class="metric-value">{{.Summary.TotalFunctions}}</div>
+                        <div class="metric-label">Total Functions</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-value">{{printf "%.2f" .Summary.AverageComplexity}}</div>
@@ -464,8 +464,8 @@ const htmlTemplate = `<!DOCTYPE html>
 
                 <div class="metric-grid">
                     <div class="metric-card">
-                        <div class="metric-value">{{if and (gt .Complexity.Summary.FunctionsParsed 0) (ne .Complexity.Summary.FunctionsParsed .Complexity.Summary.TotalFunctions)}}{{.Complexity.Summary.TotalFunctions}} / {{.Complexity.Summary.FunctionsParsed}}{{else}}{{.Complexity.Summary.TotalFunctions}}{{end}}</div>
-                        <div class="metric-label">{{if and (gt .Complexity.Summary.FunctionsParsed 0) (ne .Complexity.Summary.FunctionsParsed .Complexity.Summary.TotalFunctions)}}Reported / Parsed{{else}}Total Functions{{end}}</div>
+                        <div class="metric-value">{{.Complexity.Summary.TotalFunctions}}</div>
+                        <div class="metric-label">Total Functions</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-value">{{printf "%.2f" .Complexity.Summary.AverageComplexity}}</div>

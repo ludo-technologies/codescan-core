@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -202,11 +203,11 @@ func TestComplexityService_AnalyzeFile(t *testing.T) {
 	}
 }
 
-// TestComplexityService_Analyze_FunctionsParsedExcludesUnchanged guards the wiring
-// between filterFunctions and the response summary: functions dropped by
-// report_unchanged must not inflate FunctionsParsed, so the gap between
-// FunctionsParsed and TotalFunctions reflects complexity filtering alone.
-func TestComplexityService_Analyze_FunctionsParsedExcludesUnchanged(t *testing.T) {
+// TestComplexityService_Analyze_SummaryIgnoresReportFilters pins the contract the
+// health score depends on: min_complexity and report_unchanged decide which
+// functions are listed, and nothing else. Every aggregate describes the whole
+// analyzed population, so no report flag can move a score.
+func TestComplexityService_Analyze_SummaryIgnoresReportFilters(t *testing.T) {
 	tempDir := t.TempDir()
 	jsFile := filepath.Join(tempDir, "mixed.js")
 	content := `
@@ -222,7 +223,7 @@ function branchy(x) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
-	analyze := func(t *testing.T, reportUnchanged bool) domain.ComplexitySummary {
+	analyze := func(t *testing.T, reportUnchanged bool, minComplexity int) *domain.ComplexityResponse {
 		t.Helper()
 		service := NewComplexityService(&config.ComplexityConfig{
 			LowThreshold:    5,
@@ -232,78 +233,44 @@ function branchy(x) {
 		})
 
 		resp, err := service.Analyze(context.Background(), domain.ComplexityRequest{
-			Paths: []string{jsFile},
+			Paths:         []string{jsFile},
+			MinComplexity: minComplexity,
 		})
 		if err != nil {
 			t.Fatalf("Analyze should not return error: %v", err)
 		}
-		return resp.Summary
+		return resp
 	}
 
-	t.Run("report unchanged enabled counts every function", func(t *testing.T) {
-		summary := analyze(t, true)
-
-		if summary.TotalFunctions != 3 {
-			t.Errorf("TotalFunctions should be 3, got %d", summary.TotalFunctions)
-		}
-		if summary.FunctionsParsed != 3 {
-			t.Errorf("FunctionsParsed should be 3, got %d", summary.FunctionsParsed)
-		}
-	})
-
-	t.Run("report unchanged disabled drops trivial functions from both counts", func(t *testing.T) {
-		summary := analyze(t, false)
-
-		// The two complexity-1 functions are not reportable, so they are absent
-		// from TotalFunctions and from FunctionsParsed alike.
-		if summary.TotalFunctions != 1 {
-			t.Errorf("TotalFunctions should be 1, got %d", summary.TotalFunctions)
-		}
-		if summary.FunctionsParsed != 1 {
-			t.Errorf("FunctionsParsed should be 1, got %d", summary.FunctionsParsed)
-		}
-	})
-}
-
-// TestComplexityService_Analyze_FunctionsParsedReportsMinComplexityDrops verifies the
-// other half of the contract: functions hidden by min_complexity stay counted, which
-// is what the "N reported / M parsed" disclosure exists to surface.
-func TestComplexityService_Analyze_FunctionsParsedReportsMinComplexityDrops(t *testing.T) {
-	tempDir := t.TempDir()
-	jsFile := filepath.Join(tempDir, "mixed.js")
-	content := `
-function trivialA() { return 1; }
-function trivialB() { return 2; }
-function branchy(x) {
-  if (x > 0) { return 1; }
-  if (x < 0) { return -1; }
-  return 0;
-}
-`
-	if err := os.WriteFile(jsFile, []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to create test file: %v", err)
+	baseline := analyze(t, true, 0)
+	if baseline.Summary.TotalFunctions != 3 {
+		t.Fatalf("TotalFunctions should be 3, got %d", baseline.Summary.TotalFunctions)
+	}
+	if len(baseline.Functions) != 3 {
+		t.Fatalf("baseline should report every function, got %d", len(baseline.Functions))
 	}
 
-	service := NewComplexityService(&config.ComplexityConfig{
-		LowThreshold:    5,
-		MediumThreshold: 10,
-		Enabled:         true,
-		ReportUnchanged: true,
-	})
-
-	resp, err := service.Analyze(context.Background(), domain.ComplexityRequest{
-		Paths:         []string{jsFile},
-		MinComplexity: 2,
-	})
-	if err != nil {
-		t.Fatalf("Analyze should not return error: %v", err)
+	tests := []struct {
+		name            string
+		reportUnchanged bool
+		minComplexity   int
+	}{
+		{"min complexity hides trivial functions", true, 2},
+		{"report unchanged hides trivial functions", false, 0},
+		{"both filters at once", false, 2},
 	}
 
-	if resp.Summary.TotalFunctions != 1 {
-		t.Errorf("TotalFunctions should be 1, got %d", resp.Summary.TotalFunctions)
-	}
-	if resp.Summary.FunctionsParsed != 3 {
-		t.Errorf("FunctionsParsed should be 3, got %d", resp.Summary.FunctionsParsed)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resp := analyze(t, test.reportUnchanged, test.minComplexity)
+
+			if len(resp.Functions) != 1 {
+				t.Errorf("only the branchy function should be listed, got %d", len(resp.Functions))
+			}
+			if !reflect.DeepEqual(resp.Summary, baseline.Summary) {
+				t.Errorf("summary must match the unfiltered run\n got: %+v\nwant: %+v", resp.Summary, baseline.Summary)
+			}
+		})
 	}
 }
 
@@ -432,7 +399,7 @@ func TestComplexityService_filterFunctions(t *testing.T) {
 		MaxComplexity: 10,
 	}
 
-	filtered, functionsParsed := service.filterFunctions(functions, req)
+	filtered := service.filterFunctions(functions, req)
 
 	// Should filter:
 	// - simple (complexity 1 < min 3)
@@ -443,11 +410,6 @@ func TestComplexityService_filterFunctions(t *testing.T) {
 
 	if len(filtered) > 0 && filtered[0].Name != "medium" {
 		t.Errorf("Filtered function should be 'medium', got '%s'", filtered[0].Name)
-	}
-
-	// 'simple' is dropped by ReportUnchanged, so it is not part of the parsed count
-	if functionsParsed != 2 {
-		t.Errorf("FunctionsParsed should be 2, got %d", functionsParsed)
 	}
 }
 
@@ -464,14 +426,10 @@ func TestComplexityService_filterFunctions_ReportUnchanged(t *testing.T) {
 
 	req := domain.ComplexityRequest{}
 
-	filtered, functionsParsed := service.filterFunctions(functions, req)
+	filtered := service.filterFunctions(functions, req)
 
 	if len(filtered) != 1 {
 		t.Errorf("Should include unchanged function when ReportUnchanged is true")
-	}
-
-	if functionsParsed != 1 {
-		t.Errorf("FunctionsParsed should be 1, got %d", functionsParsed)
 	}
 }
 
@@ -567,7 +525,7 @@ func TestComplexityService_generateSummary_Empty(t *testing.T) {
 	cfg := &config.ComplexityConfig{}
 	service := NewComplexityService(cfg)
 
-	summary := service.generateSummary([]domain.FunctionComplexity{}, 0, domain.ComplexityRequest{}, 0)
+	summary := service.generateSummary([]domain.FunctionComplexity{}, 0)
 
 	if summary.TotalFunctions != 0 {
 		t.Error("Empty functions should have 0 total")
@@ -587,13 +545,13 @@ func TestComplexityService_generateSummary_WithFunctions(t *testing.T) {
 		{Name: "c", Metrics: domain.ComplexityMetrics{Complexity: 25}, RiskLevel: domain.RiskLevelHigh},
 	}
 
-	summary := service.generateSummary(functions, 2, domain.ComplexityRequest{}, 5)
+	summary := service.generateSummary(functions, 2)
 
 	if summary.TotalFunctions != 3 {
 		t.Errorf("TotalFunctions should be 3, got %d", summary.TotalFunctions)
 	}
-	if summary.FunctionsParsed != 5 {
-		t.Errorf("FunctionsParsed should be 5, got %d", summary.FunctionsParsed)
+	if summary.FunctionsParsed != 3 {
+		t.Errorf("FunctionsParsed should be 3, got %d", summary.FunctionsParsed)
 	}
 	if summary.FilesAnalyzed != 2 {
 		t.Errorf("FilesAnalyzed should be 2, got %d", summary.FilesAnalyzed)

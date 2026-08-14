@@ -110,14 +110,16 @@ type FunctionComplexity struct {
 	RiskLevel RiskLevel `json:"risk_level" yaml:"risk_level"`
 }
 
-// ComplexitySummary represents aggregate statistics
+// ComplexitySummary represents aggregate statistics.
+// Averages, min/max and risk counts are computed over every analyzed function;
+// the report filters only limit which functions are listed.
 type ComplexitySummary struct {
-	// TotalFunctions is the post-filter count (functions included in results after min_complexity filtering).
+	// TotalFunctions is the complete analyzed population that every aggregate below
+	// describes. min_complexity, max_complexity and report_unchanged limit which
+	// functions ComplexityResponse.Functions carries, not what is measured.
 	TotalFunctions int `json:"total_functions" yaml:"total_functions"`
-	// FunctionsParsed is the count of reportable functions: parsed functions that survived
-	// report_unchanged, counted before the min/max complexity filters. Functions dropped by
-	// report_unchanged are excluded from both counts, so the difference between
-	// FunctionsParsed and TotalFunctions is attributable to complexity filtering alone.
+	// FunctionsParsed is retained for output compatibility and describes the same
+	// complete analyzed population as TotalFunctions.
 	FunctionsParsed   int     `json:"functions_parsed" yaml:"functions_parsed"`
 	AverageComplexity float64 `json:"average_complexity" yaml:"average_complexity"`
 	MaxComplexity     int     `json:"max_complexity" yaml:"max_complexity"`
@@ -133,8 +135,9 @@ type ComplexitySummary struct {
 	ComplexityDistribution map[string]int `json:"complexity_distribution,omitempty" yaml:"complexity_distribution,omitempty"`
 }
 
-// DirectoryComplexityMetrics aggregates reported ComplexityResponse.Functions
-// entries for one project-root-relative directory.
+// DirectoryComplexityMetrics aggregates the complete analyzed function
+// population for one project-root-relative directory. Report filters do not
+// change these metrics, matching the project-wide summary contract.
 type DirectoryComplexityMetrics struct {
 	DirectoryPath         string  `json:"directory_path" yaml:"directory_path"`
 	FunctionCount         int     `json:"function_count" yaml:"function_count"`

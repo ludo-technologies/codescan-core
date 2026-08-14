@@ -127,10 +127,11 @@ type AnalyzeSummary struct {
 	ArchCompliance            float64 `json:"arch_compliance" yaml:"arch_compliance"`
 
 	// Key metrics
-	// TotalFunctions is the post-filter count (functions included after min_complexity filtering).
+	// TotalFunctions is the complete analyzed population that every complexity
+	// metric below describes, including the health score. Report filters change
+	// which functions are listed, never what is scored.
 	TotalFunctions int `json:"total_functions" yaml:"total_functions"`
-	// FunctionsParsed is the count of reportable functions: parsed functions that survived
-	// report_unchanged, counted before the min/max complexity filters.
+	// FunctionsParsed is retained for output compatibility and matches TotalFunctions.
 	FunctionsParsed       int     `json:"functions_parsed" yaml:"functions_parsed"`
 	AverageComplexity     float64 `json:"average_complexity" yaml:"average_complexity"`
 	HighComplexityCount   int     `json:"high_complexity_count" yaml:"high_complexity_count"`

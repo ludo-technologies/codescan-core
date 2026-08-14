@@ -100,16 +100,17 @@ func (s *ComplexityServiceImpl) buildResponse(ctx context.Context, results []fil
 	moduleRollups := moduleComplexityRollups(allFunctions, linesOfCode)
 
 	// Filter and sort results
-	filteredFunctions, functionsParsed := s.filterFunctions(allFunctions, req)
-	sortedFunctions := s.sortFunctions(filteredFunctions, req.SortBy)
+	sortedFunctions := s.sortFunctions(s.filterFunctions(allFunctions, req), req.SortBy)
 
-	byDirectory, err := aggregateDirectoryComplexity(sortedFunctions, analyzedPaths)
+	// Both aggregations describe the analyzed population, not the subset the
+	// report filters leave visible: otherwise raising min_complexity would
+	// remove the functions it measures and move the health score with them.
+	byDirectory, err := aggregateDirectoryComplexity(allFunctions, analyzedPaths)
 	if err != nil {
 		return nil, domain.NewAnalysisError("failed to aggregate directory complexity", err)
 	}
 
-	// Generate summary
-	summary := s.generateSummary(sortedFunctions, len(analyzedPaths), req, functionsParsed)
+	summary := s.generateSummary(allFunctions, len(analyzedPaths))
 
 	return &domain.ComplexityResponse{
 		Functions:     sortedFunctions,
@@ -239,21 +240,17 @@ func (s *ComplexityServiceImpl) analyzeProjectFile(projectFile *ProjectFile) fil
 	return fileAnalysis[fileComplexity]{value: file}
 }
 
-// filterFunctions returns the visible functions plus the count of functions that
-// reached the complexity filters. report_unchanged is part of the reporting
-// contract rather than a complexity filter, so functions it drops are excluded
-// from the parsed count as well.
-func (s *ComplexityServiceImpl) filterFunctions(functions []domain.FunctionComplexity, req domain.ComplexityRequest) ([]domain.FunctionComplexity, int) {
+// filterFunctions returns the functions the report lists. Every filter here is
+// a reporting decision: the summary and the directory rollups are computed over
+// the unfiltered population, so nothing dropped here moves a metric.
+func (s *ComplexityServiceImpl) filterFunctions(functions []domain.FunctionComplexity, req domain.ComplexityRequest) []domain.FunctionComplexity {
 	var filtered []domain.FunctionComplexity
-	functionsParsed := 0
 
 	for _, fn := range functions {
 		// Skip unchanged (complexity = 1) if requested
 		if !s.config.ReportUnchanged && fn.Metrics.Complexity == 1 {
 			continue
 		}
-
-		functionsParsed++
 
 		// Filter by minimum complexity
 		if req.MinComplexity > 0 && fn.Metrics.Complexity < req.MinComplexity {
@@ -268,7 +265,7 @@ func (s *ComplexityServiceImpl) filterFunctions(functions []domain.FunctionCompl
 		filtered = append(filtered, fn)
 	}
 
-	return filtered, functionsParsed
+	return filtered
 }
 
 // sortFunctions sorts functions based on the specified criteria
@@ -321,13 +318,14 @@ func functionPrecedes(a, b domain.FunctionComplexity) bool {
 }
 
 // generateSummary generates a summary of the complexity analysis.
-// functionsParsed is the reportable function count from filterFunctions: functions that
-// survived report_unchanged, counted before the min/max complexity filters.
-func (s *ComplexityServiceImpl) generateSummary(functions []domain.FunctionComplexity, filesProcessed int, req domain.ComplexityRequest, functionsParsed int) domain.ComplexitySummary {
+// functions must be the complete analyzed population: the report filters are
+// presentation decisions, so averages, min/max and risk counts stay stable
+// regardless of how much of the population is displayed.
+func (s *ComplexityServiceImpl) generateSummary(functions []domain.FunctionComplexity, filesProcessed int) domain.ComplexitySummary {
 	summary := domain.ComplexitySummary{
 		FilesAnalyzed:   filesProcessed,
 		TotalFunctions:  len(functions),
-		FunctionsParsed: functionsParsed,
+		FunctionsParsed: len(functions),
 	}
 
 	if len(functions) == 0 {
