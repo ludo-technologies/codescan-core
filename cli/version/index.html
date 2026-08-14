@@ -1715,10 +1715,10 @@
 </tbody>
 </table>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>version<span class="w"> </span>--verbose
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="go">0.4.1 (commit: unknown, built: unknown, by: source)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="go">0.4.1 (commit: 7b3d1e2, built: 2026-08-14T07:40:09Z, by: release)</span>
 </span></code></pre></div>
-<p>The release pipeline injects only the version number through linker flags, so the other three fields keep their placeholder values even on an official release build. Treat <code>commit</code>, <code>built</code>, and <code>by</code> as unpopulated rather than as a sign that something went wrong with your install.</p>
-<p>A binary you compiled yourself reports <code>dev</code> as its version, for the same reason. That is the expected output of <code>go build</code> without the release flags.</p>
+<p>Official release builds inject the version tag, commit hash, build timestamp in UTC, and <code>by: release</code>.</p>
+<p>A binary you compiled yourself using bare <code>go build</code> reports placeholder values (<code>dev</code>, commit <code>unknown</code>, built <code>unknown</code>, by <code>source</code>). Building via <code>make</code> sets <code>by: make</code> and local git metadata.</p>
 <h2 id="the-root-flag">The root flag<a class="headerlink" href="#the-root-flag" title="Permanent link">&para;</a></h2>
 <p><code>jscan --version</code> prints the same short string as <code>jscan version</code> and exists because Cobra provides it automatically.</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>--version

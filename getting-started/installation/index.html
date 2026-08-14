@@ -1883,9 +1883,9 @@
 <p>A binary you build yourself reports <code>dev</code>, because the version string is injected during the release build through linker flags.</p>
 <p>Adding <code>--verbose</code> prints the same version together with three build metadata fields:</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>version<span class="w"> </span>--verbose
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="go">0.4.1 (commit: unknown, built: unknown, by: source)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="go">0.4.1 (commit: 7b3d1e2, built: 2026-08-14T07:40:09Z, by: release)</span>
 </span></code></pre></div>
-<p>The release pipeline currently injects only the version number, so the commit, build date, and builder fields keep their placeholder values on official builds as well.</p>
+<p>Official release binaries include the commit hash, the build timestamp in UTC, and <code>release</code> as the builder.</p>
 <h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
 <p>Continue to the <a href="../quick-start/">quick start</a> to run your first analysis and read the report.</p>
 
