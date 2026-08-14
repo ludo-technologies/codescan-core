@@ -26,17 +26,13 @@ jscan analyze src/ test/ scripts/build.ts             # Several paths at once
 | Flag | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--select` | `-s` | `complexity,deadcode,clone,cbo,deps` | Comma-separated list of analyses to run |
-| `--format` | `-f` | `html` | Output format. Accepts `html`, `json`, or `text` |
+| `--format` | `-f` | `html` | Output format. Accepts `html`, `json`, `text`, `yaml`, or `csv` |
 | `--json` | | `false` | Shorthand for `--format json` |
 | `--text` | | `false` | Shorthand for `--format text` |
 | `--html` | | `false` | Shorthand for `--format html`, which is already the default |
 | `--no-open` | | `false` | Write the HTML report without opening a browser |
 | `--output` | `-o` | `jscan-report.html` | Path for the HTML report file |
 | `--config` | `-c` | discovered | Path to a configuration file |
-
-!!! warning "Only three formats are recognized"
-
-    `--format` silently falls back to HTML for any value other than `json` or `text`. Passing `--format csv` or `--format yaml` produces an HTML report rather than an error, so check the flag spelling if you receive HTML unexpectedly.
 
 If both `--json` and `--text` are given, JSON wins.
 
@@ -51,6 +47,14 @@ The format determines where results go and what else is printed.
 === "JSON"
 
     The full result document goes to standard output. The score summary goes to standard error, so that redirecting standard output to a file keeps the JSON valid. Progress bars are suppressed. The [JSON schema page](../output/json-schema.md) documents every field.
+
+=== "YAML"
+
+    The full result document goes to standard output formatted as YAML, matching the JSON response structure. The score summary goes to standard error. Progress bars are suppressed.
+
+=== "CSV"
+
+    Tabular results for complexity, dead code findings, clone pairs, and dependency edges go to standard output in comma-separated format. The score summary goes to standard error. Progress bars are suppressed.
 
 === "Text"
 

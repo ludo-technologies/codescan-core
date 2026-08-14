@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support `yaml` and `csv` output formats in `jscan analyze --format`, directing clean structured output to stdout and the score summary to stderr
 - Report a project scale line (Micro, Small, Medium, Large, Enterprise, classified by analyzed file count) directly below the health score in the terminal summary, the text output, and the HTML report header. The `summary` object of the JSON and YAML output gains `project_scale` and `total_loc`. The scale is contextual only and does not affect the health score
 - Apply `analysis.include_patterns`, `analysis.recursive`, `complexity.report_unchanged`, `dead_code.min_severity`, `dead_code.sort_by`, and `output.sort_by`, which until now were validated and then ignored. Include patterns select from the file types jscan can parse, using the same matching rules as `exclude_patterns`; a file named directly on the command line is analyzed whether or not it matches
 - Warn on stderr, naming each key, when a configuration file sets keys that no command reads. Misspelled keys are reported the same way
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Reject unrecognized `--format` values in `jscan analyze` with an error naming supported formats instead of silently falling back to HTML
 - Parse TypeScript with the TypeScript grammar in dependency analysis, which parsed every file with the JavaScript grammar and silently lost whatever a JS parse of a TS file drops — most visibly exports declared with TypeScript-only syntax, which made modules look unreferenced or export-free in the dependency graph. TypeScript projects will see more complete module nodes, and coupling metrics that follow from them (such as `deps_main_sequence_deviation`) can shift. The same rewiring gives dependency analysis real file names for every project, JavaScript included: dependency edges' `location.file_path` reported the placeholder `<input>` and now reports the analyzed file's path, both in `jscan analyze` and in `AnalyzeSingleFile`
 - Measure the `nesting_depth` metric, which was reported as 0 for every function because the calculation was never called and, when called, counted a function's control structures instead of measuring how deeply they nest. An `else if` continues the chain its `if` opened, a `catch` clause stays at the level of its `try`, and a nested function is measured on its own
 - Count one decision point per `case` label so a `switch` scores like the equivalent `if` chain instead of adding 1 no matter how many cases it has, and report the case count in the previously always-zero `switch_cases` metric. A `default` clause adds nothing, matching `else`. Switch-heavy code (reducers, dispatchers, state machines) now scores higher, so some functions cross the medium/high risk thresholds and complexity scores drop; the code did not get worse, it was under-measured. The same fix corrects a decision point that was lost when a branch sat inside a `try` block, so an `if` inside `try` now adds 1 as it does anywhere else
