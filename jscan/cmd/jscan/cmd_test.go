@@ -183,3 +183,19 @@ func TestVersionCmd_ShortFlag(t *testing.T) {
 		t.Error("Missing short flag -v for --verbose")
 	}
 }
+
+func TestVersionCmd_Execute(t *testing.T) {
+	cmd := versionCmd()
+	cmd.SetArgs([]string{})
+	if err := cmd.Execute(); err != nil {
+		t.Errorf("versionCmd.Execute() error = %v", err)
+	}
+}
+
+func TestVersionCmd_ExecuteVerbose(t *testing.T) {
+	cmd := versionCmd()
+	cmd.SetArgs([]string{"--verbose"})
+	if err := cmd.Execute(); err != nil {
+		t.Errorf("versionCmd.Execute(--verbose) error = %v", err)
+	}
+}

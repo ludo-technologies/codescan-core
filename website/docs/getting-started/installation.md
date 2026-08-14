@@ -82,10 +82,10 @@ Adding `--verbose` prints the same version together with three build metadata fi
 
 ```console
 $ jscan version --verbose
-0.4.1 (commit: unknown, built: unknown, by: source)
+0.4.1 (commit: 7b3d1e2, built: 2026-08-14T07:40:09Z, by: release)
 ```
 
-The release pipeline currently injects only the version number, so the commit, build date, and builder fields keep their placeholder values on official builds as well.
+Official release binaries include the commit hash, the build timestamp in UTC, and `release` as the builder.
 
 ## Next step
 
