@@ -1934,7 +1934,7 @@
 <td><code>--format</code></td>
 <td><code>-f</code></td>
 <td><code>html</code></td>
-<td>Output format. Accepts <code>html</code>, <code>json</code>, or <code>text</code></td>
+<td>Output format. Accepts <code>html</code>, <code>json</code>, <code>text</code>, <code>yaml</code>, or <code>csv</code></td>
 </tr>
 <tr>
 <td><code>--json</code></td>
@@ -1974,20 +1974,22 @@
 </tr>
 </tbody>
 </table>
-<div class="admonition warning">
-<p class="admonition-title">Only three formats are recognized</p>
-<p><code>--format</code> silently falls back to HTML for any value other than <code>json</code> or <code>text</code>. Passing <code>--format csv</code> or <code>--format yaml</code> produces an HTML report rather than an error, so check the flag spelling if you receive HTML unexpectedly.</p>
-</div>
 <p>If both <code>--json</code> and <code>--text</code> are given, JSON wins.</p>
 <h2 id="output-behavior">Output behavior<a class="headerlink" href="#output-behavior" title="Permanent link">&para;</a></h2>
 <p>The format determines where results go and what else is printed.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">HTML (default)</label><label for="__tabbed_1_2">JSON</label><label for="__tabbed_1_3">Text</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">HTML (default)</label><label for="__tabbed_1_2">JSON</label><label for="__tabbed_1_3">YAML</label><label for="__tabbed_1_4">CSV</label><label for="__tabbed_1_5">Text</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>jscan writes the report to <code>jscan-report.html</code> in the current directory, prints the absolute path, and opens the file in your default browser. The browser step is skipped when <code>--no-open</code> is set and also when jscan detects that it is running inside an SSH session. A short score summary follows on standard output.</p>
 </div>
 <div class="tabbed-block">
 <p>The full result document goes to standard output. The score summary goes to standard error, so that redirecting standard output to a file keeps the JSON valid. Progress bars are suppressed. The <a href="../../output/json-schema/">JSON schema page</a> documents every field.</p>
+</div>
+<div class="tabbed-block">
+<p>The full result document goes to standard output formatted as YAML, matching the JSON response structure. The score summary goes to standard error. Progress bars are suppressed.</p>
+</div>
+<div class="tabbed-block">
+<p>Tabular results for complexity, dead code findings, clone pairs, and dependency edges go to standard output in comma-separated format. The score summary goes to standard error. Progress bars are suppressed.</p>
 </div>
 <div class="tabbed-block">
 <p>The full human-readable report goes to standard output, ending with the health score breakdown. No separate summary is printed to standard error, because the text report already contains one.</p>
