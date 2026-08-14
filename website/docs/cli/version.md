@@ -19,12 +19,12 @@ jscan version 0.4.1
 
 ```console
 $ jscan version --verbose
-0.4.1 (commit: unknown, built: unknown, by: source)
+0.4.1 (commit: 7b3d1e2, built: 2026-08-14T07:40:09Z, by: release)
 ```
 
-The release pipeline injects only the version number through linker flags, so the other three fields keep their placeholder values even on an official release build. Treat `commit`, `built`, and `by` as unpopulated rather than as a sign that something went wrong with your install.
+Official release builds inject the version tag, commit hash, build timestamp in UTC, and `by: release`.
 
-A binary you compiled yourself reports `dev` as its version, for the same reason. That is the expected output of `go build` without the release flags.
+A binary you compiled yourself using bare `go build` reports placeholder values (`dev`, commit `unknown`, built `unknown`, by `source`). Building via `make` sets `by: make` and local git metadata.
 
 ## The root flag
 

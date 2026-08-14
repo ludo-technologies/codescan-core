@@ -52,7 +52,15 @@ jobs:
             EXT=".exe"
           fi
 
-          go build -ldflags="-s -w -X github.com/ludo-technologies/polyscan/jscan/internal/version.Version=${VERSION}" -o jscan${EXT} ./cmd/jscan
+          COMMIT=$(git rev-parse --short HEAD)
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          go build -ldflags="-s -w \
+            -X github.com/ludo-technologies/polyscan/jscan/internal/version.Version=${VERSION} \
+            -X github.com/ludo-technologies/polyscan/jscan/internal/version.Commit=${COMMIT} \
+            -X github.com/ludo-technologies/polyscan/jscan/internal/version.Date=${DATE} \
+            -X github.com/ludo-technologies/polyscan/jscan/internal/version.BuiltBy=release" \
+            -o jscan${EXT} ./cmd/jscan
 
           ARCHIVE_NAME="jscan_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
           if [ "${{ matrix.goos }}" = "windows" ]; then

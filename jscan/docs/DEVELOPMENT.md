@@ -65,10 +65,9 @@ The build injects version metadata via linker flags (`-ldflags`):
 - `Version` - from `git describe --tags --always --dirty`
 - `Commit` - from `git rev-parse --short HEAD`
 - `Date` - build date
-- `BuiltBy` - set to `make` when built via Makefile
+- `BuiltBy` - set to `make` when built via Makefile, or `release` when built via the release workflow
 
-The release workflow injects only `Version`, so a released binary reports
-`unknown` for the commit and date and `source` as its builder.
+The release workflow injects all four fields (`Version`, `Commit`, `Date`, and `BuiltBy=release`). Binaries built with a bare `go build` retain the placeholder values (`dev`, `unknown`, `unknown`, `source`).
 
 ## Cross-compilation does not work
 
