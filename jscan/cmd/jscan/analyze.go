@@ -305,7 +305,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 
 		// Print CLI summary
 		summary := service.BuildAnalyzeSummary(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse)
-		fmt.Print(service.FormatCLISummary(summary, duration))
+		fmt.Print(service.FormatCLISummary(summary, duration, unanalyzedFiles(complexityResponse)))
 
 		return nil
 	}
@@ -320,10 +320,21 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	// Text format already includes a Health Score section, so skip it.
 	if format != domain.OutputFormatText {
 		summary := service.BuildAnalyzeSummary(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse)
-		fmt.Fprint(os.Stderr, service.FormatCLISummary(summary, duration))
+		fmt.Fprint(os.Stderr, service.FormatCLISummary(summary, duration, unanalyzedFiles(complexityResponse)))
 	}
 
 	return nil
+}
+
+// unanalyzedFiles returns the per-file failures the complexity analysis
+// collected. It is the only analysis that reports the files it dropped, and it
+// runs over the same file set as the others, so its list identifies what every
+// score is missing.
+func unanalyzedFiles(complexityResponse *domain.ComplexityResponse) []string {
+	if complexityResponse == nil {
+		return nil
+	}
+	return complexityResponse.Errors
 }
 
 // countSelected reports how many analyses the run will execute.

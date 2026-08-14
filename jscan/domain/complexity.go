@@ -124,7 +124,15 @@ type ComplexitySummary struct {
 	AverageComplexity float64 `json:"average_complexity" yaml:"average_complexity"`
 	MaxComplexity     int     `json:"max_complexity" yaml:"max_complexity"`
 	MinComplexity     int     `json:"min_complexity" yaml:"min_complexity"`
-	FilesAnalyzed     int     `json:"files_analyzed" yaml:"files_analyzed"`
+	// FilesAnalyzed is the number of files that were parsed and contributed to
+	// the metrics above.
+	FilesAnalyzed int `json:"files_analyzed" yaml:"files_analyzed"`
+	// TotalFiles is the number of files the request covered, parsed or not.
+	TotalFiles int `json:"total_files" yaml:"total_files"`
+	// SkippedFiles is the number of files dropped because they could not be read
+	// or parsed. Their contents are absent from every metric here, so a consumer
+	// must read this before trusting the aggregates.
+	SkippedFiles int `json:"skipped_files" yaml:"skipped_files"`
 
 	// Risk distribution
 	LowRiskFunctions    int `json:"low_risk_functions" yaml:"low_risk_functions"`

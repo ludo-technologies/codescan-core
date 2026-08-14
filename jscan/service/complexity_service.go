@@ -76,11 +76,13 @@ func (s *ComplexityServiceImpl) buildResponse(ctx context.Context, results []fil
 	var warnings []string
 	var errors []string
 	var analyzedPaths []string
+	filesSkipped := 0
 	linesOfCode := make(map[string]int, len(paths))
 
 	for index, result := range results {
 		if len(result.errors) > 0 {
 			errors = append(errors, result.errors...)
+			filesSkipped++
 			continue // Skip this file but continue with others
 		}
 
@@ -110,7 +112,7 @@ func (s *ComplexityServiceImpl) buildResponse(ctx context.Context, results []fil
 		return nil, domain.NewAnalysisError("failed to aggregate directory complexity", err)
 	}
 
-	summary := s.generateSummary(allFunctions, len(analyzedPaths))
+	summary := s.generateSummary(allFunctions, len(analyzedPaths), filesSkipped)
 
 	return &domain.ComplexityResponse{
 		Functions:     sortedFunctions,
@@ -321,9 +323,14 @@ func functionPrecedes(a, b domain.FunctionComplexity) bool {
 // functions must be the complete analyzed population: the report filters are
 // presentation decisions, so averages, min/max and risk counts stay stable
 // regardless of how much of the population is displayed.
-func (s *ComplexityServiceImpl) generateSummary(functions []domain.FunctionComplexity, filesProcessed int) domain.ComplexitySummary {
+// filesSkipped counts the files that produced no metrics because they could not
+// be read or parsed; reporting it lets consumers see that the aggregates below
+// cover less than the request asked for.
+func (s *ComplexityServiceImpl) generateSummary(functions []domain.FunctionComplexity, filesProcessed int, filesSkipped int) domain.ComplexitySummary {
 	summary := domain.ComplexitySummary{
 		FilesAnalyzed:   filesProcessed,
+		TotalFiles:      filesProcessed + filesSkipped,
+		SkippedFiles:    filesSkipped,
 		TotalFunctions:  len(functions),
 		FunctionsParsed: len(functions),
 	}

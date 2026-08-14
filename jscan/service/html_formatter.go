@@ -434,6 +434,12 @@ const htmlTemplate = `<!DOCTYPE html>
                         <div class="metric-value">{{.Summary.AnalyzedFiles}}</div>
                         <div class="metric-label">Files Analyzed</div>
                     </div>
+                    {{if gt .Summary.SkippedFiles 0}}
+                    <div class="metric-card">
+                        <div class="metric-value">{{.Summary.SkippedFiles}}</div>
+                        <div class="metric-label">Files Skipped (parse errors)</div>
+                    </div>
+                    {{end}}
                     {{if .HasComplexity}}
                     <div class="metric-card">
                         <div class="metric-value">{{.Summary.TotalFunctions}}</div>

@@ -525,7 +525,7 @@ func TestComplexityService_generateSummary_Empty(t *testing.T) {
 	cfg := &config.ComplexityConfig{}
 	service := NewComplexityService(cfg)
 
-	summary := service.generateSummary([]domain.FunctionComplexity{}, 0)
+	summary := service.generateSummary([]domain.FunctionComplexity{}, 0, 0)
 
 	if summary.TotalFunctions != 0 {
 		t.Error("Empty functions should have 0 total")
@@ -545,7 +545,7 @@ func TestComplexityService_generateSummary_WithFunctions(t *testing.T) {
 		{Name: "c", Metrics: domain.ComplexityMetrics{Complexity: 25}, RiskLevel: domain.RiskLevelHigh},
 	}
 
-	summary := service.generateSummary(functions, 2)
+	summary := service.generateSummary(functions, 2, 0)
 
 	if summary.TotalFunctions != 3 {
 		t.Errorf("TotalFunctions should be 3, got %d", summary.TotalFunctions)
