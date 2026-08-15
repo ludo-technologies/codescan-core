@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"sort"
 
 	coregraph "github.com/ludo-technologies/polyscan/core/graph"
@@ -312,7 +313,8 @@ func (c *CouplingMetricsCalculator) CalculateTransitiveDependencies(nodeID strin
 }
 
 // CalculateMaxDepth calculates the maximum dependency depth in the graph,
-// measured in edges along the longest dependency chain.
+// measured in edges along the longest dependency chain. It fails only when ctx
+// is cancelled during the chain search.
 //
 // The chain comes from core/graph's condensation-based finder over the
 // load-time graph: cycles are collapsed before the search, so the depth is well
@@ -320,11 +322,15 @@ func (c *CouplingMetricsCalculator) CalculateTransitiveDependencies(nodeID strin
 // report shows under LongestChains. Dynamic import() edges are excluded, since
 // depth measures how deeply modules are layered at load time, which is the same
 // contract cycle detection uses.
-func (c *CouplingMetricsCalculator) CalculateMaxDepth(graph *domain.DependencyGraph) int {
+func (c *CouplingMetricsCalculator) CalculateMaxDepth(ctx context.Context, graph *domain.DependencyGraph) (int, error) {
 	if graph == nil || graph.NodeCount() == 0 {
-		return 0
+		return 0, nil
 	}
-	return c.CalculateMaxDepthFrom(coregraph.NewChainFinder(LoadTimeGraph(graph)))
+	finder, err := coregraph.NewChainFinder(ctx, LoadTimeGraph(graph))
+	if err != nil {
+		return 0, err
+	}
+	return c.CalculateMaxDepthFrom(finder), nil
 }
 
 // CalculateMaxDepthFrom is CalculateMaxDepth against a chain finder the caller

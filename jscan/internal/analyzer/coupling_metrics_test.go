@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"math"
 	"testing"
 
@@ -256,7 +257,10 @@ func TestCalculateMaxDepth(t *testing.T) {
 	graph.AddEdge(&domain.DependencyEdge{From: "c", To: "d", Weight: 1})
 
 	calc := NewCouplingMetricsCalculator(nil)
-	depth := calc.CalculateMaxDepth(graph)
+	depth, err := calc.CalculateMaxDepth(context.Background(), graph)
+	if err != nil {
+		t.Fatalf("CalculateMaxDepth: %v", err)
+	}
 
 	if depth != 3 {
 		t.Errorf("Expected max depth 3, got %d", depth)
@@ -274,7 +278,10 @@ func TestCalculateMaxDepthWithCycle(t *testing.T) {
 	graph.AddEdge(&domain.DependencyEdge{From: "c", To: "a", Weight: 1})
 
 	calc := NewCouplingMetricsCalculator(nil)
-	depth := calc.CalculateMaxDepth(graph)
+	depth, err := calc.CalculateMaxDepth(context.Background(), graph)
+	if err != nil {
+		t.Fatalf("CalculateMaxDepth: %v", err)
+	}
 
 	// Should handle cycle gracefully
 	if depth < 0 {
@@ -296,14 +303,14 @@ func TestCalculateMaxDepthExcludesDynamicImports(t *testing.T) {
 
 	calc := NewCouplingMetricsCalculator(nil)
 
-	if depth := calc.CalculateMaxDepth(graph); depth != 1 {
-		t.Errorf("the dynamic edge must not count toward depth: got %d, want 1", depth)
+	if depth, err := calc.CalculateMaxDepth(context.Background(), graph); err != nil || depth != 1 {
+		t.Errorf("the dynamic edge must not count toward depth: got %d, %v; want 1", depth, err)
 	}
 
 	// Promoting the same pair to a static import restores the layer.
 	graph.AddEdge(&domain.DependencyEdge{From: "b", To: "c", Weight: 1})
-	if depth := calc.CalculateMaxDepth(graph); depth != 2 {
-		t.Errorf("a static edge alongside the dynamic one is a load-time dependency: got %d, want 2", depth)
+	if depth, err := calc.CalculateMaxDepth(context.Background(), graph); err != nil || depth != 2 {
+		t.Errorf("a static edge alongside the dynamic one is a load-time dependency: got %d, %v; want 2", depth, err)
 	}
 }
 

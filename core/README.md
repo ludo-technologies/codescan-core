@@ -12,7 +12,7 @@ Shared Go module that provides language-agnostic code analysis algorithms for th
 | `clone/` | AST feature extraction, clone classification, 5 clone grouping strategies (Connected, KCore, StarMedoid, CompleteLinkage, Centroid), and group dedup post-passes |
 | `dfa/` | Data-flow analysis framework over CFGs with language-injected variable reference extraction |
 | `domain/` | Shared type definitions, thresholds, and error taxonomy |
-| `graph/` | Directed graph abstraction, Tarjan SCC cycle detection, Robert Martin coupling metrics |
+| `graph/` | Directed graph abstraction, Tarjan SCC cycle detection, longest dependency chains over the SCC condensation, Robert Martin coupling metrics |
 | `lcom/` | LCOM4 lack-of-cohesion metric over method/attribute access maps |
 | `lsh/` | Locality-Sensitive Hashing index and MinHash signatures |
 | `nesting/` | Nesting depth analysis with language-injected nesting classifiers |

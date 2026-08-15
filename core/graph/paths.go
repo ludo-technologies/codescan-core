@@ -1,44 +1,62 @@
 package graph
 
-import "sort"
-
-// noComponent marks the absence of a component index.
-const noComponent = -1
+import (
+	"context"
+	"sort"
+)
 
 // ChainFinder answers longest-dependency-chain queries over a directed graph.
 //
 // Finding the longest simple path in a graph that may contain cycles is
 // NP-hard, so a ChainFinder walks the condensation instead: strongly connected
-// components are collapsed to single vertices and the heaviest path through the
-// resulting DAG is memoized in one linear pass, weighting each component by how
-// many nodes it holds. Each query then expands that component path into a
+// components are collapsed to single vertices and the heaviest chains through
+// the resulting DAG are memoized in one linear pass, weighting each component
+// by how many nodes it holds. Each query then expands a component chain into a
 // concrete route through the members of every component it crosses, so every
 // chain returned is a real simple path in the graph.
 //
-// The chain is maximal in dependency layers: no other simple path crosses more
+// A chain is maximal in dependency layers: no other simple path crosses more
 // strongly connected components. Within a component the route is not guaranteed
 // maximal — the final component is walked greedily through as many members as
 // it can reach, while components the chain passes through are crossed by the
 // shortest route between the edges that enter and leave them. Recovering the
 // longest route through a cycle is the NP-hard problem again.
 //
-// Ties are resolved by traversal order, which is derived from the graph's node
-// ordering, so repeated queries over the same graph return the same chain.
+// Chains are ranked by weight (the node count of the components they cross)
+// and, between equally heavy chains, by the lexicographic order of the
+// components they cross, each component named by its smallest member. That
+// order depends only on the graph, not on traversal, so repeated queries over
+// the same graph return the same chains.
 type ChainFinder struct {
-	dag  *condensation
-	best []componentChain
+	dag *condensation
+	// best is the top-ranked chain starting at each component.
+	best []*rankedChain
 }
 
-// NewChainFinder builds the condensation of g and memoizes the longest chain
+// NewChainFinder builds the condensation of g and memoizes the best chain
 // reachable from every component. Construction is linear in the graph size;
 // each subsequent query is linear in the length of the chain it returns.
-func NewChainFinder(g DirectedGraph) *ChainFinder {
+//
+// The condensation and the memoizing pass check ctx as they go and return
+// ctx.Err() as soon as the context is cancelled.
+func NewChainFinder(ctx context.Context, g DirectedGraph) (*ChainFinder, error) {
 	if g == nil || g.NodeCount() == 0 {
-		return &ChainFinder{}
+		return &ChainFinder{}, nil
 	}
 
-	dag := newCondensation(g)
-	return &ChainFinder{dag: dag, best: dag.longestChainPerComponent()}
+	dag, err := newCondensation(ctx, g)
+	if err != nil {
+		return nil, err
+	}
+	ranked, err := dag.rankedChainsPerComponent(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	best := make([]*rankedChain, len(ranked))
+	for index, chains := range ranked {
+		best[index] = chains[0]
+	}
+	return &ChainFinder{dag: dag, best: best}, nil
 }
 
 // LongestChainFrom returns the longest chain that starts at nodeID, or nil if
@@ -51,7 +69,7 @@ func (f *ChainFinder) LongestChainFrom(nodeID string) []string {
 	if !known {
 		return nil
 	}
-	return f.dag.expand(f.componentPathFrom(start), nodeID)
+	return f.dag.expand(f.best[start], nodeID)
 }
 
 // LongestChain returns the longest chain anywhere in the graph.
@@ -60,29 +78,63 @@ func (f *ChainFinder) LongestChain() []string {
 		return nil
 	}
 
-	start, nodes := noComponent, 0
-	for index, chain := range f.best {
-		if chain.nodes > nodes {
-			start, nodes = index, chain.nodes
+	var top *rankedChain
+	for _, chain := range f.best {
+		if top == nil || f.dag.chainLess(chain, top) {
+			top = chain
 		}
 	}
-	if start == noComponent {
-		return nil
-	}
-	return f.dag.expand(f.componentPathFrom(start), "")
+	return f.dag.expand(top, "")
 }
 
-func (f *ChainFinder) componentPathFrom(start int) []int {
-	var path []int
-	for index := start; index != noComponent; index = f.best[index].next {
-		path = append(path, index)
+// LongestChains returns the limit best-ranked chains in the graph, best first.
+// Chains may start anywhere, so a reported chain can be the tail of another.
+// Every chain contains at least one edge: a node that depends on nothing is
+// not a chain, so a graph without edges has none. A limit of zero or less
+// returns nil.
+//
+// The ranking pass is linear in the graph size times limit and checks ctx as it
+// goes, returning ctx.Err() as soon as the context is cancelled.
+func (f *ChainFinder) LongestChains(ctx context.Context, limit int) ([][]string, error) {
+	if f.dag == nil || limit <= 0 {
+		return nil, nil
 	}
-	return path
+
+	ranked, err := f.dag.rankedChainsPerComponent(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	var candidates []*rankedChain
+	for _, chains := range ranked {
+		for _, chain := range chains {
+			// A lone node weighs 1; anything heavier crosses an edge, either
+			// into another component or around its own cycle.
+			if chain.nodes > 1 {
+				candidates = append(candidates, chain)
+			}
+		}
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		return f.dag.chainLess(candidates[i], candidates[j])
+	})
+	if len(candidates) > limit {
+		candidates = candidates[:limit]
+	}
+
+	chains := make([][]string, len(candidates))
+	for index, candidate := range candidates {
+		chains[index] = f.dag.expand(candidate, "")
+	}
+	return chains, nil
 }
 
 // condensation is the DAG of strongly connected components of a graph.
 type condensation struct {
-	graph      DirectedGraph
+	graph DirectedGraph
+	// components lists every component's members in sorted order. Components
+	// come in reverse topological order, so every component a chain continues
+	// into has a smaller index than the component it leaves.
 	components [][]string
 	// componentOf maps a node ID to the index of its component.
 	componentOf map[string]int
@@ -93,12 +145,16 @@ type condensation struct {
 	crossing map[[2]int][2]string
 }
 
-func newCondensation(g DirectedGraph) *condensation {
-	components := StronglyConnectedComponents(g)
+func newCondensation(ctx context.Context, g DirectedGraph) (*condensation, error) {
+	components, err := StronglyConnectedComponents(ctx, g)
+	if err != nil {
+		return nil, err
+	}
 	// Sort each component's members so a chain that starts inside a cycle starts
-	// at a predictable node rather than wherever Tarjan happened to pop it.
-	// These slices are this call's own; CycleDetector runs its own SCC pass, so
-	// its reported cycle order is untouched.
+	// at a predictable node rather than wherever Tarjan happened to pop it, and
+	// so component[0] names the component when chains are compared. These
+	// slices are this call's own; CycleDetector runs its own SCC pass, so its
+	// reported cycle order is untouched.
 	for _, component := range components {
 		sort.Strings(component)
 	}
@@ -117,6 +173,9 @@ func newCondensation(g DirectedGraph) *condensation {
 	}
 
 	for index, component := range components {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		seen := make(map[int]struct{})
 		for _, nodeID := range component {
 			for _, successor := range g.Successors(nodeID) {
@@ -134,69 +193,101 @@ func newCondensation(g DirectedGraph) *condensation {
 		}
 	}
 
-	return dag
+	return dag, nil
 }
 
-// componentChain is the best chain reachable from one component: how many
-// graph nodes it spans and which component continues it.
-type componentChain struct {
+// rankedChain is one chain through the condensation, stored as a linked list
+// of components so that chains sharing a tail share its storage.
+type rankedChain struct {
+	component int
+	// next continues the chain, or is nil when the chain ends here.
+	next *rankedChain
+	// nodes is the chain's weight: the node count of every component it crosses.
 	nodes int
-	next  int
+	// rank is the chain's position among the ranked chains starting at the same
+	// component, which lets two chains be compared without walking them.
+	rank int
 }
 
-// longestChainPerComponent memoizes, for every component, the heaviest chain
-// starting there, weighting a component by its node count so that a chain
-// through a large cycle outranks an equally deep chain through single modules.
-// The condensation is acyclic, so no component is reachable from itself and a
-// single memoized pass suffices.
-func (dag *condensation) longestChainPerComponent() []componentChain {
-	best := make([]componentChain, len(dag.components))
-	resolved := make([]bool, len(dag.components))
-
-	var longestFrom func(index int) componentChain
-	longestFrom = func(index int) componentChain {
-		if resolved[index] {
-			return best[index]
+// rankedChainsPerComponent memoizes, for every component, the limit best-ranked
+// chains starting there. A component with no successors starts exactly one
+// chain, itself; every other component's chains extend the memoized chains of
+// its successors, so a chain is only ever a top-limit chain from its start when
+// its tail is a top-limit chain from the component that follows. Components
+// come in reverse topological order, so each one is ranked after every
+// component it can continue into.
+func (dag *condensation) rankedChainsPerComponent(ctx context.Context, limit int) ([][]*rankedChain, error) {
+	ranked := make([][]*rankedChain, len(dag.components))
+	for index, component := range dag.components {
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
-		resolved[index] = true
 
-		size := len(dag.components[index])
-		chain := componentChain{nodes: size, next: noComponent}
+		size := len(component)
+		var candidates []*rankedChain
+		if len(dag.successors[index]) == 0 {
+			candidates = []*rankedChain{{component: index, nodes: size}}
+		}
 		for _, successor := range dag.successors[index] {
-			if candidate := longestFrom(successor); candidate.nodes+size > chain.nodes {
-				chain = componentChain{nodes: candidate.nodes + size, next: successor}
+			for _, tail := range ranked[successor] {
+				candidates = append(candidates, &rankedChain{
+					component: index,
+					next:      tail,
+					nodes:     size + tail.nodes,
+				})
 			}
 		}
 
-		best[index] = chain
-		return chain
+		sort.Slice(candidates, func(i, j int) bool {
+			return dag.chainLess(candidates[i], candidates[j])
+		})
+		if len(candidates) > limit {
+			candidates = candidates[:limit]
+		}
+		for rank, chain := range candidates {
+			chain.rank = rank
+		}
+		ranked[index] = candidates
 	}
-
-	for index := range dag.components {
-		longestFrom(index)
-	}
-	return best
+	return ranked, nil
 }
 
-// expand turns a component path into a concrete node path, routing through the
+// chainLess orders chains best first: heavier chains before lighter ones, then
+// by the lexicographic order of the components crossed, each named by its
+// smallest member. Two chains that leave the same start component through the
+// same next component are ordered by that tail's rank, which was assigned by
+// this same order, so the comparison never walks a chain.
+func (dag *condensation) chainLess(left, right *rankedChain) bool {
+	if left.nodes != right.nodes {
+		return left.nodes > right.nodes
+	}
+	if left.component != right.component {
+		return dag.components[left.component][0] < dag.components[right.component][0]
+	}
+	if left.next == nil || right.next == nil {
+		return false
+	}
+	if left.next.component != right.next.component {
+		return dag.components[left.next.component][0] < dag.components[right.next.component][0]
+	}
+	return left.next.rank < right.next.rank
+}
+
+// expand turns a component chain into a concrete node path, routing through the
 // members of every component the chain crosses. The path begins at startNode
 // when given, and otherwise at the first component's first member.
-func (dag *condensation) expand(componentPath []int, startNode string) []string {
-	if len(componentPath) == 0 {
-		return nil
-	}
-
+func (dag *condensation) expand(chain *rankedChain, startNode string) []string {
 	var path []string
 	entry := startNode
-	for position, index := range componentPath {
+	for ; chain != nil; chain = chain.next {
 		exit := ""
 		nextEntry := ""
-		if position+1 < len(componentPath) {
-			edge := dag.crossing[[2]int{index, componentPath[position+1]}]
+		if chain.next != nil {
+			edge := dag.crossing[[2]int{chain.component, chain.next.component}]
 			exit, nextEntry = edge[0], edge[1]
 		}
 
-		path = append(path, dag.routeWithin(index, entry, exit)...)
+		path = append(path, dag.routeWithin(chain.component, entry, exit)...)
 		entry = nextEntry
 	}
 

@@ -1,5 +1,7 @@
 package graph
 
+import "context"
+
 // CycleResult holds the result of cycle detection via Tarjan's SCC algorithm.
 type CycleResult struct {
 	// Cycles contains all strongly connected components with more than one node.
@@ -12,6 +14,7 @@ type CycleResult struct {
 
 // CycleDetector finds strongly connected components using Tarjan's algorithm.
 type CycleDetector struct {
+	ctx      context.Context
 	index    int
 	stack    []string
 	onStack  map[string]bool
@@ -32,8 +35,14 @@ func (d *CycleDetector) DetectCycles(g DirectedGraph) *CycleResult {
 		AffectedNodes: make(map[string]bool),
 	}
 
+	// context.Background is never cancelled, so the SCC pass cannot fail here.
+	components, err := StronglyConnectedComponents(context.Background(), g)
+	if err != nil {
+		panic(err)
+	}
+
 	// Only SCCs with more than one node are actual cycles.
-	for _, scc := range StronglyConnectedComponents(g) {
+	for _, scc := range components {
 		if len(scc) <= 1 {
 			continue
 		}
@@ -51,8 +60,12 @@ func (d *CycleDetector) DetectCycles(g DirectedGraph) *CycleResult {
 // including single-node components, using Tarjan's algorithm. Components are
 // returned in reverse topological order: a component appears before any
 // component it depends on.
-func StronglyConnectedComponents(g DirectedGraph) [][]string {
+//
+// The pass checks ctx once per visited node and returns ctx.Err() as soon as
+// the context is cancelled.
+func StronglyConnectedComponents(ctx context.Context, g DirectedGraph) ([][]string, error) {
 	d := &CycleDetector{
+		ctx:      ctx,
 		onStack:  make(map[string]bool),
 		indices:  make(map[string]int),
 		lowlinks: make(map[string]int),
@@ -62,15 +75,22 @@ func StronglyConnectedComponents(g DirectedGraph) [][]string {
 	d.collect = func(scc []string) { components = append(components, scc) }
 
 	for _, nodeID := range g.NodeIDs() {
-		if _, visited := d.indices[nodeID]; !visited {
-			d.strongConnect(g, nodeID)
+		if _, visited := d.indices[nodeID]; visited {
+			continue
+		}
+		if err := d.strongConnect(g, nodeID); err != nil {
+			return nil, err
 		}
 	}
 
-	return components
+	return components, nil
 }
 
-func (d *CycleDetector) strongConnect(g DirectedGraph, v string) {
+func (d *CycleDetector) strongConnect(g DirectedGraph, v string) error {
+	if err := d.ctx.Err(); err != nil {
+		return err
+	}
+
 	d.indices[v] = d.index
 	d.lowlinks[v] = d.index
 	d.index++
@@ -79,7 +99,9 @@ func (d *CycleDetector) strongConnect(g DirectedGraph, v string) {
 
 	for _, w := range g.Successors(v) {
 		if _, visited := d.indices[w]; !visited {
-			d.strongConnect(g, w)
+			if err := d.strongConnect(g, w); err != nil {
+				return err
+			}
 			if d.lowlinks[w] < d.lowlinks[v] {
 				d.lowlinks[v] = d.lowlinks[w]
 			}
@@ -105,4 +127,5 @@ func (d *CycleDetector) strongConnect(g DirectedGraph, v string) {
 			d.collect(scc)
 		}
 	}
+	return nil
 }
