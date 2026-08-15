@@ -230,21 +230,31 @@ Complexities below are in fragment count `n`, fragment size `m`, module count
 | Clone detection without LSH | O(n²) verifications | Exhaustive; the reason LSH auto-enables |
 | `core/graph` SCC | O(V + E) | Tarjan |
 | `core/graph` longest chain | O(V + E) | Condensation plus memoized DAG traversal — see below |
+| `core/graph` top-N chains | O((V + E) · N) | Same condensation; every component keeps its N best chains |
 
-The last row is worth stating explicitly: dependency-chain reporting must never
-enumerate simple paths. On a real import graph with cycles, exhaustive
+The last two rows are worth stating explicitly: dependency-chain reporting must
+never enumerate simple paths. On a real import graph with cycles, exhaustive
 enumeration does not terminate in practical time.
 
 What the chain guarantees, then, is that no other simple path crosses more
 strongly connected components — it is maximal in dependency layers. Components
 are weighted by module count when chains are compared, so a chain through a
-large cycle outranks an equally deep chain through single modules. Within a
+large cycle outranks an equally deep chain through single modules; between
+equally heavy chains, the one whose components sort first by name wins, so the
+ranking depends on the graph alone and not on traversal order. Within a
 component the route is not guaranteed maximal: the component that ends the chain
 is walked greedily through as many members as it can reach, and components the
 chain passes through are crossed by the shortest route between the edges that
 enter and leave them. Recovering the longest route through a cycle is the
 NP-hard problem again. `MaxDepth` counts the edges of that concrete chain, so it
 is always a depth some real import path achieves.
+
+`LongestChains(ctx, N)` ranks chains globally rather than per start node: each
+component memoizes its N best chains, built from the memoized chains of the
+components it depends on, and the global top N is drawn from those lists. A
+chain's tail is a chain in its own right, so a reported list can hold a chain
+and its suffix. Both the condensation and the ranking pass observe context
+cancellation, so a caller with a deadline can abandon the search.
 
 ### `MaxDepth` values changed
 

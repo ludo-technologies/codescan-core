@@ -132,7 +132,10 @@ func (s *DependencyGraphServiceImpl) AnalyzeSnapshot(ctx context.Context, snapsh
 	// condensation, so build the finder once and let both read from it. It runs
 	// over the load-time graph, so a dynamic import() cannot add a layer that
 	// the cycle report has already ruled out.
-	chainFinder := coregraph.NewChainFinder(analyzer.LoadTimeGraph(graph))
+	chainFinder, err := coregraph.NewChainFinder(ctx, analyzer.LoadTimeGraph(graph))
+	if err != nil {
+		return nil, fmt.Errorf("dependency chain search cancelled: %w", err)
+	}
 	maxDepth := couplingCalc.CalculateMaxDepthFrom(chainFinder)
 
 	// Build analysis result
