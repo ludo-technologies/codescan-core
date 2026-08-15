@@ -57,6 +57,13 @@ const (
 	ScoreThresholdFair      = 60 // Fair: 60-74
 	// Poor: 0-59 (below ScoreThresholdFair)
 
+	// Files that fail to parse are absent from every metric, so without a
+	// penalty they score better than working code. The bounds are anchored to
+	// the grade thresholds: a single unanalyzable file forfeits an A, and a
+	// target where nothing parses cannot rank above F.
+	MinParseErrorPenalty = 100 - GradeAThreshold + 1
+	MaxParseErrorPenalty = 100 - GradeDThreshold + 1
+
 	// Other constants
 	MinimumScore                = 0 // Allow truly low scores for severely problematic code
 	HealthyThreshold            = 70
@@ -98,6 +105,24 @@ func DuplicationPenalty(duplicationPercent float64) int {
 	}
 
 	return int(math.Round(penalty))
+}
+
+// ParseErrorPenalty charges the health score for files that could not be
+// analyzed at all. Such a file yields no functions, no dead code, no clones and
+// no coupling, so without this term corrupting a file raises the score. The
+// penalty grows with the unanalyzed fraction and never drops below
+// MinParseErrorPenalty, so one broken file in a large tree still costs a grade.
+func ParseErrorPenalty(skippedFiles, totalFiles int) int {
+	if skippedFiles <= 0 || totalFiles <= 0 {
+		return 0
+	}
+
+	ratio := float64(skippedFiles) / float64(totalFiles)
+	if ratio > 1 {
+		ratio = 1
+	}
+
+	return max(int(math.Round(ratio*float64(MaxParseErrorPenalty))), MinParseErrorPenalty)
 }
 
 // CouplingPenalty calculates the penalty for class coupling (max 20) from the
