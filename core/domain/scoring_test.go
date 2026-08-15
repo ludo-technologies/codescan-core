@@ -38,6 +38,34 @@ func TestDuplicationPenalty(t *testing.T) {
 	}
 }
 
+func TestParseErrorPenalty(t *testing.T) {
+	if p := ParseErrorPenalty(0, 100); p != 0 {
+		t.Errorf("nothing skipped: got %d, want 0", p)
+	}
+	if p := ParseErrorPenalty(5, 0); p != 0 {
+		t.Errorf("no files at all: got %d, want 0", p)
+	}
+	// One file in a large tree rounds to zero, so the floor is what makes it cost the A.
+	if p := ParseErrorPenalty(1, 500); p != MinParseErrorPenalty {
+		t.Errorf("one skipped file: got %d, want %d", p, MinParseErrorPenalty)
+	}
+	if 100-ParseErrorPenalty(1, 500) >= GradeAThreshold {
+		t.Error("one skipped file must forfeit an A")
+	}
+	if p := ParseErrorPenalty(10, 10); p != MaxParseErrorPenalty {
+		t.Errorf("nothing parsed: got %d, want %d", p, MaxParseErrorPenalty)
+	}
+	if 100-ParseErrorPenalty(10, 10) >= GradeDThreshold {
+		t.Error("a wholly unparseable target must rank F")
+	}
+	if half, few := ParseErrorPenalty(50, 100), ParseErrorPenalty(5, 100); half <= few {
+		t.Errorf("penalty must grow with the unanalyzed fraction: %d vs %d", half, few)
+	}
+	if p := ParseErrorPenalty(20, 10); p != MaxParseErrorPenalty {
+		t.Errorf("more skipped than total: got %d, want %d (capped)", p, MaxParseErrorPenalty)
+	}
+}
+
 func TestCouplingPenalty(t *testing.T) {
 	if p := CouplingPenalty(0, 0, 0); p != 0 {
 		t.Errorf("no classes: got %d, want 0", p)
