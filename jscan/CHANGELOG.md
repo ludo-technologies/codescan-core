@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-16
+
 ### Added
 
 - Support `yaml` and `csv` output formats in `jscan analyze --format`, directing clean structured output to stdout and the score summary to stderr
@@ -15,8 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Warn on stderr, naming each key, when a configuration file sets keys that no command reads. Misspelled keys are reported the same way
 - Report directory complexity rollups. The complexity section of the JSON, YAML, and CSV output gains a `by_directory` array with the function count, average and maximum complexity, high-risk count, and average and maximum nesting depth of each directory, and the text output and the HTML complexity tab gain a matching table. Directory paths are relative to the deepest directory that contains every analyzed file
 - Report per-module quality hotspots. The analyze JSON and YAML output gains a `module_quality` array joining, per file, its line count, complexity rollups, and dead-code rollups, with the module name from dependency analysis; the text output, the CSV output, and a new Modules tab in the HTML report show the same table. The rollups are taken before `min_complexity` and `min_severity` are applied, so a filtered report still reports what each module carries
+- Report the files that could not be read or parsed. `ComplexitySummary` gains `total_files` and `skipped_files`, and the CLI summary, the text report, and the HTML report state the shortfall and name the files
 
 ### Changed
+
+- Fail `jscan check` when a file cannot be read or parsed, exiting 2 as its convention documents, and charge the health score a penalty proportional to the unanalyzed fraction, floored so that one skipped file forfeits an A and a wholly unparseable target cannot rank above F. A syntactically broken file used to be dropped from the analysis entirely and cleared every threshold by contributing nothing, so corrupting a module read as the largest quality improvement in a run. The parser now rejects a tree carrying ERROR or MISSING nodes, `--allow-parse-errors` keeps the previous report-only behavior, and an unknown flag or a misspelled `--select` value exits 2 instead of exiting 1 and reading as a quality verdict
+- Rank the longest dependency chains across the whole graph rather than one chain per start node, so ties resolve by module name instead of traversal order, and cancel chain analysis as soon as the request context is cancelled
 
 - Read and parse each file once into a shared project snapshot instead of once per analysis, and build each file's control flow graphs once for complexity and dead code together. A full `jscan analyze` run held five sets of parse trees at its peak and now holds one: on vuejs/core (147k lines, 474 files) peak memory drops from 1.86 GB to 1.05 GB and the parse-bound analyses (complexity, deadcode, cbo, deps) run in roughly half their previous time. A run selecting a single analysis skips the shared snapshot and keeps releasing each file as it goes, so `--select complexity` and CI `check` runs stay at their previous low peaks. Analysis results are unchanged except for the dependency-analysis fix below
 - Adopt `core/clone` for grouping strategies, group dedup, Type-1/2 similarity gates, pair classification, and AST feature extraction; keep JS/TS adapters (fragment extraction, comment stripping, cost model, LSH orchestration)
@@ -32,6 +38,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Count one decision point per `case` label so a `switch` scores like the equivalent `if` chain instead of adding 1 no matter how many cases it has, and report the case count in the previously always-zero `switch_cases` metric. A `default` clause adds nothing, matching `else`. Switch-heavy code (reducers, dispatchers, state machines) now scores higher, so some functions cross the medium/high risk thresholds and complexity scores drop; the code did not get worse, it was under-measured. The same fix corrects a decision point that was lost when a branch sat inside a `try` block, so an `if` inside `try` now adds 1 as it does anywhere else
 - Keep the braces of a `switch` body out of its parsed case list, which also stops them from appearing as empty case branches in the control flow graph
 - Match `analysis.exclude_patterns` against whole path segments instead of any substring of a file's path, so the default entries `out` and `dist` no longer drop `src/routes/`, `src/layout/`, `src/checkout/`, or `src/utils/distance.ts`. Patterns containing a slash are matched against the path, with `**` spanning any number of directories, and patterns are now evaluated relative to the analyzed path so a parent directory named `build` no longer excludes an entire project. Affected projects will see more files analyzed and therefore different scores
+- Compute the complexity summary and the directory rollups over the analyzed population instead of the filtered, sorted function list, so that a report filter no longer doubles as a scoring filter. Raising `--min-complexity` removed the very functions it was meant to surface from the population the health score divides by, and the score moved with it; `report_unchanged` did the same to trivial functions. `total_functions` and `functions_parsed` now describe the same population and are therefore equal, and the "N reported / M parsed" line goes out of the text and HTML output because there is nothing left to disclose
+- Build dependency edges for dynamic `import()` calls, which were never detected: the AST builder left the `import` keyword as a generic node the callee match never recognized, calls sharing a start position were skipped as duplicates, and a template literal argument carried no text. A template literal with substitutions still resolves to no source, because it names no fixed module
+- Measure dependency depth and the longest chains over the load-time graph, which counted dynamic `import()` edges while cycle detection excluded them, so a lazily imported module could add a layer to a depth the cycle report had already ruled out. Coupling metrics keep every edge, since a lazy import is still a runtime dependency
+- Name an unresolved module from its resolved ID rather than from whichever importer the graph builder reached first, so a module several files reach through different relative specifiers keeps one name between runs
+- Break ties in the coupling orderings by source location, so classes a sort key cannot separate no longer keep the input order, which varies run to run because files are analyzed concurrently. A tie at the ten-entry cutoff changed which class appeared in `most_coupled_classes` between runs on identical input
+- Report the commit, build date, and builder in `jscan version` for release binaries, which reported the placeholders the version package holds for a plain `go build`
+
+## [0.9.1] - 2026-07-25
+
+First release built from the polyscan monorepo. The analyzer is unchanged from 0.9.0; only the build and publish pipeline moved.
 
 ## [0.9.0] - 2026-07-11
 
@@ -200,7 +216,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI with analyze command
 - Configuration file support (jscan.config.json)
 
-[Unreleased]: https://github.com/ludo-technologies/jscan/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/ludo-technologies/polyscan/compare/jscan/v0.10.0...HEAD
+[0.10.0]: https://github.com/ludo-technologies/polyscan/compare/jscan/v0.9.1...jscan/v0.10.0
+[0.9.1]: https://github.com/ludo-technologies/polyscan/releases/tag/jscan/v0.9.1
+[0.9.0]: https://github.com/ludo-technologies/jscan/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/ludo-technologies/jscan/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/ludo-technologies/jscan/compare/v0.6.2...v0.7.0
+[0.6.2]: https://github.com/ludo-technologies/jscan/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/ludo-technologies/jscan/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/ludo-technologies/jscan/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ludo-technologies/jscan/compare/v0.4.0...v0.5.0
