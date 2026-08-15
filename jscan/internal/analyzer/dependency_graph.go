@@ -90,7 +90,7 @@ func (b *DependencyGraphBuilder) BuildGraph(moduleResult *domain.ModuleAnalysisR
 				// Ensure target node exists (for external or unresolved modules)
 				toID := edge.To
 				if graph.GetNode(toID) == nil {
-					externalNode := b.createExternalNode(toID, imp.Source, imp.SourceType)
+					externalNode := b.createExternalNode(toID, imp.SourceType)
 					graph.AddNode(externalNode)
 				}
 				graph.AddEdge(edge)
@@ -125,16 +125,21 @@ func (b *DependencyGraphBuilder) normalizeModuleID(filePath string) string {
 	return filepath.ToSlash(filePath)
 }
 
-// createModuleNode creates a ModuleNode from file path and module info
-func (b *DependencyGraphBuilder) createModuleNode(filePath string, info *domain.ModuleInfo) *domain.ModuleNode {
-	id := b.normalizeModuleID(filePath)
-	name := filepath.Base(filePath)
-
-	// Remove extension for the name
+// moduleDisplayName derives a module name from a path: the base name without
+// its extension
+func moduleDisplayName(path string) string {
+	name := filepath.Base(path)
 	ext := filepath.Ext(name)
 	if ext != "" {
 		name = strings.TrimSuffix(name, ext)
 	}
+	return name
+}
+
+// createModuleNode creates a ModuleNode from file path and module info
+func (b *DependencyGraphBuilder) createModuleNode(filePath string, info *domain.ModuleInfo) *domain.ModuleNode {
+	id := b.normalizeModuleID(filePath)
+	name := moduleDisplayName(filePath)
 
 	// Extract export names
 	var exports []string
@@ -159,11 +164,21 @@ func (b *DependencyGraphBuilder) createModuleNode(filePath string, info *domain.
 	}
 }
 
-// createExternalNode creates a ModuleNode for an external/unresolved module
-func (b *DependencyGraphBuilder) createExternalNode(id, source string, moduleType domain.ModuleType) *domain.ModuleNode {
+// createExternalNode creates a ModuleNode for an external/unresolved module.
+// The name comes from the resolved ID, not from the importing file's specifier:
+// several files can reach the same unresolved module through different relative
+// specifiers, and the first importer visited depends on map iteration order.
+func (b *DependencyGraphBuilder) createExternalNode(id string, moduleType domain.ModuleType) *domain.ModuleNode {
+	name := id
+	switch moduleType {
+	case domain.ModuleTypeRelative, domain.ModuleTypeAbsolute:
+		// These IDs are paths, so show the file name like project nodes do.
+		name = moduleDisplayName(id)
+	}
+
 	return &domain.ModuleNode{
 		ID:         id,
-		Name:       source,
+		Name:       name,
 		FilePath:   "",
 		ModuleType: moduleType,
 		IsExternal: true,

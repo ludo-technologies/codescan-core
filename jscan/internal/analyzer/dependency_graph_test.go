@@ -578,6 +578,77 @@ func TestBuildGraphWithExtensionlessImports(t *testing.T) {
 	}
 }
 
+func TestBuildGraphNamesUnresolvedModuleFromItsID(t *testing.T) {
+	// Two files reach the same unresolved module through different relative
+	// specifiers. The node name must not depend on which importer the map
+	// iteration visits first.
+	moduleResult := &domain.ModuleAnalysisResult{
+		Files: map[string]*domain.ModuleInfo{
+			"/project/lib/app.js": {
+				Imports: []*domain.Import{
+					{
+						Source:     "./missing/public",
+						SourceType: domain.ModuleTypeRelative,
+					},
+				},
+			},
+			"/project/lib/missing/router.js": {
+				Imports: []*domain.Import{
+					{
+						Source:     "./public",
+						SourceType: domain.ModuleTypeRelative,
+					},
+				},
+			},
+		},
+	}
+
+	config := DefaultDependencyGraphBuilderConfig()
+	config.ProjectRoot = "/project"
+	builder := NewDependencyGraphBuilder(config)
+
+	for range 50 {
+		graph := builder.BuildGraph(moduleResult)
+
+		node := graph.GetNode("lib/missing/public")
+		if node == nil {
+			t.Fatal("Expected an unresolved node for lib/missing/public")
+		}
+		if node.Name != "public" {
+			t.Fatalf("Expected name %q, got %q", "public", node.Name)
+		}
+	}
+}
+
+func TestBuildGraphNamesUnresolvedPackageFromItsSource(t *testing.T) {
+	moduleResult := &domain.ModuleAnalysisResult{
+		Files: map[string]*domain.ModuleInfo{
+			"/project/lib/app.js": {
+				Imports: []*domain.Import{
+					{
+						Source:     "@scope/pkg/sub",
+						SourceType: domain.ModuleTypePackage,
+					},
+				},
+			},
+		},
+	}
+
+	config := DefaultDependencyGraphBuilderConfig()
+	config.ProjectRoot = "/project"
+	config.IncludeExternal = true
+	builder := NewDependencyGraphBuilder(config)
+	graph := builder.BuildGraph(moduleResult)
+
+	node := graph.GetNode("@scope/pkg/sub")
+	if node == nil {
+		t.Fatal("Expected an external node for @scope/pkg/sub")
+	}
+	if node.Name != "@scope/pkg/sub" {
+		t.Errorf("Expected name %q, got %q", "@scope/pkg/sub", node.Name)
+	}
+}
+
 func TestBuildGraphFromASTs(t *testing.T) {
 	source := `
 import { helper } from './helper';
