@@ -77,6 +77,9 @@ const (
 	NodeProperty         NodeType = "Property"
 
 	// Module system (ESM)
+	// NodeImport is the `import` keyword used as an expression, either as the
+	// callee of a dynamic import call or as the object of `import.meta`.
+	NodeImport                   NodeType = "Import"
 	NodeImportDeclaration        NodeType = "ImportDeclaration"
 	NodeImportSpecifier          NodeType = "ImportSpecifier"
 	NodeImportDefaultSpecifier   NodeType = "ImportDefaultSpecifier"

@@ -217,13 +217,18 @@ func (ma *ModuleAnalyzer) extractImports(ast *parser.Node, info *domain.ModuleIn
 	})
 }
 
-// nodeLocationKey creates a unique key for a node based on its location
+// nodeLocationKey creates a unique key for a node based on its location.
+// The end position is part of the key because nested nodes of the same type
+// can share a start position, as in `import('./m.js').then(...)` where the
+// dynamic import and the `.then()` call are both call expressions starting at
+// the same offset.
 func nodeLocationKey(node *parser.Node) string {
 	if node == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s:%s:%d:%d", node.Type, node.Location.File,
-		node.Location.StartLine, node.Location.StartCol)
+	return fmt.Sprintf("%s:%s:%d:%d:%d:%d", node.Type, node.Location.File,
+		node.Location.StartLine, node.Location.StartCol,
+		node.Location.EndLine, node.Location.EndCol)
 }
 
 // extractExports walks the AST and extracts all export statements
@@ -347,16 +352,11 @@ func (ma *ModuleAnalyzer) processImportDeclaration(node *parser.Node) *domain.Im
 
 // processDynamicImport checks if a call expression is a dynamic import
 func (ma *ModuleAnalyzer) processDynamicImport(node *parser.Node) *domain.Import {
-	if node.Callee == nil {
+	if node.Callee == nil || node.Callee.Type != parser.NodeImport {
 		return nil
 	}
 
-	// Check if callee is 'import' (dynamic import)
-	// Tree-sitter may represent it as an identifier or use Raw
-	isImportCall := (node.Callee.Type == parser.NodeIdentifier && node.Callee.Name == "import") ||
-		node.Callee.Raw == "import"
-
-	if !isImportCall || len(node.Arguments) == 0 {
+	if len(node.Arguments) == 0 {
 		return nil
 	}
 
@@ -523,6 +523,18 @@ func (ma *ModuleAnalyzer) extractSourceValue(node *parser.Node) string {
 
 	// The source is typically a string literal
 	switch node.Type {
+	case parser.NodeTemplateLiteral:
+		// Only a template without substitutions names a fixed module; anything
+		// interpolated is not statically resolvable.
+		raw := node.Raw
+		if strings.Contains(raw, "${") {
+			return ""
+		}
+		if len(raw) >= 2 && raw[0] == '`' && raw[len(raw)-1] == '`' {
+			return raw[1 : len(raw)-1]
+		}
+		return ""
+
 	case parser.NodeStringLiteral, parser.NodeLiteral:
 		// Remove quotes from the raw value
 		raw := node.Raw

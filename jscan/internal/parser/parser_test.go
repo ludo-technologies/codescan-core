@@ -786,18 +786,55 @@ func TestParseTemplateLiteral(t *testing.T) {
 		t.Fatalf("Parse failed: %v", err)
 	}
 
-	// Template literals may be parsed as various node types
-	found := false
+	var template *Node
 	ast.Walk(func(n *Node) bool {
 		if n.Type == NodeTemplateLiteral {
-			found = true
+			template = n
 			return false
 		}
 		return true
 	})
 
-	// Template literal parsing verified - specific node type may vary
-	t.Logf("Template literal node found: %v (node types may vary)", found)
+	if template == nil {
+		t.Fatal("Expected a template literal node")
+	}
+	if template.Raw != "`Hello, ${name}!`" {
+		t.Errorf("Expected raw to keep the whole literal, got %q", template.Raw)
+	}
+}
+
+func TestParseDynamicImportCallee(t *testing.T) {
+	code := "const m = import('./lazy.js');"
+
+	parser := NewParser()
+	defer parser.Close()
+
+	ast, err := parser.ParseString(code)
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	var call *Node
+	ast.Walk(func(n *Node) bool {
+		if n.Type == NodeCallExpression {
+			call = n
+			return false
+		}
+		return true
+	})
+
+	if call == nil {
+		t.Fatal("Expected a call expression node")
+	}
+	if call.Callee == nil || call.Callee.Type != NodeImport {
+		t.Fatalf("Expected callee of type %q, got %v", NodeImport, call.Callee)
+	}
+	if len(call.Arguments) != 1 {
+		t.Fatalf("Expected 1 argument, got %d", len(call.Arguments))
+	}
+	if call.Arguments[0].Raw != "'./lazy.js'" {
+		t.Errorf("Expected argument raw \"'./lazy.js'\", got %q", call.Arguments[0].Raw)
+	}
 }
 
 // AST Node tests
