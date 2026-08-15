@@ -171,7 +171,7 @@ A pattern **containing a slash** is compared to the path itself, where `**` stan
 
 Patterns are matched relative to the path you pass to jscan, so the directories above it are never considered. A project stored at `/home/me/build/myapp` is analyzed normally even though `build` is on the default list. A file you name directly on the command line is matched on its own name alone, so `jscan analyze src/dist/bundle.js` analyzes that file.
 
-!!! note "Behavior changed in the release after 0.9.0"
+!!! note "Behavior changed in 0.10.0"
 
     Earlier versions also skipped a file when a pattern appeared anywhere in its path as a plain substring. The default entries `out` and `dist` therefore removed `src/routes/api.ts`, `src/layout/Header.tsx`, `src/checkout/Cart.ts`, and `src/utils/distance.ts` without reporting anything. If you worked around that by trimming the short entries out of your `exclude_patterns`, you can now go back to the default list.
 
