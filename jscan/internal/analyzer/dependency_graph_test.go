@@ -113,18 +113,11 @@ const module = await import('./dynamic-module');
 
 	edges := graph.GetOutgoingEdges("/src/app.js")
 
-	// Dynamic imports may or may not be detected depending on tree-sitter grammar
-	// If detected, verify edge type is set correctly
-	for _, edge := range edges {
-		if edge.EdgeType == domain.EdgeTypeDynamic {
-			// Dynamic edge found, test passes
-			return
-		}
+	if len(edges) != 1 {
+		t.Fatalf("Expected 1 edge, got %d", len(edges))
 	}
-
-	// If no edges at all, check if module analyzer detected any imports
-	if len(moduleInfo.Imports) == 0 {
-		t.Skip("Dynamic imports not detected by parser - this is parser-dependent")
+	if edges[0].EdgeType != domain.EdgeTypeDynamic {
+		t.Errorf("Expected edge type %q, got %q", domain.EdgeTypeDynamic, edges[0].EdgeType)
 	}
 }
 

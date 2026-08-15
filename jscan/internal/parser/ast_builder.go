@@ -126,6 +126,15 @@ func (b *ASTBuilder) buildNode(tsNode *sitter.Node) *Node {
 		return b.buildIdentifier(tsNode)
 	case "string", "number", "true", "false", "null":
 		return b.buildLiteral(tsNode)
+	case "template_string":
+		return b.buildTemplateLiteral(tsNode)
+	case "import":
+		// The `import` keyword in expression position: `import('./m.js')` or
+		// `import.meta`. Tree-sitter nests a second `import` token inside it,
+		// which carries no extra information.
+		node := NewNode(NodeImport)
+		node.Location = b.getLocation(tsNode)
+		return node
 	case "import_statement":
 		return b.buildImportStatement(tsNode)
 	case "export_statement":
@@ -917,6 +926,27 @@ func (b *ASTBuilder) buildLiteral(tsNode *sitter.Node) *Node {
 		node.Type = NodeBooleanLiteral
 	case "null":
 		node.Type = NodeNullLiteral
+	}
+
+	return node
+}
+
+// buildTemplateLiteral builds a template literal node. Raw keeps the whole
+// literal, backticks included, so callers can tell a fixed template apart from
+// one with substitutions; children keep the interpolated expressions walkable.
+func (b *ASTBuilder) buildTemplateLiteral(tsNode *sitter.Node) *Node {
+	node := NewNode(NodeTemplateLiteral)
+	node.Location = b.getLocation(tsNode)
+	node.Raw = tsNode.Content(b.source)
+
+	for i := 0; i < int(tsNode.ChildCount()); i++ {
+		child := tsNode.Child(i)
+		if child != nil && !b.isTrivia(child) {
+			childNode := b.buildNode(child)
+			if childNode != nil {
+				node.AddChild(childNode)
+			}
+		}
 	}
 
 	return node

@@ -263,22 +263,107 @@ func TestDynamicImport(t *testing.T) {
 		t.Fatalf("Failed to analyze: %v", err)
 	}
 
-	// Dynamic imports may or may not be detected depending on tree-sitter grammar
-	// We check that if detected, it has correct properties
-	for _, imp := range info.Imports {
-		if imp.IsDynamic {
-			if imp.ImportType != domain.ImportTypeDynamic {
-				t.Errorf("Expected import type 'dynamic', got %v", imp.ImportType)
-			}
-			if imp.Source != "./lazy-module" {
-				t.Errorf("Expected source './lazy-module', got %q", imp.Source)
-			}
-			return // Found and validated
-		}
+	if len(info.Imports) != 1 {
+		t.Fatalf("Expected 1 import, got %d", len(info.Imports))
 	}
-	// Note: Dynamic import detection depends on tree-sitter grammar
-	// If not detected, this is acceptable for now
-	t.Log("Dynamic import not detected (tree-sitter grammar limitation)")
+
+	imp := info.Imports[0]
+	if !imp.IsDynamic {
+		t.Error("Expected import to be dynamic")
+	}
+	if imp.ImportType != domain.ImportTypeDynamic {
+		t.Errorf("Expected import type 'dynamic', got %v", imp.ImportType)
+	}
+	if imp.Source != "./lazy-module" {
+		t.Errorf("Expected source './lazy-module', got %q", imp.Source)
+	}
+	if imp.SourceType != domain.ModuleTypeRelative {
+		t.Errorf("Expected source type 'relative', got %v", imp.SourceType)
+	}
+}
+
+func TestDynamicImportForms(t *testing.T) {
+	tests := []struct {
+		name   string
+		source string
+		want   []string
+	}{
+		{
+			name:   "awaited",
+			source: "async function load() { return await import('./awaited.js'); }",
+			want:   []string{"./awaited.js"},
+		},
+		{
+			name:   "returned from exported function",
+			source: "export function b() { return import('./returned.js'); }",
+			want:   []string{"./returned.js"},
+		},
+		{
+			name:   "chained with then",
+			source: "import('./chained.js').then(m => m.run());",
+			want:   []string{"./chained.js"},
+		},
+		{
+			name:   "template literal without substitution",
+			source: "const m = import(`./template.js`);",
+			want:   []string{"./template.js"},
+		},
+		{
+			name:   "template literal with substitution is not resolvable",
+			source: "const m = import(`./locales/${lang}.js`);",
+			want:   nil,
+		},
+		{
+			name:   "package specifier",
+			source: "const m = import('lodash');",
+			want:   []string{"lodash"},
+		},
+		{
+			name:   "several in one file",
+			source: "import('./one.js');\nimport('./two.js').catch(() => {});\n",
+			want:   []string{"./one.js", "./two.js"},
+		},
+		{
+			name:   "import.meta is not an import",
+			source: "const url = import.meta.url;",
+			want:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := parser.NewParser()
+			defer p.Close()
+
+			ast, err := p.ParseString(tt.source)
+			if err != nil {
+				t.Fatalf("Failed to parse: %v", err)
+			}
+
+			analyzer := NewModuleAnalyzer(DefaultModuleAnalyzerConfig())
+			info, err := analyzer.AnalyzeFile(ast, "test.js")
+			if err != nil {
+				t.Fatalf("Failed to analyze: %v", err)
+			}
+
+			var got []string
+			for _, imp := range info.Imports {
+				if !imp.IsDynamic {
+					t.Errorf("Expected every detected import to be dynamic, got %v for %q", imp.ImportType, imp.Source)
+				}
+				got = append(got, imp.Source)
+			}
+
+			if len(got) != len(tt.want) {
+				t.Fatalf("Expected sources %v, got %v", tt.want, got)
+			}
+			for i, want := range tt.want {
+				if got[i] != want {
+					t.Errorf("Expected source %q at index %d, got %q", want, i, got[i])
+				}
+			}
+		})
+	}
 }
 
 func TestExportNamedDeclaration(t *testing.T) {
