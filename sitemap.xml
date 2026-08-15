@@ -2,98 +2,98 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://jscan.codescan.dev/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/contributing/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/faq/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/cli/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/cli/analyze/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/cli/check/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/cli/deps/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/cli/init/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/cli/version/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/configuration/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/configuration/examples/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/configuration/reference/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/getting-started/installation/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/getting-started/quick-start/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/guides/dependency-graph/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/guides/reduce-duplicate-code/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/guides/typescript-projects/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/integrations/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/integrations/agent-skills/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/integrations/ci-cd/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/output/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/output/health-score/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/output/html-report/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
     <url>
          <loc>https://jscan.codescan.dev/output/json-schema/</loc>
-         <lastmod>2026-08-14</lastmod>
+         <lastmod>2026-08-15</lastmod>
     </url>
 </urlset>

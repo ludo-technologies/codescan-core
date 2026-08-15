@@ -2347,7 +2347,7 @@
 <p>A pattern <strong>containing a slash</strong> is compared to the path itself, where <code>**</code> stands for any number of directory levels. <code>src/generated</code> skips that directory and everything under it. <code>**/dist/**</code> skips every file below any directory named <code>dist</code>.</p>
 <p>Patterns are matched relative to the path you pass to jscan, so the directories above it are never considered. A project stored at <code>/home/me/build/myapp</code> is analyzed normally even though <code>build</code> is on the default list. A file you name directly on the command line is matched on its own name alone, so <code>jscan analyze src/dist/bundle.js</code> analyzes that file.</p>
 <div class="admonition note">
-<p class="admonition-title">Behavior changed in the release after 0.9.0</p>
+<p class="admonition-title">Behavior changed in 0.10.0</p>
 <p>Earlier versions also skipped a file when a pattern appeared anywhere in its path as a plain substring. The default entries <code>out</code> and <code>dist</code> therefore removed <code>src/routes/api.ts</code>, <code>src/layout/Header.tsx</code>, <code>src/checkout/Cart.ts</code>, and <code>src/utils/distance.ts</code> without reporting anything. If you worked around that by trimming the short entries out of your <code>exclude_patterns</code>, you can now go back to the default list.</p>
 </div>
 <p>Because your list replaces the default, start from the list above and append to it rather than writing a short one from scratch. Omitting <code>node_modules</code> in particular will make jscan analyze your entire dependency tree.</p>
