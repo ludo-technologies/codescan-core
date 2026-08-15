@@ -26,15 +26,19 @@ func (e *CheckExitError) Error() string {
 }
 
 var (
-	checkMaxComplexity  int
-	checkAllowDeadCode  bool
-	checkAllowCircDeps  bool
-	checkMaxCycles      int
-	checkSelectAnalyses []string
-	checkVerbose        bool
-	checkJSON           bool
-	checkConfigPath     string
+	checkMaxComplexity    int
+	checkAllowDeadCode    bool
+	checkAllowCircDeps    bool
+	checkAllowParseErrors bool
+	checkMaxCycles        int
+	checkSelectAnalyses   []string
+	checkVerbose          bool
+	checkJSON             bool
+	checkConfigPath       string
 )
+
+// checkAnalyses are the analyses --select accepts.
+var checkAnalyses = []string{"complexity", "deadcode", "deps"}
 
 func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -67,16 +71,25 @@ Examples:
 		SilenceErrors: true, // Don't print error messages (we handle our own output)
 	}
 
+	// An unusable invocation is invalid input, which the exit-code contract
+	// above assigns to 2. Without this an unknown flag exits 1 and reads as a
+	// quality verdict.
+	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		return &CheckExitError{Code: 2, Message: err.Error()}
+	})
+
 	cmd.Flags().IntVar(&checkMaxComplexity, "max-complexity", 10,
 		"Maximum allowed cyclomatic complexity per function")
 	cmd.Flags().BoolVar(&checkAllowDeadCode, "allow-dead-code", false,
 		"Allow dead code findings without failing")
 	cmd.Flags().BoolVar(&checkAllowCircDeps, "allow-circular-deps", false,
 		"Allow circular dependencies without failing")
+	cmd.Flags().BoolVar(&checkAllowParseErrors, "allow-parse-errors", false,
+		"Report files that could not be read or parsed without failing")
 	cmd.Flags().IntVar(&checkMaxCycles, "max-cycles", 0,
 		"Maximum allowed dependency cycles (0 = none allowed)")
 	cmd.Flags().StringSliceVarP(&checkSelectAnalyses, "select", "s",
-		[]string{"complexity", "deadcode", "deps"},
+		checkAnalyses,
 		"Analyses to run: complexity,deadcode,deps")
 	cmd.Flags().BoolVarP(&checkVerbose, "verbose", "v", false,
 		"Show detailed output")
@@ -91,6 +104,14 @@ Examples:
 func runCheck(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return &CheckExitError{Code: 2, Message: "no paths specified"}
+	}
+
+	// A misspelled analysis name would otherwise select nothing and pass.
+	for _, selected := range checkSelectAnalyses {
+		if !contains(checkAnalyses, selected) {
+			return &CheckExitError{Code: 2, Message: fmt.Sprintf(
+				"invalid --select value %q: expected one of %v", selected, checkAnalyses)}
+		}
 	}
 
 	startTime := time.Now()
@@ -158,6 +179,28 @@ func runCheck(cmd *cobra.Command, args []string) error {
 	return outputCheckResult(result, startTime)
 }
 
+// reportUnanalyzedFiles lists what an analysis could not use and reports whether
+// that should fail the gate. A file that cannot be read or parsed is absent from
+// every metric, so it clears every threshold by contributing nothing: without
+// this the gate passes on code it never looked at.
+func reportUnanalyzedFiles(analysis string, errs []string) error {
+	if len(errs) == 0 {
+		return nil
+	}
+
+	for _, err := range errs {
+		fmt.Fprintf(os.Stderr, "  [%s] %s\n", analysis, err)
+	}
+
+	if checkAllowParseErrors {
+		return nil
+	}
+
+	// Counted as errors, not files: an analysis is free to report more than one
+	// problem per file, and the listing above is what identifies them.
+	return fmt.Errorf("%d %s error(s), listed above (use --allow-parse-errors to ignore)", len(errs), analysis)
+}
+
 func checkComplexity(ctx context.Context, files []string, cfg *config.Config, result *domain.CheckResult, pm domain.ProgressManager) error {
 	result.Summary.ComplexityChecked = true
 
@@ -172,6 +215,10 @@ func checkComplexity(ctx context.Context, files []string, cfg *config.Config, re
 	resp, err := svc.Analyze(ctx, req)
 	if err != nil {
 		return fmt.Errorf("complexity analysis failed: %w", err)
+	}
+
+	if err := reportUnanalyzedFiles("complexity", resp.Errors); err != nil {
+		return err
 	}
 
 	// Check each function against threshold
@@ -200,6 +247,10 @@ func checkDeadCode(_ context.Context, files []string, cfg *config.Config, result
 	resp, err := runDeadCodeAnalysis(files, cfg, pm)
 	if err != nil {
 		return fmt.Errorf("dead code analysis failed: %w", err)
+	}
+
+	if err := reportUnanalyzedFiles("dead code", resp.Errors); err != nil {
+		return err
 	}
 
 	result.Summary.DeadCodeFindings = resp.Summary.TotalFindings
@@ -249,6 +300,10 @@ func checkDependencies(ctx context.Context, files []string, _ *config.Config, re
 	resp, err := svc.Analyze(ctx, req)
 	if err != nil {
 		return fmt.Errorf("dependency analysis failed: %w", err)
+	}
+
+	if err := reportUnanalyzedFiles("dependencies", resp.Errors); err != nil {
+		return err
 	}
 
 	if resp.Analysis != nil && resp.Analysis.CircularDependencies != nil {

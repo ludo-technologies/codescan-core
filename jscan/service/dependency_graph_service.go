@@ -129,8 +129,10 @@ func (s *DependencyGraphServiceImpl) AnalyzeSnapshot(ctx context.Context, snapsh
 	couplingAnalysis := couplingCalc.CalculateCouplingAnalysis(graph, moduleMetrics)
 
 	// The max depth and the reported chains are the same search over the same
-	// condensation, so build the finder once and let both read from it.
-	chainFinder := coregraph.NewChainFinder(graph)
+	// condensation, so build the finder once and let both read from it. It runs
+	// over the load-time graph, so a dynamic import() cannot add a layer that
+	// the cycle report has already ruled out.
+	chainFinder := coregraph.NewChainFinder(analyzer.LoadTimeGraph(graph))
 	maxDepth := couplingCalc.CalculateMaxDepthFrom(chainFinder)
 
 	// Build analysis result

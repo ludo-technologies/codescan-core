@@ -133,7 +133,9 @@ func TestBuildGraphWithTypeOnlyImports(t *testing.T) {
 import type { User } from './types';
 import { normalImport } from './utils';
 `
-	p := parser.NewParser()
+	// `import type` is TypeScript syntax, so the JavaScript grammar cannot
+	// parse this source.
+	p := parser.NewTypeScriptParser()
 	defer p.Close()
 
 	ast, err := p.ParseString(source)

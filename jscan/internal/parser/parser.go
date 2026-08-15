@@ -55,11 +55,53 @@ func (p *Parser) ParseFile(filename string, source []byte) (*Node, error) {
 		return nil, fmt.Errorf("no root node in parse tree for %s", filename)
 	}
 
+	// Reported without the filename: every caller already has the path and
+	// prefixes it, so repeating it here only doubles it in the output.
+	if err := checkSyntax(rootNode); err != nil {
+		return nil, err
+	}
+
 	// Build our internal AST from tree-sitter CST
 	builder := NewASTBuilder(filename, source)
 	ast := builder.Build(rootNode)
 
 	return ast, nil
+}
+
+// checkSyntax reports the first syntax problem in the parsed tree, or nil when
+// the source is valid. tree-sitter always returns a tree: source it cannot
+// parse comes back with ERROR and MISSING nodes rather than an error, so
+// without this check a file no JavaScript engine would load is analyzed as if
+// it were valid, and every metric silently describes only the fragments the
+// grammar managed to salvage.
+func checkSyntax(root *sitter.Node) error {
+	if !root.HasError() {
+		return nil
+	}
+
+	if node := firstErrorNode(root); node != nil {
+		return fmt.Errorf("syntax error at line %d", int(node.StartPoint().Row)+1)
+	}
+	return fmt.Errorf("syntax errors found in source code")
+}
+
+// firstErrorNode returns the first ERROR or MISSING node in source order,
+// descending only into subtrees that carry an error.
+func firstErrorNode(node *sitter.Node) *sitter.Node {
+	if node.IsError() || node.IsMissing() {
+		return node
+	}
+
+	for index := 0; index < int(node.ChildCount()); index++ {
+		child := node.Child(index)
+		if child == nil || !child.HasError() {
+			continue
+		}
+		if found := firstErrorNode(child); found != nil {
+			return found
+		}
+	}
+	return nil
 }
 
 // Parse parses JavaScript/TypeScript source code

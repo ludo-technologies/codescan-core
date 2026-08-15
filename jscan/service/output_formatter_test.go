@@ -78,7 +78,7 @@ func TestBuildAnalyzeSummary_WiresProjectScale(t *testing.T) {
 	if got := FormatProjectScale(summary); got != want {
 		t.Errorf("FormatProjectScale() = %q, want %q", got, want)
 	}
-	if cli := FormatCLISummary(summary, time.Second); !strings.Contains(cli, "Project Scale: "+want) {
+	if cli := FormatCLISummary(summary, time.Second, nil); !strings.Contains(cli, "Project Scale: "+want) {
 		t.Errorf("CLI summary missing project scale line:\n%s", cli)
 	}
 }

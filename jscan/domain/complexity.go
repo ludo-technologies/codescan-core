@@ -110,19 +110,29 @@ type FunctionComplexity struct {
 	RiskLevel RiskLevel `json:"risk_level" yaml:"risk_level"`
 }
 
-// ComplexitySummary represents aggregate statistics
+// ComplexitySummary represents aggregate statistics.
+// Averages, min/max and risk counts are computed over every analyzed function;
+// the report filters only limit which functions are listed.
 type ComplexitySummary struct {
-	// TotalFunctions is the post-filter count (functions included in results after min_complexity filtering).
+	// TotalFunctions is the complete analyzed population that every aggregate below
+	// describes. min_complexity, max_complexity and report_unchanged limit which
+	// functions ComplexityResponse.Functions carries, not what is measured.
 	TotalFunctions int `json:"total_functions" yaml:"total_functions"`
-	// FunctionsParsed is the count of reportable functions: parsed functions that survived
-	// report_unchanged, counted before the min/max complexity filters. Functions dropped by
-	// report_unchanged are excluded from both counts, so the difference between
-	// FunctionsParsed and TotalFunctions is attributable to complexity filtering alone.
+	// FunctionsParsed is retained for output compatibility and describes the same
+	// complete analyzed population as TotalFunctions.
 	FunctionsParsed   int     `json:"functions_parsed" yaml:"functions_parsed"`
 	AverageComplexity float64 `json:"average_complexity" yaml:"average_complexity"`
 	MaxComplexity     int     `json:"max_complexity" yaml:"max_complexity"`
 	MinComplexity     int     `json:"min_complexity" yaml:"min_complexity"`
-	FilesAnalyzed     int     `json:"files_analyzed" yaml:"files_analyzed"`
+	// FilesAnalyzed is the number of files that were parsed and contributed to
+	// the metrics above.
+	FilesAnalyzed int `json:"files_analyzed" yaml:"files_analyzed"`
+	// TotalFiles is the number of files the request covered, parsed or not.
+	TotalFiles int `json:"total_files" yaml:"total_files"`
+	// SkippedFiles is the number of files dropped because they could not be read
+	// or parsed. Their contents are absent from every metric here, so a consumer
+	// must read this before trusting the aggregates.
+	SkippedFiles int `json:"skipped_files" yaml:"skipped_files"`
 
 	// Risk distribution
 	LowRiskFunctions    int `json:"low_risk_functions" yaml:"low_risk_functions"`
@@ -133,8 +143,9 @@ type ComplexitySummary struct {
 	ComplexityDistribution map[string]int `json:"complexity_distribution,omitempty" yaml:"complexity_distribution,omitempty"`
 }
 
-// DirectoryComplexityMetrics aggregates reported ComplexityResponse.Functions
-// entries for one project-root-relative directory.
+// DirectoryComplexityMetrics aggregates the complete analyzed function
+// population for one project-root-relative directory. Report filters do not
+// change these metrics, matching the project-wide summary contract.
 type DirectoryComplexityMetrics struct {
 	DirectoryPath         string  `json:"directory_path" yaml:"directory_path"`
 	FunctionCount         int     `json:"function_count" yaml:"function_count"`

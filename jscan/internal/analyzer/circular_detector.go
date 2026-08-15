@@ -27,8 +27,17 @@ func isLoadTimeEdge(edge *domain.DependencyEdge) bool {
 	return edge != nil && edge.EdgeType != domain.EdgeTypeDynamic
 }
 
-// loadTimeGraph excludes dynamic imports from the graph seen by cycle
-// detection while leaving the full dependency graph unchanged for reporting.
+// LoadTimeGraph is graph seen through its load-time imports alone. Every
+// structural analysis of how modules are layered — cycles, depth, chains —
+// reads the same view, so the reported depth cannot count an edge that the
+// cycle report has already ruled out. Coupling metrics deliberately keep the
+// dynamic edges: a lazy import is still a runtime dependency.
+func LoadTimeGraph(graph *domain.DependencyGraph) coregraph.DirectedGraph {
+	return loadTimeGraph{graph: graph}
+}
+
+// loadTimeGraph excludes dynamic imports from the graph seen by structural
+// analysis while leaving the full dependency graph unchanged for reporting.
 type loadTimeGraph struct {
 	graph *domain.DependencyGraph
 }

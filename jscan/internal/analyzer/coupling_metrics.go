@@ -314,15 +314,17 @@ func (c *CouplingMetricsCalculator) CalculateTransitiveDependencies(nodeID strin
 // CalculateMaxDepth calculates the maximum dependency depth in the graph,
 // measured in edges along the longest dependency chain.
 //
-// The chain comes from core/graph's condensation-based finder: cycles are
-// collapsed before the search, so the depth is well defined even when modules
-// import each other, and it is the same chain the report shows under
-// LongestChains.
+// The chain comes from core/graph's condensation-based finder over the
+// load-time graph: cycles are collapsed before the search, so the depth is well
+// defined even when modules import each other, and it is the same chain the
+// report shows under LongestChains. Dynamic import() edges are excluded, since
+// depth measures how deeply modules are layered at load time, which is the same
+// contract cycle detection uses.
 func (c *CouplingMetricsCalculator) CalculateMaxDepth(graph *domain.DependencyGraph) int {
 	if graph == nil || graph.NodeCount() == 0 {
 		return 0
 	}
-	return c.CalculateMaxDepthFrom(coregraph.NewChainFinder(graph))
+	return c.CalculateMaxDepthFrom(coregraph.NewChainFinder(LoadTimeGraph(graph)))
 }
 
 // CalculateMaxDepthFrom is CalculateMaxDepth against a chain finder the caller

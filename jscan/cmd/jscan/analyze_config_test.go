@@ -133,12 +133,12 @@ func TestRunComplexityAnalysisInternal_MinComplexityFromConfig(t *testing.T) {
 		t.Errorf("min_complexity=3 should drop functions: got %d of %d",
 			len(filtered.Functions), len(baseline.Functions))
 	}
-	if filtered.Summary.TotalFunctions != len(filtered.Functions) {
-		t.Errorf("TotalFunctions should be the post-filter count, got %d for %d functions",
-			filtered.Summary.TotalFunctions, len(filtered.Functions))
+	if filtered.Summary.TotalFunctions != len(baseline.Functions) {
+		t.Errorf("TotalFunctions should stay at the analyzed population %d, got %d",
+			len(baseline.Functions), filtered.Summary.TotalFunctions)
 	}
 	if filtered.Summary.FunctionsParsed != len(baseline.Functions) {
-		t.Errorf("FunctionsParsed should stay at the pre-filter count %d, got %d",
+		t.Errorf("FunctionsParsed should stay at the analyzed population %d, got %d",
 			len(baseline.Functions), filtered.Summary.FunctionsParsed)
 	}
 }

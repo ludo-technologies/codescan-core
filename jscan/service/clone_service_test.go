@@ -30,19 +30,6 @@ func TestCloneServiceDetectClones_AllFilesFailReturnsError(t *testing.T) {
 	}
 }
 
-func TestCloneServiceDetectClones_PartialFailureReturnsResponseAndError(t *testing.T) {
-	svc := NewCloneServiceWithDefaults()
-	req := domain.DefaultCloneRequest()
-
-	tempDir := t.TempDir()
-	validFile := filepath.Join(tempDir, "valid.js")
-	content := []byte(`function alpha(value) {
-  if (value > 10) {
-    return value + 1;
-  }
-  return value - 1;
-}
-
 func TestCloneStatisticsIncludesGroupOnlyMembers(t *testing.T) {
 	svc := NewCloneServiceWithDefaults()
 	a := &domain.Clone{Location: &domain.CloneLocation{FilePath: "a.js", StartLine: 1, EndLine: 10}}
@@ -60,6 +47,19 @@ func TestCloneStatisticsIncludesGroupOnlyMembers(t *testing.T) {
 	if len(clones) != 3 {
 		t.Fatalf("expected group-only member in clone output, got %d clones", len(clones))
 	}
+}
+
+func TestCloneServiceDetectClones_PartialFailureReturnsResponseAndError(t *testing.T) {
+	svc := NewCloneServiceWithDefaults()
+	req := domain.DefaultCloneRequest()
+
+	tempDir := t.TempDir()
+	validFile := filepath.Join(tempDir, "valid.js")
+	content := []byte(`function alpha(value) {
+  if (value > 10) {
+    return value + 1;
+  }
+  return value - 1;
 }
 `)
 	if err := os.WriteFile(validFile, content, 0o644); err != nil {

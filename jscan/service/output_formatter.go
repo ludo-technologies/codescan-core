@@ -285,6 +285,11 @@ func BuildAnalyzeSummary(
 		summary.HighComplexityCount = complexityResponse.Summary.HighRiskFunctions
 		summary.MediumComplexityCount = complexityResponse.Summary.MediumRiskFunctions
 		summary.AnalyzedFiles = complexityResponse.Summary.FilesAnalyzed
+		// TotalFiles must count the files that failed to parse too, otherwise
+		// the shortfall is invisible and the health score is computed as if the
+		// unanalyzable part of the project did not exist.
+		summary.TotalFiles = complexityResponse.Summary.TotalFiles
+		summary.SkippedFiles = complexityResponse.Summary.SkippedFiles
 	}
 
 	if deadCodeResponse != nil {
@@ -349,13 +354,22 @@ func FormatProjectScale(summary *domain.AnalyzeSummary) string {
 		summary.ProjectScale, summary.AnalyzedFiles, summary.TotalFunctions)
 }
 
-// FormatCLISummary formats an AnalyzeSummary as a compact CLI string (pyscn-style)
-func FormatCLISummary(summary *domain.AnalyzeSummary, duration time.Duration) string {
+// FormatCLISummary formats an AnalyzeSummary as a compact CLI string (pyscn-style).
+// skipped names the files no analysis could use; the summary carries their count,
+// but a count alone says the report is incomplete without saying what to fix.
+func FormatCLISummary(summary *domain.AnalyzeSummary, duration time.Duration, skipped []string) string {
 	w := &strings.Builder{}
 
 	fmt.Fprintf(w, "\n\U0001F4CA Analysis Summary:\n")
 	fmt.Fprintf(w, "Health Score: %d/100 (Grade: %s)\n", summary.HealthScore, summary.Grade)
 	fmt.Fprintf(w, "Project Scale: %s\n", FormatProjectScale(summary))
+	if summary.SkippedFiles > 0 {
+		fmt.Fprintf(w, "⚠️  %d of %d files skipped (parse errors) - excluded from every score below\n",
+			summary.SkippedFiles, summary.TotalFiles)
+		for _, entry := range skipped {
+			fmt.Fprintf(w, "    %s\n", entry)
+		}
+	}
 	fmt.Fprintf(w, "Total time: %dms\n", duration.Milliseconds())
 
 	fmt.Fprintf(w, "\n\U0001F4C8 Detailed Scores:\n")
@@ -437,16 +451,6 @@ func calculateDuplicationPercentage(response *domain.CloneResponse) float64 {
 	return float64(totalClones) / float64(totalFragments) * 100
 }
 
-// writeComplexityText writes complexity response as plain text
-// formatFunctionCoverage renders the post-filter function count, disclosing the
-// pre-filter parsed count when min_complexity filtering dropped functions.
-func formatFunctionCoverage(reported, parsed int) string {
-	if parsed > 0 && parsed != reported {
-		return fmt.Sprintf("%d reported / %d parsed", reported, parsed)
-	}
-	return fmt.Sprintf("%d", reported)
-}
-
 // complexityFunctionsHeading names the criterion the functions are listed by,
 // taken from the configuration the analysis reported back so that the heading
 // cannot drift away from the actual order.
@@ -474,6 +478,7 @@ func complexityFunctionsHeading(responseConfig interface{}) string {
 	return fmt.Sprintf("Functions (sorted by %s):", sortBy)
 }
 
+// writeComplexityText writes complexity response as plain text
 func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityResponse, writer io.Writer) error {
 	fmt.Fprintf(writer, "\n=== Complexity Analysis ===\n\n")
 	fmt.Fprintf(writer, "Generated: %s\n", response.GeneratedAt)
@@ -482,7 +487,7 @@ func (f *OutputFormatterImpl) writeComplexityText(response *domain.ComplexityRes
 	// Summary
 	fmt.Fprintf(writer, "Summary:\n")
 	fmt.Fprintf(writer, "  Files analyzed: %d\n", response.Summary.FilesAnalyzed)
-	fmt.Fprintf(writer, "  Total functions: %s\n", formatFunctionCoverage(response.Summary.TotalFunctions, response.Summary.FunctionsParsed))
+	fmt.Fprintf(writer, "  Total functions: %d\n", response.Summary.TotalFunctions)
 	fmt.Fprintf(writer, "  Average complexity: %.2f\n", response.Summary.AverageComplexity)
 	fmt.Fprintf(writer, "  Max complexity: %d\n", response.Summary.MaxComplexity)
 	fmt.Fprintf(writer, "  Min complexity: %d\n", response.Summary.MinComplexity)
@@ -667,7 +672,12 @@ func (f *OutputFormatterImpl) writeAnalyzeText(
 	// Write Health Score section
 	fmt.Fprintf(writer, "\n=== Health Score ===\n\n")
 	fmt.Fprintf(writer, "Overall: %d/100 (Grade: %s)\n", summary.HealthScore, summary.Grade)
-	fmt.Fprintf(writer, "Project Scale: %s\n\n", FormatProjectScale(summary))
+	fmt.Fprintf(writer, "Project Scale: %s\n", FormatProjectScale(summary))
+	if summary.SkippedFiles > 0 {
+		fmt.Fprintf(writer, "%d of %d files skipped (parse errors) - excluded from every score below\n",
+			summary.SkippedFiles, summary.TotalFiles)
+	}
+	fmt.Fprintf(writer, "\n")
 	fmt.Fprintf(writer, "Category Scores:\n")
 	fmt.Fprintf(writer, "  Complexity:       %3d/100\n", summary.ComplexityScore)
 	fmt.Fprintf(writer, "  Dead Code:        %3d/100\n", summary.DeadCodeScore)

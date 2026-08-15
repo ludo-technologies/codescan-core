@@ -60,6 +60,13 @@ const (
 	ScoreThresholdFair      = coredomain.ScoreThresholdFair
 	// Poor: 0-59 (below ScoreThresholdFair)
 
+	// Files that fail to parse are absent from every metric, so without a
+	// penalty they score better than working code. The bounds are anchored to
+	// the grade thresholds: a single unanalyzable file forfeits an A, and a
+	// target where nothing parses cannot rank above F.
+	MinParseErrorPenalty = 100 - coredomain.GradeAThreshold + 1
+	MaxParseErrorPenalty = 100 - coredomain.GradeDThreshold + 1
+
 	// Other constants
 	MinimumScore                = coredomain.MinimumScore
 	HealthyThreshold            = coredomain.HealthyThreshold
@@ -127,10 +134,11 @@ type AnalyzeSummary struct {
 	ArchCompliance            float64 `json:"arch_compliance" yaml:"arch_compliance"`
 
 	// Key metrics
-	// TotalFunctions is the post-filter count (functions included after min_complexity filtering).
+	// TotalFunctions is the complete analyzed population that every complexity
+	// metric below describes, including the health score. Report filters change
+	// which functions are listed, never what is scored.
 	TotalFunctions int `json:"total_functions" yaml:"total_functions"`
-	// FunctionsParsed is the count of reportable functions: parsed functions that survived
-	// report_unchanged, counted before the min/max complexity filters.
+	// FunctionsParsed is retained for output compatibility and matches TotalFunctions.
 	FunctionsParsed       int     `json:"functions_parsed" yaml:"functions_parsed"`
 	AverageComplexity     float64 `json:"average_complexity" yaml:"average_complexity"`
 	HighComplexityCount   int     `json:"high_complexity_count" yaml:"high_complexity_count"`
@@ -172,6 +180,16 @@ type AnalyzeSummary struct {
 
 // Validate checks if the summary contains valid values
 func (s *AnalyzeSummary) Validate() error {
+	// File accounting: the skipped count drives the parse-error penalty, so a
+	// nonsensical value must not silently produce a plausible score.
+	if s.SkippedFiles < 0 {
+		return fmt.Errorf("SkippedFiles cannot be negative: %d", s.SkippedFiles)
+	}
+
+	if s.SkippedFiles > s.TotalFiles {
+		return fmt.Errorf("SkippedFiles (%d) cannot exceed TotalFiles (%d)", s.SkippedFiles, s.TotalFiles)
+	}
+
 	// Basic range checks
 	if s.AverageComplexity < 0 {
 		return fmt.Errorf("AverageComplexity cannot be negative: %f", s.AverageComplexity)
@@ -217,6 +235,20 @@ func (s *AnalyzeSummary) Validate() error {
 	}
 
 	return nil
+}
+
+// calculateParseErrorPenalty charges the health score for files that could not
+// be analyzed at all. Such a file yields no functions, no dead code, no clones
+// and no coupling, so without this term corrupting a file raises the score.
+// The penalty grows with the unanalyzed fraction and never drops below
+// MinParseErrorPenalty, so one broken file in a large tree still costs a grade.
+func (s *AnalyzeSummary) calculateParseErrorPenalty() int {
+	if s.SkippedFiles <= 0 || s.TotalFiles <= 0 {
+		return 0
+	}
+
+	ratio := float64(s.SkippedFiles) / float64(s.TotalFiles)
+	return max(int(math.Round(ratio*float64(MaxParseErrorPenalty))), MinParseErrorPenalty)
 }
 
 // calculateComplexityPenalty calculates the penalty for complexity (max 20)
@@ -349,6 +381,11 @@ func (s *AnalyzeSummary) CalculateHealthScore() error {
 	// Use compliance directly as score (98% compliance = 98 points)
 	s.ArchitectureScore = int(math.Round(s.ArchCompliance * 100))
 
+	// Unanalyzable files are penalised outside the per-category scores: they
+	// have no category of their own, and every category above silently
+	// excludes them.
+	parseErrorPenalty := s.calculateParseErrorPenalty()
+
 	score := coredomain.HealthScoreFromPenalties(
 		complexityPenalty,
 		deadCodePenalty,
@@ -356,6 +393,7 @@ func (s *AnalyzeSummary) CalculateHealthScore() error {
 		couplingPenalty,
 		dependencyPenalty,
 		architecturePenalty,
+		parseErrorPenalty,
 	)
 	s.HealthScore = score
 	s.Grade = coredomain.GradeFromScore(score)
