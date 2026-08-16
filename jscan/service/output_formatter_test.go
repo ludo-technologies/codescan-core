@@ -387,8 +387,8 @@ func TestOutputFormatterWriteHTML(t *testing.T) {
 	if !strings.Contains(output, "jscan Analysis Report") {
 		t.Error("Expected output to contain 'jscan Analysis Report'")
 	}
-	if !strings.Contains(output, "Health Score") {
-		t.Error("Expected output to contain 'Health Score'")
+	if !strings.Contains(output, "HEALTH SCORE") {
+		t.Error("Expected output to contain the health score ring")
 	}
 	if !strings.Contains(output, "testFunc") {
 		t.Error("Expected output to contain function name 'testFunc'")
@@ -411,8 +411,13 @@ func TestOutputFormatterWriteHTML_CloneNilSafe(t *testing.T) {
 	}
 
 	output := buf.String()
-	if !strings.Contains(output, "Clone Detection") {
-		t.Error("Expected output to contain clone section")
+	if !strings.Contains(output, `id="duplication"`) {
+		t.Error("Expected output to contain the duplication panel")
+	}
+	// The pair carries no fragments at all; the report must still render it
+	// rather than dereferencing a nil location.
+	if !strings.Contains(output, "unknown") {
+		t.Error("Expected a fragment with no location to render as unknown")
 	}
 }
 

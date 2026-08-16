@@ -14,54 +14,64 @@ jscan analyze --output reports/quality.html --no-open src/
 
 ## Layout
 
-Above the tabs, the report header carries the health score badge, and directly below it the project scale line reports how large the analyzed repository is. See [Project scale](health-score.md#project-scale) for the size labels.
-
-The report opens on a summary and has one tab per analysis, plus a Modules tab that joins them. Tabs appear only for the analyses that ran, so a report produced with `--select complexity` has three tabs rather than seven.
+The report opens on an Overview and puts the per-analysis detail behind four more tabs. Tabs appear only for the analyses that ran, so a report produced with `--select complexity` has two tabs rather than five. A tab carries a badge with the number of problems it holds, colored red when any of them is high risk.
 
 | Tab | Contents |
 | --- | --- |
-| Summary | The overall score and grade, the six category scores, and file statistics |
-| Complexity | Function count, average and maximum complexity, a table of directory rollups, and a table of functions |
-| Dead Code | Finding counts by severity and a table of every issue |
-| Clones | Clone pair and group counts and a table of the most similar pairs |
-| Coupling | Module count, average CBO, and a table ranked by coupling |
-| Dependencies | Module count, entry points, maximum depth, and any circular imports |
-| Modules | Per-file quality hotspots joined across the analyses that ran |
+| Overview | The verdict, the score breakdown, hotspot files, the complexity distribution, and one summary card per remaining analysis |
+| Functions | Complexity and dead code, plus the sortable per-file and per-directory rollups |
+| Duplication | Clone statistics and the clone groups, or the individual pairs when no group formed |
+| Classes | Coupling statistics and the most coupled classes |
+| Architecture | Module dependencies, main sequence zones, circular imports, and the longest dependency chains |
 
-Each analysis tab header carries that category's score out of 100, colored by quality band, so you can see where the problem is without opening every tab. The Modules tab has no score of its own: it reports where the other categories' problems are concentrated rather than a category.
+Above the tabs, the header names the project and reports how many files were analyzed, how many were skipped, and how long the run took.
+
+### The Overview
+
+The Overview answers "what is wrong and where" without opening another tab.
+
+The **verdict** pairs the health score ring with a sentence naming which dimensions are clean and which hold most of the debt, each with the numbers behind the judgement. When files failed to parse, the verdict says so first, because every score below excludes them. The line underneath reports how large the analyzed repository is; see [Project scale](health-score.md#project-scale) for the size labels.
+
+The **score breakdown** gives each dimension its own card with the score, a bar, and the two figures that produced it. Clicking a card jumps to the tab that explains it.
+
+The **complexity distribution** buckets every analyzed function by cyclomatic complexity. The bucket edges follow the thresholds the run actually used, so the colored buckets hold only functions that really are medium or high risk, and the dashed line marks the complexity where risk begins. Change the thresholds with [`complexity.low_threshold`](../configuration/reference.md#complexitylow_threshold) and [`complexity.medium_threshold`](../configuration/reference.md#complexitymedium_threshold).
+
+**Hotspot files** ranks the eight files with the most high-risk functions, then by maximum complexity, joining complexity, dead code, and clone counts per file. The Functions tab has the complete list.
 
 ## Row limits
 
-Tables are truncated so that the file stays a reasonable size on a large codebase.
+Tables are truncated so that the file stays a reasonable size on a large codebase. Every truncated table says how many rows it is hiding.
 
-| Table | Limit | Notes |
-| --- | --- | --- |
-| Functions | 20 | A line below the table reports the true total |
-| Clone pairs | 20 | A line below the table reports the true total |
-| Modules by coupling | 20 | A line below the table reports the true total |
-| Circular dependencies | 10 | A line below the table reports the true total |
-| Modules | 20 | A line below the table reports the true total |
-| Directory complexity | no limit | One row per directory that had a reported function |
-| Dead code, per function | 20 | **No line is printed**, so the truncation is silent |
-| Dead code, file level | no limit | Every file level finding is shown |
+| Table | Limit |
+| --- | --- |
+| Hotspot files | 8 |
+| Most complex functions | 20 |
+| Dead code findings | 20 |
+| Most coupled classes | 20 |
+| Clone groups | 10 groups, 10 fragments each |
+| Clone pairs | 20 |
+| Circular dependencies | 20 |
+| Longest dependency chains | 10 |
+| All modules | no limit |
+| Directory complexity | no limit |
 
-The dead code limit applies per function rather than to the table as a whole. A function with more than 20 findings shows the first 20 and nothing indicates that others exist. Use `--json` or `--text` when you need the complete list.
-
-## Reading the summary tab
-
-The headline is the health score and its grade. Below it sit the six category scores, and below those the file statistics.
-
-Two details in this tab are easy to misread.
-
-The **Total Functions** card changes meaning when `output.min_complexity` filtered anything out. In that case it shows two numbers and relabels itself **Reported / Parsed**, for example `12 / 340`. The first is what the report contains and the second is what jscan actually parsed. When the label says **Total Functions** with a single number, nothing was filtered.
-
-The **architecture score** is not shown, because architecture validation is not implemented in jscan. Only five category scores carry meaning. See [the health score page](health-score.md) for what each one measures.
+The dead code limit applies to the table as a whole rather than per function. Use `--json` or `--text` when you need the complete list.
 
 ## Sorting
 
-Every table is sorted by the metric it is about, worst first. Functions are ordered by descending complexity, modules by descending coupling, and clone pairs by descending similarity. Since the tables are truncated at 20 rows, this means you always see the worst offenders rather than an arbitrary sample.
+Each table is sorted by the metric it is about, worst first. Functions are ordered by descending complexity, classes by descending coupling, and clone groups by descending similarity. Since the tables are truncated, this means you always see the worst offenders rather than an arbitrary sample.
 
-The functions table is the one exception: it follows [`output.sort_by`](../configuration/reference.md#outputsort_by). Setting that key to `name` therefore leaves you with the first 20 functions alphabetically rather than the 20 worst, which is rarely what you want in the HTML report. The other tables ignore it.
+The two full-length tables on the Functions tab, **All modules** and **Directory complexity**, are sortable in the browser: click a column heading to sort by it and click again to reverse.
+
+The most-complex-functions table is the one exception to worst-first: it follows [`output.sort_by`](../configuration/reference.md#outputsort_by). Setting that key to `name` therefore leaves you with the first 20 functions alphabetically rather than the 20 worst, which is rarely what you want in the HTML report. The other tables ignore it.
+
+## Dark mode
+
+The report follows the theme of whatever is displaying it. Nothing needs to be configured, and the file is the same either way.
+
+## Linking to a tab
+
+The address bar tracks the open tab, so `jscan-report.html#architecture` opens straight to Architecture. An unrecognized fragment is ignored and the Overview stays open.
 
 ## Sharing and archiving
 

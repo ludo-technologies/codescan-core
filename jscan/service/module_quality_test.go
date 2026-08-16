@@ -207,8 +207,9 @@ func TestWriteHTMLRendersRollupTables(t *testing.T) {
 	report := buf.String()
 	for _, expected := range []string{
 		"Directory Complexity",
-		"Module Quality Hotspots",
-		"showTab('modules', this)",
+		"All modules",
+		"Hotspot files",
+		"sortModuleQuality(",
 		"src/a.ts",
 	} {
 		if !strings.Contains(report, expected) {
