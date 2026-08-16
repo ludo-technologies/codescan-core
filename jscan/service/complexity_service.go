@@ -343,9 +343,11 @@ func (s *ComplexityServiceImpl) generateSummary(functions []domain.FunctionCompl
 	totalComplexity := 0
 	maxComplexity := 0
 	minComplexity := functions[0].Metrics.Complexity
+	summary.ComplexityDistribution = make(map[int]int)
 
 	for _, fn := range functions {
 		totalComplexity += fn.Metrics.Complexity
+		summary.ComplexityDistribution[fn.Metrics.Complexity]++
 
 		if fn.Metrics.Complexity > maxComplexity {
 			maxComplexity = fn.Metrics.Complexity

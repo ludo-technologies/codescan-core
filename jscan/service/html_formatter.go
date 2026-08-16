@@ -46,6 +46,7 @@ func analyzeTemplateFuncs() template.FuncMap {
 		"addf":      func(a, b float64) float64 { return a + b },
 		"divf":      func(a, b float64) float64 { return a / b },
 		"int":       func(t domain.CloneType) int { return int(t) },
+		"percent":   formatPercent,
 		"scoreBand": scoreBand,
 		// Clone fragments are pointers with an optional location, so every
 		// fragment accessor tolerates a missing one rather than panicking
@@ -284,14 +285,14 @@ func buildAnalyzeReportView(
 		ShowDeadColumn:  summary.DeadCodeEnabled,
 		ShowCloneColumn: summary.CloneEnabled,
 	}
-	low, medium := riskThresholds(complexity)
+	risk := readComplexityRisk(complexity)
 	view.ProjectName, view.ProjectPath = reportProject(moduleQuality, complexity)
 	view.Tabs = buildReportTabs(summary, complexity, moduleQuality, deps)
 	view.Dimensions = buildReportDimensions(summary, view.Tabs)
 	view.Verdict = buildReportVerdict(summary, view.Dimensions)
 	view.Facts = buildReportFacts(summary, moduleQuality)
-	view.Hotspots = buildReportHotspots(moduleQuality, clone, low, medium)
-	view.Histogram = buildReportHistogram(complexity, low, medium)
+	view.Hotspots = buildReportHotspots(moduleQuality, clone, risk)
+	view.Histogram = buildReportHistogram(complexity, risk)
 	view.Duplication = buildReportDuplication(summary, clone)
 	view.Classes = buildReportClasses(summary, cbo)
 	view.Structure = buildReportStructure(deps)
@@ -620,6 +621,13 @@ func buildReportFacts(summary *domain.AnalyzeSummary, moduleQuality []domain.Mod
 	return facts
 }
 
+// formatPercent renders a 0-1 ratio as a percentage. Similarity is reported
+// this way everywhere in the report: a bare 0.95 reads as neither a score nor
+// a share.
+func formatPercent(ratio float64) string {
+	return fmt.Sprintf("%.1f%%", ratio*100)
+}
+
 func formatThousands(n int) string {
 	digits := fmt.Sprintf("%d", n)
 	if len(digits) <= 3 {
@@ -642,7 +650,7 @@ func formatThousands(n int) string {
 func buildReportHotspots(
 	moduleQuality []domain.ModuleQualityMetrics,
 	clone *domain.CloneResponse,
-	low, medium int,
+	risk complexityRisk,
 ) []reportHotspot {
 	if len(moduleQuality) == 0 {
 		return nil
@@ -686,7 +694,7 @@ func buildReportHotspots(
 			Functions: module.AnalyzedFunctionCount,
 			MaxCC:     module.MaxComplexity,
 			MaxCCPct:  module.MaxComplexity * 100 / maxCC,
-			MaxCCBand: complexityBand(module.MaxComplexity, low, medium),
+			MaxCCBand: risk.band(module.MaxComplexity),
 			HighRisk:  module.HighRiskFunctionCount,
 			DeadCode:  module.DeadCodeFindingCount,
 			Clones:    clonesByFile[module.FilePath],
@@ -695,60 +703,43 @@ func buildReportHotspots(
 	return rows
 }
 
-// riskThresholds recovers the complexity thresholds the run was configured
-// with: the highest complexity still rated low risk, and the highest still
-// rated medium. The response carries the labels but not the thresholds behind
-// them, and guessing a default would mislabel any project that configured its
-// own. Both are 0 when there is nothing to measure.
-func riskThresholds(complexity *domain.ComplexityResponse) (low, medium int) {
-	if complexity == nil {
-		return 0, 0
-	}
-	lowMax, mediumMax := 0, 0
-	mediumMin, highMin := 0, 0
-	for _, function := range complexity.Functions {
-		cc := function.Metrics.Complexity
-		switch function.RiskLevel {
-		case domain.RiskLevelLow:
-			lowMax = max(lowMax, cc)
-		case domain.RiskLevelMedium:
-			mediumMax = max(mediumMax, cc)
-			if mediumMin == 0 || cc < mediumMin {
-				mediumMin = cc
-			}
-		case domain.RiskLevelHigh:
-			if highMin == 0 || cc < highMin {
-				highMin = cc
-			}
-		}
-	}
-
-	// A band with no functions in it leaves no upper bound of its own, so the
-	// lower bound of the next band up stands in for it.
-	switch {
-	case lowMax > 0:
-		low = lowMax
-	case mediumMin > 0:
-		low = mediumMin - 1
-	case highMin > 0:
-		low = highMin - 1
-	}
-	switch {
-	case mediumMax > 0:
-		medium = mediumMax
-	case highMin > low+1:
-		medium = highMin - 1
-	default:
-		medium = low
-	}
-	return low, medium
+// complexityRisk is the pair of thresholds the run was configured with: the
+// highest complexity still rated low risk, and the highest still rated medium.
+// Known is false when the response did not report them, and then nothing is
+// banded rather than banded against a default the project may have overridden.
+type complexityRisk struct {
+	Low    int
+	Medium int
+	Known  bool
 }
 
-func complexityBand(cc, low, medium int) string {
+// readComplexityRisk takes the thresholds from the config the analysis
+// reported. Inferring them from the risk labels of the listed functions would
+// be wrong whenever a report filter removed the functions that sit on a
+// boundary.
+func readComplexityRisk(complexity *domain.ComplexityResponse) complexityRisk {
+	if complexity == nil {
+		return complexityRisk{}
+	}
+	config, ok := complexity.Config.(map[string]interface{})
+	if !ok {
+		return complexityRisk{}
+	}
+	low, lowOK := config["low_threshold"].(int)
+	medium, mediumOK := config["medium_threshold"].(int)
+	if !lowOK || !mediumOK || low < 1 || medium < low {
+		return complexityRisk{}
+	}
+	return complexityRisk{Low: low, Medium: medium, Known: true}
+}
+
+func (risk complexityRisk) band(complexity int) string {
 	switch {
-	case cc > medium:
+	case !risk.Known:
+		return ""
+	case complexity > risk.Medium:
 		return "bad"
-	case cc > low:
+	case complexity > risk.Low:
 		return "warn"
 	default:
 		return ""
@@ -816,13 +807,13 @@ type histogramBin struct {
 // thresholds make empty (a low threshold of 1 removes both middle buckets).
 // Bucket edges that fall on the thresholds are what lets a bucket carry a
 // single risk color honestly.
-func histogramBins(low, medium int) []histogramBin {
-	if medium <= low {
-		medium = low + 1
+func histogramBins(risk complexityRisk) []histogramBin {
+	if risk.Medium <= risk.Low {
+		risk.Medium = risk.Low + 1
 	}
-	candidates := []int{1, low, medium}
-	if low > 5 {
-		candidates = []int{1, 5, low, medium}
+	candidates := []int{1, risk.Low, risk.Medium}
+	if risk.Low > 5 {
+		candidates = []int{1, 5, risk.Low, risk.Medium}
 	}
 	uppers := []int{}
 	for _, upper := range candidates {
@@ -833,7 +824,7 @@ func histogramBins(low, medium int) []histogramBin {
 	bins := make([]histogramBin, 0, len(uppers)+1)
 	previous := 0
 	for _, upper := range uppers {
-		bin := histogramBin{upper: upper, band: complexityBand(upper, low, medium)}
+		bin := histogramBin{upper: upper, band: risk.band(upper)}
 		if upper == previous+1 {
 			bin.label = fmt.Sprintf("%d", upper)
 		} else {
@@ -845,30 +836,27 @@ func histogramBins(low, medium int) []histogramBin {
 	return append(bins, histogramBin{label: fmt.Sprintf("%d+", previous+1), band: "bad"})
 }
 
-func buildReportHistogram(complexity *domain.ComplexityResponse, low, medium int) *reportHistogram {
-	if complexity == nil || len(complexity.Functions) == 0 {
+// buildReportHistogram plots the complete analyzed population from the
+// distribution the summary carries. complexity.Functions is the filtered
+// report list, so counting it would contradict the function total, the median,
+// and every score in the same report.
+func buildReportHistogram(complexity *domain.ComplexityResponse, risk complexityRisk) *reportHistogram {
+	if complexity == nil || !risk.Known {
 		return nil
 	}
-	defs := histogramBins(low, medium)
+	distribution := complexity.Summary.ComplexityDistribution
+	total := 0
+	for _, count := range distribution {
+		total += count
+	}
+	if total == 0 {
+		return nil
+	}
+	defs := histogramBins(risk)
 
 	counts := make([]int, len(defs))
-	ccs := make([]int, 0, len(complexity.Functions))
-	spans := make([]int, 0, len(complexity.Functions))
-	var deepest, longest *domain.FunctionComplexity
-
-	for i := range complexity.Functions {
-		function := &complexity.Functions[i]
-		cc := function.Metrics.Complexity
-		ccs = append(ccs, cc)
-		spans = append(spans, functionLineSpan(*function))
-		counts[binIndex(defs, cc)]++
-
-		if deepest == nil || function.Metrics.NestingDepth > deepest.Metrics.NestingDepth {
-			deepest = function
-		}
-		if longest == nil || functionLineSpan(*function) > functionLineSpan(*longest) {
-			longest = function
-		}
+	for cc, count := range distribution {
+		counts[binIndex(defs, cc)] += count
 	}
 
 	maxCount := 1
@@ -880,7 +868,7 @@ func buildReportHistogram(complexity *domain.ComplexityResponse, low, medium int
 
 	slot := (histRight - histLeft) / float64(len(defs))
 	barWidth := slot * histBarFill
-	hist := &reportHistogram{Total: formatThousands(len(complexity.Functions))}
+	hist := &reportHistogram{Total: formatThousands(total)}
 	for i, def := range defs {
 		height := float64(counts[i]) * scale
 		if counts[i] > 0 && height < 1 {
@@ -898,7 +886,7 @@ func buildReportHistogram(complexity *domain.ComplexityResponse, low, medium int
 		})
 		if def.band == "warn" && hist.Threshold == "" {
 			hist.ThresholdX = round1(histLeft + slot*float64(i) - histLabelSpace/2)
-			hist.Threshold = fmt.Sprintf("risk from CC %d", low+1)
+			hist.Threshold = fmt.Sprintf("risk from CC %d", risk.Low+1)
 		}
 	}
 	for i := 0; i <= histTickCount; i++ {
@@ -910,22 +898,42 @@ func buildReportHistogram(complexity *domain.ComplexityResponse, low, medium int
 	}
 
 	hist.Facts = append(hist.Facts, reportKV{
-		Key:   "Median function",
-		Value: fmt.Sprintf("CC %s, %s lines", formatMedian(median(ccs)), formatMedian(median(spans))),
+		Key:   "Median complexity",
+		Value: fmt.Sprintf("CC %s", formatMedian(medianOfDistribution(distribution, total))),
 	})
-	if deepest != nil {
-		hist.Facts = append(hist.Facts, reportKV{
-			Key:   "Deepest nesting",
-			Value: fmt.Sprintf("%d levels (%s)", deepest.Metrics.NestingDepth, deepest.Name),
-		})
-	}
-	if longest != nil {
-		hist.Facts = append(hist.Facts, reportKV{
-			Key:   "Longest function",
-			Value: fmt.Sprintf("%d lines (%s)", functionLineSpan(*longest), longest.Name),
-		})
+	// The two facts below need a function each, and complexity.Functions is the
+	// filtered report list. Naming the worst of a filtered list as the worst of
+	// the project would be wrong, so they are reported only when the list is
+	// the whole population.
+	if len(complexity.Functions) == total {
+		deepest, longest := extremeFunctions(complexity.Functions)
+		hist.Facts = append(hist.Facts,
+			reportKV{
+				Key:   "Deepest nesting",
+				Value: fmt.Sprintf("%d levels (%s)", deepest.Metrics.NestingDepth, deepest.Name),
+			},
+			reportKV{
+				Key:   "Longest function",
+				Value: fmt.Sprintf("%d lines (%s)", functionLineSpan(*longest), longest.Name),
+			},
+		)
 	}
 	return hist
+}
+
+// extremeFunctions returns the most deeply nested and the longest function.
+// The caller guarantees a non-empty population.
+func extremeFunctions(functions []domain.FunctionComplexity) (deepest, longest *domain.FunctionComplexity) {
+	for i := range functions {
+		function := &functions[i]
+		if deepest == nil || function.Metrics.NestingDepth > deepest.Metrics.NestingDepth {
+			deepest = function
+		}
+		if longest == nil || functionLineSpan(*function) > functionLineSpan(*longest) {
+			longest = function
+		}
+	}
+	return deepest, longest
 }
 
 func binIndex(bins []histogramBin, cc int) int {
@@ -968,18 +976,30 @@ func round1(v float64) float64 {
 	return float64(int(v*10+0.5)) / 10
 }
 
-func median(values []int) float64 {
-	if len(values) == 0 {
+// medianOfDistribution finds the median of a population counted by value,
+// walking the values in order until half the population is behind it.
+func medianOfDistribution(distribution map[int]int, total int) float64 {
+	if total == 0 {
 		return 0
 	}
-	sorted := make([]int, len(values))
-	copy(sorted, values)
-	sort.Ints(sorted)
-	mid := len(sorted) / 2
-	if len(sorted)%2 == 1 {
-		return float64(sorted[mid])
+	values := make([]int, 0, len(distribution))
+	for value := range distribution {
+		values = append(values, value)
 	}
-	return float64(sorted[mid-1]+sorted[mid]) / 2
+	sort.Ints(values)
+
+	lower, upper := (total-1)/2, total/2
+	seen, low := 0, 0
+	for _, value := range values {
+		seen += distribution[value]
+		if low == 0 && seen > lower {
+			low = value
+		}
+		if seen > upper {
+			return float64(low+value) / 2
+		}
+	}
+	return float64(low)
 }
 
 // formatMedian prints whole medians without a decimal and half values with one.
@@ -1044,7 +1064,7 @@ func buildReportDuplication(summary *domain.AnalyzeSummary, clone *domain.CloneR
 		{Key: "Clone pairs", Value: formatThousands(stats.TotalClonePairs)},
 	}
 	if stats.TotalClonePairs > 0 || stats.TotalCloneGroups > 0 {
-		dup.Facts = append(dup.Facts, reportKV{Key: "Avg similarity", Value: fmt.Sprintf("%.2f", stats.AverageSimilarity)})
+		dup.Facts = append(dup.Facts, reportKV{Key: "Avg similarity", Value: formatPercent(stats.AverageSimilarity)})
 	}
 	if stats.FilesAnalyzed > 0 {
 		dup.Facts = append(dup.Facts, reportKV{Key: "Files with clones", Value: fmt.Sprintf("%d of %d", len(files), stats.FilesAnalyzed)})

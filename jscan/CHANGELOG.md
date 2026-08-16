@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Report `complexity.summary.complexity_distribution` in the JSON and YAML output, counting the analyzed functions that have each cyclomatic complexity. The field was declared but never populated. Like every other aggregate in that summary it describes the complete analyzed population, so it is the one field that lets a consumer plot the distribution a filtered report was scored on
+
 ### Changed
 
-- Redesign the analyze HTML report. The Overview now opens with a verdict that names which dimensions are clean and which hold the debt, a score card per dimension that links to its detail tab, a hotspot-file table joining complexity, dead code, and clones per file, and a complexity histogram whose buckets follow the thresholds the run was configured with. The seven tabs merge into five (Overview, Functions, Duplication, Classes, Architecture), each tab carrying a badge with the number of problems it holds. Files that could not be parsed are reported in the header and in the verdict, the Architecture tab gains the main-sequence zones and the longest dependency chains, the per-module and per-directory tables became sortable, the dead-code table announces the rows it truncates instead of hiding them silently, the report follows the display's light or dark theme, and an unrecognized URL fragment leaves the Overview open instead of blanking every panel. The report markup moved out of the Go string constant into embedded `report.html`, `report.css`, and `report.js`
+- Redesign the analyze HTML report. The Overview now opens with a verdict that names which dimensions are clean and which hold the debt, a score card per dimension that links to its detail tab, a hotspot-file table joining complexity, dead code, and clones per file, and a complexity histogram that covers every analyzed function and whose buckets follow the thresholds the run was configured with. The seven tabs merge into five (Overview, Functions, Duplication, Classes, Architecture), each tab carrying a badge with the number of problems it holds. Files that could not be parsed are reported in the header and in the verdict, the Architecture tab gains the main-sequence zones and the longest dependency chains, the per-module and per-directory tables became sortable, the dead-code table announces the rows it truncates instead of hiding them silently, the report follows the display's light or dark theme, and an unrecognized URL fragment leaves the Overview open instead of blanking every panel. The report markup moved out of the Go string constant into embedded `report.html`, `report.css`, and `report.js`
 
 ## [0.10.0] - 2026-08-16
 

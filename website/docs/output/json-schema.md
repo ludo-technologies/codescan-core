@@ -90,7 +90,7 @@ This is the object most scripts want. It carries the health score, the per-categ
 
 A few fields need explanation.
 
-`total_functions` is the count **after** the `output.min_complexity` filter. `functions_parsed` is the count before it. When the two differ, the report you are looking at is a filtered view.
+`total_functions` is every function jscan analyzed, which is what every complexity figure here and the health score describe. `output.min_complexity` and the other report filters change which functions `complexity.functions` lists, never what is counted here. `functions_parsed` is retained for output compatibility and carries the same number.
 
 `cbo_classes`, `high_coupling_classes`, and `medium_coupling_classes` count modules rather than classes in jscan, despite the names. See [the analyze reference](../cli/analyze.md#cbo).
 
@@ -156,7 +156,34 @@ File paths are reported exactly as jscan resolved them, which means they are abs
 }
 ```
 
-`directory_path` is relative to the deepest directory that contains every analyzed file, so the shared prefix of your selection is stripped and files sitting directly in that directory are reported as `.`. The rows are ranked worst first: high-risk functions, then maximum complexity, then average complexity. They describe the functions the report shows, so `min_complexity` shrinks them along with `functions`.
+`directory_path` is relative to the deepest directory that contains every analyzed file, so the shared prefix of your selection is stripped and files sitting directly in that directory are reported as `.`. The rows are ranked worst first: high-risk functions, then maximum complexity, then average complexity. They describe every analyzed function rather than the ones the report lists, so `min_complexity` does not shrink them along with `functions`.
+
+The `summary` object describes the same complete population:
+
+```json
+{
+  "total_functions": 7,
+  "functions_parsed": 7,
+  "average_complexity": 1.71,
+  "max_complexity": 3,
+  "min_complexity": 1,
+  "files_analyzed": 2,
+  "total_files": 2,
+  "skipped_files": 0,
+  "low_risk_functions": 7,
+  "medium_risk_functions": 0,
+  "high_risk_functions": 0,
+  "complexity_distribution": {
+    "1": 4,
+    "2": 1,
+    "3": 2
+  }
+}
+```
+
+`complexity_distribution` counts the analyzed functions that have each cyclomatic complexity, keyed by that complexity. It is the one field that lets a consumer plot the distribution a filtered report was scored on. It is absent when no function was analyzed.
+
+`total_files` counts the files the request covered and `skipped_files` those that could not be read or parsed. Their contents are absent from every figure above, so read `skipped_files` before trusting the aggregates.
 
 ## `dead_code`
 

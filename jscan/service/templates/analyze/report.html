@@ -341,7 +341,7 @@
       <div class="s"><div class="v num">{{.Clone.Statistics.TotalClones}}<small> / {{.Clone.Statistics.TotalFragments}}</small></div><div class="l">fragments cloned</div></div>
       <div class="s"><div class="v num">{{.Clone.Statistics.TotalCloneGroups}}</div><div class="l">clone groups</div></div>
       <div class="s"><div class="v num">{{.Clone.Statistics.TotalClonePairs}}</div><div class="l">clone pairs</div></div>
-      <div class="s"><div class="v num">{{printf "%.2f" .Clone.Statistics.AverageSimilarity}}</div><div class="l">avg similarity</div></div>
+      <div class="s"><div class="v num">{{percent .Clone.Statistics.AverageSimilarity}}</div><div class="l">avg similarity</div></div>
       <div class="s"><div class="v num">{{.Clone.Statistics.FilesAnalyzed}}</div><div class="l">files scanned</div></div>
     </div>
   </div>
@@ -354,7 +354,7 @@
       <div class="clone-group-h">
         <span class="pill type {{printf "t%d" (int $group.Type)}}">{{$group.Type}}</span>
         <b>Group {{$group.ID}}</b>
-        <span class="muted">{{len $group.Clones}} fragments · similarity {{printf "%.2f" $group.Similarity}}</span>
+        <span class="muted">{{len $group.Clones}} fragments · similarity {{percent $group.Similarity}}</span>
       </div>
       <div class="tbl-wrap">
         <table class="tbl compact">
@@ -394,7 +394,7 @@
             <td class="mono">{{cloneFile $pair.Clone2}}</td>
             <td class="r num">{{cloneLines $pair.Clone1}}</td>
             <td class="r num">{{cloneLines $pair.Clone2}}</td>
-            <td class="r num">{{printf "%.3f" $pair.Similarity}}</td>
+            <td class="r num">{{percent $pair.Similarity}}</td>
             <td><span class="pill type {{printf "t%d" (int $pair.Type)}}">{{$pair.Type}}</span></td>
           </tr>
           {{end}}{{end}}

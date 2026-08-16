@@ -9,10 +9,13 @@ import (
 	"github.com/ludo-technologies/polyscan/jscan/domain"
 )
 
-// reportComplexityResponse builds a complexity response whose risk labels follow
-// the thresholds a real run would have applied.
+// reportComplexityResponse builds a complexity response the way the complexity
+// service does: risk labels drawn from the thresholds, a distribution over the
+// whole analyzed population, and the thresholds in the reported config.
 func reportComplexityResponse(low, medium int, complexities ...int) *domain.ComplexityResponse {
-	response := &domain.ComplexityResponse{}
+	response := &domain.ComplexityResponse{
+		Config: map[string]interface{}{"low_threshold": low, "medium_threshold": medium},
+	}
 	for i, complexity := range complexities {
 		risk := domain.RiskLevelLow
 		switch {
@@ -29,6 +32,10 @@ func reportComplexityResponse(low, medium int, complexities ...int) *domain.Comp
 			Metrics:   domain.ComplexityMetrics{Complexity: complexity, NestingDepth: i % 3},
 			RiskLevel: risk,
 		})
+		if response.Summary.ComplexityDistribution == nil {
+			response.Summary.ComplexityDistribution = map[int]int{}
+		}
+		response.Summary.ComplexityDistribution[complexity]++
 	}
 	response.Summary.TotalFunctions = len(complexities)
 	response.Summary.FilesAnalyzed = 1
@@ -36,60 +43,68 @@ func reportComplexityResponse(low, medium int, complexities ...int) *domain.Comp
 	return response
 }
 
-func TestRiskThresholdsAreRecoveredFromRiskLabels(t *testing.T) {
+func TestComplexityRiskComesFromTheReportedConfig(t *testing.T) {
 	tests := []struct {
-		name           string
-		response       *domain.ComplexityResponse
-		wantLow        int
-		wantMedium     int
-		wantAtLeastOne bool
+		name     string
+		response *domain.ComplexityResponse
+		want     complexityRisk
 	}{
 		{
-			name:       "every band populated",
-			response:   reportComplexityResponse(9, 19, 1, 9, 10, 19, 20, 40),
-			wantLow:    9,
-			wantMedium: 19,
+			name:     "thresholds reported",
+			response: reportComplexityResponse(9, 19, 1, 12),
+			want:     complexityRisk{Low: 9, Medium: 19, Known: true},
 		},
 		{
-			name: "no medium functions",
-			// Nothing lands between the thresholds, so the lowest high-risk
-			// function stands in for the missing upper bound.
-			response:   reportComplexityResponse(9, 19, 1, 9, 25),
-			wantLow:    9,
-			wantMedium: 24,
+			// Inferring the thresholds from the listed functions would answer
+			// 11 and 15 here, and band CC 12 as low risk when the run rated it
+			// medium.
+			name: "report filters removed the boundary functions",
+			response: &domain.ComplexityResponse{
+				Config: map[string]interface{}{"low_threshold": 9, "medium_threshold": 19},
+				Functions: []domain.FunctionComplexity{
+					{Metrics: domain.ComplexityMetrics{Complexity: 12}, RiskLevel: domain.RiskLevelMedium},
+					{Metrics: domain.ComplexityMetrics{Complexity: 15}, RiskLevel: domain.RiskLevelMedium},
+				},
+			},
+			want: complexityRisk{Low: 9, Medium: 19, Known: true},
 		},
 		{
-			name:       "no low functions",
-			response:   reportComplexityResponse(9, 19, 12, 15),
-			wantLow:    11,
-			wantMedium: 15,
+			name:     "no config reported",
+			response: &domain.ComplexityResponse{},
+			want:     complexityRisk{},
 		},
 		{
-			name:       "no functions at all",
-			response:   reportComplexityResponse(9, 19),
-			wantLow:    0,
-			wantMedium: 0,
+			name: "thresholds out of order",
+			response: &domain.ComplexityResponse{
+				Config: map[string]interface{}{"low_threshold": 20, "medium_threshold": 5},
+			},
+			want: complexityRisk{},
+		},
+		{
+			name: "thresholds of another type",
+			response: &domain.ComplexityResponse{
+				Config: map[string]interface{}{"low_threshold": "9", "medium_threshold": "19"},
+			},
+			want: complexityRisk{},
+		},
+		{
+			name:     "no complexity analysis",
+			response: nil,
+			want:     complexityRisk{},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			low, medium := riskThresholds(test.response)
-			if low != test.wantLow || medium != test.wantMedium {
-				t.Errorf("riskThresholds() = (%d, %d), want (%d, %d)", low, medium, test.wantLow, test.wantMedium)
+			if got := readComplexityRisk(test.response); got != test.want {
+				t.Errorf("readComplexityRisk() = %+v, want %+v", got, test.want)
 			}
 		})
 	}
 }
 
-func TestRiskThresholdsWithoutComplexityAnalysis(t *testing.T) {
-	if low, medium := riskThresholds(nil); low != 0 || medium != 0 {
-		t.Errorf("expected no thresholds without complexity analysis, got (%d, %d)", low, medium)
-	}
-}
-
 func TestHistogramBinsFollowTheRunsThresholds(t *testing.T) {
-	bins := histogramBins(9, 19)
+	bins := histogramBins(complexityRisk{Low: 9, Medium: 19, Known: true})
 
 	labels := make([]string, 0, len(bins))
 	bands := make([]string, 0, len(bins))
@@ -111,7 +126,7 @@ func TestHistogramBinsFollowTheRunsThresholds(t *testing.T) {
 }
 
 func TestHistogramBinsCollapseWhenThresholdsAreTight(t *testing.T) {
-	bins := histogramBins(1, 2)
+	bins := histogramBins(complexityRisk{Low: 1, Medium: 2, Known: true})
 
 	labels := make([]string, 0, len(bins))
 	for _, bin := range bins {
@@ -125,7 +140,7 @@ func TestHistogramBinsCollapseWhenThresholdsAreTight(t *testing.T) {
 
 func TestBuildReportHistogramCountsAndMarksTheThreshold(t *testing.T) {
 	complexity := reportComplexityResponse(9, 19, 1, 1, 3, 12, 25)
-	hist := buildReportHistogram(complexity, 9, 19)
+	hist := buildReportHistogram(complexity, complexityRisk{Low: 9, Medium: 19, Known: true})
 
 	if hist == nil {
 		t.Fatal("expected a histogram")
@@ -143,19 +158,69 @@ func TestBuildReportHistogramCountsAndMarksTheThreshold(t *testing.T) {
 		t.Errorf("threshold marker = %q, want %q", hist.Threshold, "risk from CC 10")
 	}
 
+	facts := reportFacts(hist)
+	if facts["Median complexity"] != "CC 3" {
+		t.Errorf("median fact = %q", facts["Median complexity"])
+	}
+	if facts["Longest function"] == "" || facts["Deepest nesting"] == "" {
+		t.Errorf("expected the per-function facts on a complete list, got %+v", facts)
+	}
+}
+
+// The histogram, the function total, and every score describe the complete
+// analyzed population; the listed functions are whatever the report filters
+// left. Counting the list would make the same report contradict itself.
+func TestBuildReportHistogramCoversTheFilteredOutFunctions(t *testing.T) {
+	complexity := reportComplexityResponse(9, 19, 1, 1, 3, 12, 25)
+	// output.min_complexity dropped everything below 10 from the report list.
+	complexity.Functions = complexity.Functions[3:]
+
+	hist := buildReportHistogram(complexity, complexityRisk{Low: 9, Medium: 19, Known: true})
+
+	if hist == nil {
+		t.Fatal("expected a histogram")
+	}
+	if hist.Total != "5" {
+		t.Errorf("histogram total = %q, want the whole population", hist.Total)
+	}
+	plotted := 0
+	for _, bin := range hist.Bins {
+		plotted += bin.Count
+	}
+	if plotted != 5 {
+		t.Errorf("plotted %d functions, want the whole population of 5", plotted)
+	}
+
+	facts := reportFacts(hist)
+	if facts["Median complexity"] != "CC 3" {
+		t.Errorf("median fact = %q, want the median of the whole population", facts["Median complexity"])
+	}
+	// Naming the longest of a filtered list as the longest of the project
+	// would be wrong, so the per-function facts drop out instead.
+	if _, named := facts["Longest function"]; named {
+		t.Errorf("expected no per-function facts on a filtered list, got %+v", facts)
+	}
+}
+
+func TestBuildReportHistogramWithoutTheDataItNeeds(t *testing.T) {
+	withoutFunctions := reportComplexityResponse(9, 19)
+	if hist := buildReportHistogram(withoutFunctions, complexityRisk{Low: 9, Medium: 19, Known: true}); hist != nil {
+		t.Error("expected no histogram when no function was analyzed")
+	}
+	// Without the thresholds the buckets have no honest edges to fall on.
+	withoutConfig := reportComplexityResponse(9, 19, 1, 12)
+	withoutConfig.Config = nil
+	if hist := buildReportHistogram(withoutConfig, readComplexityRisk(withoutConfig)); hist != nil {
+		t.Error("expected no histogram when the run did not report its thresholds")
+	}
+}
+
+func reportFacts(hist *reportHistogram) map[string]string {
 	facts := map[string]string{}
 	for _, fact := range hist.Facts {
 		facts[fact.Key] = fact.Value
 	}
-	if facts["Median function"] != "CC 3, 10 lines" {
-		t.Errorf("median fact = %q", facts["Median function"])
-	}
-}
-
-func TestBuildReportHistogramWithoutFunctions(t *testing.T) {
-	if hist := buildReportHistogram(&domain.ComplexityResponse{}, 0, 0); hist != nil {
-		t.Error("expected no histogram when no function was analyzed")
-	}
+	return facts
 }
 
 func TestBuildReportTabsMergeTheAnalysesIntoFive(t *testing.T) {
@@ -288,7 +353,7 @@ func TestBuildReportHotspotsRankByRiskThenComplexity(t *testing.T) {
 		}},
 	}
 
-	hotspots := buildReportHotspots(modules, clone, 9, 19)
+	hotspots := buildReportHotspots(modules, clone, complexityRisk{Low: 9, Medium: 19, Known: true})
 
 	if len(hotspots) != 3 {
 		t.Fatalf("expected 3 hotspots, got %d", len(hotspots))

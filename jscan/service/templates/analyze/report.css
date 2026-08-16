@@ -223,7 +223,13 @@ details.card[open] > summary { margin-bottom: 14px; }
 .dim.ok .dim-score { color: var(--good); }
 .dim.watch .bar > i { background: var(--warn); } .dim.watch .dim-score { color: var(--warn); }
 .dim.poor .bar > i { background: var(--bad); }  .dim.poor .dim-score { color: var(--bad); }
+.dim-top, .dim-sub { flex-wrap: wrap; }
 .dim-sub { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+/* Two score cards no longer fit side by side on a phone: the name and the
+   score start to overlap well before the card itself runs out of room. */
+@media (max-width: 560px) {
+  .dims { grid-template-columns: 1fr; }
+}
 
 /* ---------- tables ---------- */
 .tbl-wrap { overflow-x: auto; }

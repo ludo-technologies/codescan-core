@@ -342,7 +342,7 @@ func TestComplexitySummary_Fields(t *testing.T) {
 		LowRiskFunctions:       80,
 		MediumRiskFunctions:    15,
 		HighRiskFunctions:      5,
-		ComplexityDistribution: map[string]int{"1-5": 50, "6-10": 30},
+		ComplexityDistribution: map[int]int{1: 50, 6: 30},
 	}
 
 	if summary.TotalFunctions != 100 {
