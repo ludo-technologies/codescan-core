@@ -1,9 +1,14 @@
 package service
 
 import (
+	"embed"
 	"fmt"
 	"html/template"
 	"io"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,27 +16,49 @@ import (
 	"github.com/ludo-technologies/polyscan/jscan/internal/version"
 )
 
-// HTMLData represents the data for HTML template
-type HTMLData struct {
-	GeneratedAt      string
-	Duration         int64
-	Version          string
-	Complexity       *domain.ComplexityResponse
-	DeadCode         *domain.DeadCodeResponse
-	Clone            *domain.CloneResponse
-	CBO              *domain.CBOResponse
-	Deps             *domain.DependencyGraphResponse
-	ModuleQuality    []domain.ModuleQualityMetrics
-	Summary          *domain.AnalyzeSummary
-	HasComplexity    bool
-	HasDeadCode      bool
-	HasClone         bool
-	HasCBO           bool
-	HasDeps          bool
-	HasModuleQuality bool
+//go:embed templates/analyze/report.html templates/analyze/report.css templates/analyze/report.js
+var analyzeTemplateFS embed.FS
+
+var (
+	analyzeReportCSS = template.CSS(mustReadTemplateAsset("templates/analyze/report.css"))
+	analyzeReportJS  = template.JS(mustReadTemplateAsset("templates/analyze/report.js"))
+
+	analyzeReportTemplate = template.Must(
+		template.New("report.html").
+			Funcs(analyzeTemplateFuncs()).
+			ParseFS(analyzeTemplateFS, "templates/analyze/report.html"),
+	)
+)
+
+func mustReadTemplateAsset(name string) string {
+	data, err := analyzeTemplateFS.ReadFile(name)
+	if err != nil {
+		panic(fmt.Sprintf("embedded template asset %s: %v", name, err))
+	}
+	return string(data)
 }
 
-// WriteHTML writes the analysis result as HTML
+func analyzeTemplateFuncs() template.FuncMap {
+	return template.FuncMap{
+		"join":      strings.Join,
+		"add":       func(a, b int) int { return a + b },
+		"sub":       func(a, b int) int { return a - b },
+		"addf":      func(a, b float64) float64 { return a + b },
+		"divf":      func(a, b float64) float64 { return a / b },
+		"int":       func(t domain.CloneType) int { return int(t) },
+		"percent":   formatPercent,
+		"scoreBand": scoreBand,
+		// Clone fragments are pointers with an optional location, so every
+		// fragment accessor tolerates a missing one rather than panicking
+		// halfway through rendering.
+		"cloneFile":    cloneFile,
+		"cloneLines":   cloneLines,
+		"cloneContent": cloneContent,
+		"lineSpan":     functionLineSpan,
+	}
+}
+
+// WriteHTML writes the analysis result as a self-contained HTML report.
 func (f *OutputFormatterImpl) WriteHTML(
 	complexityResponse *domain.ComplexityResponse,
 	deadCodeResponse *domain.DeadCodeResponse,
@@ -41,8 +68,6 @@ func (f *OutputFormatterImpl) WriteHTML(
 	writer io.Writer,
 	duration time.Duration,
 ) error {
-	now := time.Now()
-
 	if cloneResponse != nil {
 		if cloneResponse.Statistics == nil {
 			cloneResponse.Statistics = &domain.CloneStatistics{}
@@ -56,809 +81,1098 @@ func (f *OutputFormatterImpl) WriteHTML(
 		cloneResponse.ClonePairs = clonePairs
 	}
 
-	// Build summary (reuse shared logic to avoid score divergence across output formats)
-	summary := BuildAnalyzeSummary(complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse)
-	moduleQuality := BuildModuleQuality(complexityResponse, deadCodeResponse, depsResponse)
-
-	data := HTMLData{
-		GeneratedAt:      now.Format("2006-01-02 15:04:05"),
-		Duration:         duration.Milliseconds(),
-		Version:          version.Version,
-		Complexity:       complexityResponse,
-		DeadCode:         deadCodeResponse,
-		Clone:            cloneResponse,
-		CBO:              cboResponse,
-		Deps:             depsResponse,
-		ModuleQuality:    moduleQuality,
-		Summary:          summary,
-		HasComplexity:    complexityResponse != nil,
-		HasDeadCode:      deadCodeResponse != nil,
-		HasClone:         cloneResponse != nil,
-		HasCBO:           cboResponse != nil,
-		HasDeps:          depsResponse != nil,
-		HasModuleQuality: len(moduleQuality) > 0,
+	view := buildAnalyzeReportView(
+		complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse, duration,
+	)
+	if err := analyzeReportTemplate.Execute(writer, view); err != nil {
+		return fmt.Errorf("failed to render HTML report: %w", err)
 	}
-
-	funcMap := template.FuncMap{
-		"join": func(elems []string, sep string) string {
-			return strings.Join(elems, sep)
-		},
-		"add": func(a, b int) int {
-			return a + b
-		},
-		"sub": func(a, b int) int {
-			return a - b
-		},
-		"mul": func(a, b float64) float64 {
-			return a * b
-		},
-		"cloneLoc": func(clone *domain.Clone) string {
-			if clone == nil || clone.Location == nil {
-				return "unknown"
-			}
-			return fmt.Sprintf("%s:%d", clone.Location.FilePath, clone.Location.StartLine)
-		},
-		"scoreQuality": func(score int) string {
-			switch {
-			case score >= domain.ScoreThresholdExcellent:
-				return "excellent"
-			case score >= domain.ScoreThresholdGood:
-				return "good"
-			case score >= domain.ScoreThresholdFair:
-				return "fair"
-			default:
-				return "poor"
-			}
-		},
-		"projectScale": func(summary *domain.AnalyzeSummary) string {
-			if summary == nil {
-				return ""
-			}
-			return FormatProjectScale(summary)
-		},
-		"gradeClass": func(grade string) string {
-			switch grade {
-			case "A":
-				return "grade-a"
-			case "B":
-				return "grade-b"
-			case "C":
-				return "grade-c"
-			case "D":
-				return "grade-d"
-			default:
-				return "grade-f"
-			}
-		},
-	}
-
-	tmpl := template.Must(template.New("analyze").Funcs(funcMap).Parse(htmlTemplate))
-	return tmpl.Execute(writer, data)
+	return nil
 }
 
-const htmlTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>jscan Analysis Report</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        .header h1 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        .header .subtitle {
-            color: #666;
-            font-size: 14px;
-        }
-        .score-badge {
-            display: inline-block;
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-size: 24px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        .grade-a { background: #4caf50; color: white; }
-        .grade-b { background: #8bc34a; color: white; }
-        .grade-c { background: #ff9800; color: white; }
-        .grade-d { background: #ff5722; color: white; }
-        .grade-f { background: #f44336; color: white; }
+// ---------------------------------------------------------------------------
+// View model
+// ---------------------------------------------------------------------------
 
-        .tabs {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        .tab-buttons {
-            display: flex;
-            background: #f5f5f5;
-        }
-        .tab-button {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-        .tab-button.active {
-            background: white;
-            color: #667eea;
-            font-weight: bold;
-        }
-        .tab-content {
-            display: none;
-            padding: 30px;
-        }
-        .tab-content.active {
-            display: block;
-        }
+const (
+	reportHotspotLimit     = 8
+	reportScoreRingCircumf = 351.86 // 2 * pi * r for r=56
+)
 
-        .metric-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-        .metric-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .metric-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        .metric-label {
-            color: #666;
-            margin-top: 5px;
-        }
+// analyzeReportView is the data handed to the report template. It carries the
+// raw responses so the detail tabs can reach them, plus the pre-computed
+// overview blocks so the template stays free of arithmetic.
+type analyzeReportView struct {
+	CSS template.CSS
+	JS  template.JS
 
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        .table th, .table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        .table th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
+	GeneratedAt time.Time
+	Duration    int64
+	Version     string
 
-        .risk-low { color: #4caf50; }
-        .risk-medium { color: #ff9800; }
-        .risk-high { color: #f44336; }
+	Complexity    *domain.ComplexityResponse
+	DeadCode      *domain.DeadCodeResponse
+	Clone         *domain.CloneResponse
+	CBO           *domain.CBOResponse
+	Deps          *domain.DependencyGraphResponse
+	ModuleQuality []domain.ModuleQualityMetrics
+	Summary       *domain.AnalyzeSummary
 
-        .severity-critical { color: #f44336; }
-        .severity-warning { color: #ff9800; }
-        .severity-info { color: #2196f3; }
+	ProjectName string
+	ProjectPath string
+	ScoreBand   string
+	RingOffset  float64
 
-        .score-bars {
-            margin: 20px 0;
-        }
-        .score-bar-item {
-            margin-bottom: 24px;
-        }
-        .score-bar-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-            font-size: 14px;
-        }
-        .score-label {
-            font-weight: 600;
-            color: #333;
-        }
-        .score-value {
-            font-weight: 700;
-            color: #667eea;
-        }
-        .score-bar-container {
-            width: 100%;
-            height: 12px;
-            background: #e0e0e0;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        .score-bar-fill {
-            height: 100%;
-            transition: width 0.3s ease;
-            border-radius: 6px;
-        }
-        .score-excellent { background: linear-gradient(90deg, #4caf50, #66bb6a); }
-        .score-good { background: linear-gradient(90deg, #8bc34a, #9ccc65); }
-        .score-fair { background: linear-gradient(90deg, #ff9800, #ffa726); }
-        .score-poor { background: linear-gradient(90deg, #f44336, #ef5350); }
-        .score-detail {
-            margin-top: 4px;
-            font-size: 12px;
-            color: #666;
-        }
+	Tabs        []reportTab
+	Verdict     reportVerdict
+	Facts       []reportFact
+	Dimensions  []reportDimension
+	Hotspots    []reportHotspot
+	Histogram   *reportHistogram
+	Duplication *reportDuplication
+	Classes     *reportClasses
+	Structure   *reportStructure
 
-        .tab-header-with-score {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #e0e0e0;
-        }
+	ProjectScale    string
+	SkippedFiles    int
+	ShowFunctions   bool
+	ShowDeadColumn  bool
+	ShowCloneColumn bool
+}
 
-        .score-badge-compact {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 16px;
-            font-size: 13px;
-            font-weight: 700;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>jscan Analysis Report</h1>
-            <p class="subtitle">Generated: {{.GeneratedAt}} | Duration: {{.Duration}}ms | Version: {{.Version}}</p>
-            <div class="score-badge {{gradeClass .Summary.Grade}}">
-                Health Score: {{.Summary.HealthScore}}/100 (Grade: {{.Summary.Grade}})
-            </div>
-            <p class="subtitle">Project Scale: {{projectScale .Summary}}</p>
-        </div>
+type reportTab struct {
+	ID        string
+	Label     string
+	Count     int
+	CountBand string // "", "warn", "bad"
+}
 
-        <div class="tabs">
-            <div class="tab-buttons">
-                <button class="tab-button active" onclick="showTab('summary', this)">Summary</button>
-                {{if .HasComplexity}}
-                <button class="tab-button" onclick="showTab('complexity', this)">Complexity</button>
-                {{end}}
-                {{if .HasDeadCode}}
-                <button class="tab-button" onclick="showTab('deadcode', this)">Dead Code</button>
-                {{end}}
-                {{if .HasClone}}
-                <button class="tab-button" onclick="showTab('clone', this)">Clones</button>
-                {{end}}
-                {{if .HasCBO}}
-                <button class="tab-button" onclick="showTab('cbo', this)">Coupling</button>
-                {{end}}
-                {{if .HasDeps}}
-                <button class="tab-button" onclick="showTab('deps', this)">Dependencies</button>
-                {{end}}
-                {{if .HasModuleQuality}}
-                <button class="tab-button" onclick="showTab('modules', this)">Modules</button>
-                {{end}}
-            </div>
+type reportVerdict struct {
+	Headline string
+	Body     []reportSegment
+}
 
-            <div id="summary" class="tab-content active">
-                <h2>Analysis Summary</h2>
+// reportSegment is a run of verdict text; Strong runs are emphasized.
+type reportSegment struct {
+	Text   string
+	Strong bool
+}
 
-                <h3 style="margin-top: 20px; margin-bottom: 16px; color: #2c3e50;">Quality Scores</h3>
-                <div class="score-bars">
-                    {{if .HasComplexity}}
-                    <div class="score-bar-item">
-                        <div class="score-bar-header">
-                            <span class="score-label">Complexity</span>
-                            <span class="score-value">{{.Summary.ComplexityScore}}/100</span>
-                        </div>
-                        <div class="score-bar-container">
-                            <div class="score-bar-fill score-{{scoreQuality .Summary.ComplexityScore}}" style="width: {{.Summary.ComplexityScore}}%"></div>
-                        </div>
-                        <div class="score-detail">Avg: {{printf "%.1f" .Summary.AverageComplexity}}, High-risk: {{.Summary.HighComplexityCount}}</div>
-                    </div>
-                    {{end}}
+type reportFact struct {
+	Value string
+	Label string
+}
 
-                    {{if .HasDeadCode}}
-                    <div class="score-bar-item">
-                        <div class="score-bar-header">
-                            <span class="score-label">Dead Code</span>
-                            <span class="score-value">{{.Summary.DeadCodeScore}}/100</span>
-                        </div>
-                        <div class="score-bar-container">
-                            <div class="score-bar-fill score-{{scoreQuality .Summary.DeadCodeScore}}" style="width: {{.Summary.DeadCodeScore}}%"></div>
-                        </div>
-                        <div class="score-detail">{{.Summary.DeadCodeCount}} issues, {{.Summary.CriticalDeadCode}} critical</div>
-                    </div>
-                    {{end}}
+type reportDimension struct {
+	Name  string
+	Score int
+	Band  string
+	Left  string
+	Right string
+	Tab   string
+}
 
-                    {{if .HasClone}}
-                    <div class="score-bar-item">
-                        <div class="score-bar-header">
-                            <span class="score-label">Code Duplication</span>
-                            <span class="score-value">{{.Summary.DuplicationScore}}/100</span>
-                        </div>
-                        <div class="score-bar-container">
-                            <div class="score-bar-fill score-{{scoreQuality .Summary.DuplicationScore}}" style="width: {{.Summary.DuplicationScore}}%"></div>
-                        </div>
-                        <div class="score-detail">{{.Summary.ClonePairs}} clone pairs, {{printf "%.1f" .Summary.CodeDuplication}}% duplication</div>
-                    </div>
-                    {{end}}
+type reportHotspot struct {
+	Dir       string
+	File      string
+	Lines     string
+	Functions int
+	MaxCC     int
+	MaxCCPct  int
+	MaxCCBand string
+	HighRisk  int
+	DeadCode  int
+	Clones    int
+}
 
-                    {{if .HasCBO}}
-                    <div class="score-bar-item">
-                        <div class="score-bar-header">
-                            <span class="score-label">Coupling</span>
-                            <span class="score-value">{{.Summary.CouplingScore}}/100</span>
-                        </div>
-                        <div class="score-bar-container">
-                            <div class="score-bar-fill score-{{scoreQuality .Summary.CouplingScore}}" style="width: {{.Summary.CouplingScore}}%"></div>
-                        </div>
-                        <div class="score-detail">{{.Summary.HighCouplingClasses}} high-risk classes, avg CBO: {{printf "%.1f" .Summary.AverageCoupling}}</div>
-                    </div>
-                    {{end}}
+type reportHistogram struct {
+	Total      string
+	Bins       []reportHistogramBin
+	Ticks      []reportHistogramTick
+	ThresholdX float64
+	Threshold  string
+	Facts      []reportKV
+}
 
-                    {{if .HasDeps}}
-                    <div class="score-bar-item">
-                        <div class="score-bar-header">
-                            <span class="score-label">Dependencies</span>
-                            <span class="score-value">{{.Summary.DependencyScore}}/100</span>
-                        </div>
-                        <div class="score-bar-container">
-                            <div class="score-bar-fill score-{{scoreQuality .Summary.DependencyScore}}" style="width: {{.Summary.DependencyScore}}%"></div>
-                        </div>
-                        <div class="score-detail">{{.Summary.DepsTotalModules}} modules, {{.Summary.DepsModulesInCycles}} in cycles</div>
-                    </div>
-                    {{end}}
-                </div>
+type reportHistogramBin struct {
+	Label  string
+	Count  int
+	X      float64
+	Y      float64
+	Width  float64
+	Height float64
+	Band   string // "", "warn", "bad"
+}
 
-                <h3 style="margin-top: 24px; margin-bottom: 16px; color: #2c3e50;">File Statistics</h3>
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Summary.AnalyzedFiles}}</div>
-                        <div class="metric-label">Files Analyzed</div>
-                    </div>
-                    {{if gt .Summary.SkippedFiles 0}}
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Summary.SkippedFiles}}</div>
-                        <div class="metric-label">Files Skipped (parse errors)</div>
-                    </div>
-                    {{end}}
-                    {{if .HasComplexity}}
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Summary.TotalFunctions}}</div>
-                        <div class="metric-label">Total Functions</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{printf "%.2f" .Summary.AverageComplexity}}</div>
-                        <div class="metric-label">Avg Complexity</div>
-                    </div>
-                    {{end}}
-                    {{if .HasDeadCode}}
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Summary.DeadCodeCount}}</div>
-                        <div class="metric-label">Dead Code Issues</div>
-                    </div>
-                    {{end}}
-                </div>
-            </div>
+type reportHistogramTick struct {
+	Label string
+	Y     float64
+}
 
-            {{if .HasComplexity}}
-            <div id="complexity" class="tab-content">
-                <div class="tab-header-with-score">
-                    <h2 style="margin: 0;">Complexity Analysis</h2>
-                    <div class="score-badge-compact score-{{scoreQuality .Summary.ComplexityScore}}">
-                        {{.Summary.ComplexityScore}}/100
-                    </div>
-                </div>
+type reportKV struct {
+	Key   string
+	Value string
+	Band  string
+	Mono  bool
+}
 
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Complexity.Summary.TotalFunctions}}</div>
-                        <div class="metric-label">Total Functions</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{printf "%.2f" .Complexity.Summary.AverageComplexity}}</div>
-                        <div class="metric-label">Average</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Complexity.Summary.MaxComplexity}}</div>
-                        <div class="metric-label">Maximum</div>
-                    </div>
-                </div>
+type reportDuplication struct {
+	Percent   float64
+	Fragments int
+	Types     []reportShare
+	Facts     []reportKV
+}
 
-                {{if .Complexity.ByDirectory}}
-                <h3>Directory Complexity</h3>
-                <div style="overflow-x: auto;">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Directory</th>
-                                <th>Functions</th>
-                                <th>Avg CC</th>
-                                <th>Max CC</th>
-                                <th>High Risk</th>
-                                <th>Avg Nesting</th>
-                                <th>Max Nesting</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{range .Complexity.ByDirectory}}
-                            <tr>
-                                <td>{{.DirectoryPath}}</td>
-                                <td>{{.FunctionCount}}</td>
-                                <td>{{printf "%.2f" .AverageComplexity}}</td>
-                                <td>{{.MaxComplexity}}</td>
-                                <td>{{.HighRiskFunctionCount}}</td>
-                                <td>{{printf "%.2f" .AverageNestingDepth}}</td>
-                                <td>{{.MaxNestingDepth}}</td>
-                            </tr>
-                            {{end}}
-                        </tbody>
-                    </table>
-                </div>
-                {{end}}
+type reportShare struct {
+	Label   string
+	Percent float64
+	Class   string
+}
 
-                <h3>Functions</h3>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Function</th>
-                            <th>File</th>
-                            <th>Complexity</th>
-                            <th>Risk</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range $i, $f := .Complexity.Functions}}
-                        {{if lt $i 20}}
-                        <tr>
-                            <td>{{$f.Name}}</td>
-                            <td>{{$f.FilePath}}</td>
-                            <td>{{$f.Metrics.Complexity}}</td>
-                            <td class="risk-{{$f.RiskLevel}}">{{$f.RiskLevel}}</td>
-                        </tr>
-                        {{end}}
-                        {{end}}
-                    </tbody>
-                </table>
-                {{if gt (len .Complexity.Functions) 20}}
-                <p style="color: #666; margin-top: 10px;">Showing top 20 of {{len .Complexity.Functions}} functions</p>
-                {{end}}
-            </div>
-            {{end}}
+type reportClasses struct {
+	Total int
+	Facts []reportKV
+}
 
-            {{if .HasDeadCode}}
-            <div id="deadcode" class="tab-content">
-                <div class="tab-header-with-score">
-                    <h2 style="margin: 0;">Dead Code Detection</h2>
-                    <div class="score-badge-compact score-{{scoreQuality .Summary.DeadCodeScore}}">
-                        {{.Summary.DeadCodeScore}}/100
-                    </div>
-                </div>
+type reportStructure struct {
+	Cycles int
+	Facts  []reportKV
+}
 
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">{{.DeadCode.Summary.TotalFindings}}</div>
-                        <div class="metric-label">Total Issues</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{.DeadCode.Summary.CriticalFindings}}</div>
-                        <div class="metric-label">Critical</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{.DeadCode.Summary.WarningFindings}}</div>
-                        <div class="metric-label">Warnings</div>
-                    </div>
-                </div>
+// scoreBand maps a 0-100 score onto the report's three semantic colors.
+func scoreBand(score int) string {
+	switch {
+	case score >= domain.ScoreThresholdGood:
+		return "ok"
+	case score >= domain.ScoreThresholdFair:
+		return "watch"
+	default:
+		return "poor"
+	}
+}
 
-                {{if gt .DeadCode.Summary.TotalFindings 0}}
-                <h3>Dead Code Issues</h3>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>File</th>
-                            <th>Function</th>
-                            <th>Lines</th>
-                            <th>Severity</th>
-                            <th>Reason</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range $file := .DeadCode.Files}}
-                        {{range $finding := $file.FileLevelFindings}}
-                        <tr>
-                            <td>{{$finding.Location.FilePath}}</td>
-                            <td><em>&lt;file-level&gt;</em></td>
-                            <td>{{$finding.Location.StartLine}}-{{$finding.Location.EndLine}}</td>
-                            <td class="severity-{{$finding.Severity}}">{{$finding.Severity}}</td>
-                            <td>{{$finding.Description}}</td>
-                        </tr>
-                        {{end}}
-                        {{range $func := $file.Functions}}
-                        {{range $i, $finding := $func.Findings}}
-                        {{if lt $i 20}}
-                        <tr>
-                            <td>{{$finding.Location.FilePath}}</td>
-                            <td>{{$finding.FunctionName}}</td>
-                            <td>{{$finding.Location.StartLine}}-{{$finding.Location.EndLine}}</td>
-                            <td class="severity-{{$finding.Severity}}">{{$finding.Severity}}</td>
-                            <td>{{$finding.Reason}}</td>
-                        </tr>
-                        {{end}}
-                        {{end}}
-                        {{end}}
-                        {{end}}
-                    </tbody>
-                </table>
-                {{else}}
-                <p style="color: #4caf50; font-weight: bold; margin-top: 20px;">✓ No dead code detected</p>
-                {{end}}
-            </div>
-            {{end}}
+func buildAnalyzeReportView(
+	complexity *domain.ComplexityResponse,
+	deadCode *domain.DeadCodeResponse,
+	clone *domain.CloneResponse,
+	cbo *domain.CBOResponse,
+	deps *domain.DependencyGraphResponse,
+	duration time.Duration,
+) *analyzeReportView {
+	// Reuse the shared summary and rollup builders so the report can never
+	// disagree with the text, JSON, or CSV output about a score.
+	summary := BuildAnalyzeSummary(complexity, deadCode, clone, cbo, deps)
+	moduleQuality := BuildModuleQuality(complexity, deadCode, deps)
 
-            {{if .HasClone}}
-            <div id="clone" class="tab-content">
-                <div class="tab-header-with-score">
-                    <h2 style="margin: 0;">Clone Detection</h2>
-                    <div class="score-badge-compact score-{{scoreQuality .Summary.DuplicationScore}}">
-                        {{.Summary.DuplicationScore}}/100
-                    </div>
-                </div>
+	view := &analyzeReportView{
+		CSS:             analyzeReportCSS,
+		JS:              analyzeReportJS,
+		GeneratedAt:     time.Now(),
+		Duration:        duration.Milliseconds(),
+		Version:         version.Version,
+		Complexity:      complexity,
+		DeadCode:        deadCode,
+		Clone:           clone,
+		CBO:             cbo,
+		Deps:            deps,
+		ModuleQuality:   moduleQuality,
+		Summary:         summary,
+		ScoreBand:       scoreBand(summary.HealthScore),
+		RingOffset:      reportScoreRingCircumf * (1 - float64(clampScore(summary.HealthScore))/100),
+		ProjectScale:    FormatProjectScale(summary),
+		SkippedFiles:    summary.SkippedFiles,
+		ShowFunctions:   reportHasFunctions(summary, complexity, moduleQuality),
+		ShowDeadColumn:  summary.DeadCodeEnabled,
+		ShowCloneColumn: summary.CloneEnabled,
+	}
+	risk := readComplexityRisk(complexity)
+	view.ProjectName, view.ProjectPath = reportProject(moduleQuality, complexity)
+	view.Tabs = buildReportTabs(summary, complexity, moduleQuality, deps)
+	view.Dimensions = buildReportDimensions(summary, view.Tabs)
+	view.Verdict = buildReportVerdict(summary, view.Dimensions)
+	view.Facts = buildReportFacts(summary, moduleQuality)
+	view.Hotspots = buildReportHotspots(moduleQuality, clone, risk)
+	view.Histogram = buildReportHistogram(complexity, risk)
+	view.Duplication = buildReportDuplication(summary, clone)
+	view.Classes = buildReportClasses(summary, cbo)
+	view.Structure = buildReportStructure(deps)
+	return view
+}
 
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Clone.Statistics.TotalClonePairs}}</div>
-                        <div class="metric-label">Clone Pairs</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Clone.Statistics.TotalCloneGroups}}</div>
-                        <div class="metric-label">Clone Groups</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{printf "%.1f%%" .Summary.CodeDuplication}}</div>
-                        <div class="metric-label">Code Duplication</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{printf "%.0f%%" (mul .Clone.Statistics.AverageSimilarity 100)}}</div>
-                        <div class="metric-label">Avg Similarity</div>
-                    </div>
-                </div>
+func clampScore(score int) int {
+	if score < 0 {
+		return 0
+	}
+	if score > 100 {
+		return 100
+	}
+	return score
+}
 
-                {{if gt .Clone.Statistics.TotalClonePairs 0}}
-                <h3>Top Clone Pairs</h3>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Location 1</th>
-                            <th>Location 2</th>
-                            <th>Similarity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range $i, $pair := .Clone.ClonePairs}}
-                        {{if lt $i 20}}
-                        <tr>
-                            <td>{{$pair.Type}}</td>
-                            <td>{{cloneLoc $pair.Clone1}}</td>
-                            <td>{{cloneLoc $pair.Clone2}}</td>
-                            <td>{{printf "%.1f%%" (mul $pair.Similarity 100)}}</td>
-                        </tr>
-                        {{end}}
-                        {{end}}
-                    </tbody>
-                </table>
-                {{if gt (len .Clone.ClonePairs) 20}}
-                <p style="color: #666; margin-top: 10px;">Showing top 20 of {{len .Clone.ClonePairs}} clone pairs</p>
-                {{end}}
-                {{else}}
-                <p style="color: #4caf50; font-weight: bold; margin-top: 20px;">✓ No code clones detected</p>
-                {{end}}
-            </div>
-            {{end}}
+// reportProject derives a project label from the analyzed file paths: the
+// responses carry no explicit root, so the common directory of everything that
+// was analyzed is the closest thing to one.
+func reportProject(
+	moduleQuality []domain.ModuleQualityMetrics,
+	complexity *domain.ComplexityResponse,
+) (name, root string) {
+	files := make([]string, 0, len(moduleQuality))
+	for _, module := range moduleQuality {
+		files = append(files, module.FilePath)
+	}
+	if len(files) == 0 && complexity != nil {
+		for _, function := range complexity.Functions {
+			files = append(files, function.FilePath)
+		}
+	}
+	root = commonDirectory(files)
+	if root == "" || root == "." || root == string(filepath.Separator) {
+		return "", ""
+	}
+	return filepath.Base(root), abbreviateHome(root)
+}
 
-            {{if .HasCBO}}
-            <div id="cbo" class="tab-content">
-                <div class="tab-header-with-score">
-                    <h2 style="margin: 0;">Coupling Analysis (CBO)</h2>
-                    <div class="score-badge-compact score-{{scoreQuality .Summary.CouplingScore}}">
-                        {{.Summary.CouplingScore}}/100
-                    </div>
-                </div>
+// abbreviateHome swaps the user's home directory for "~" so the report header
+// stays short and does not leak the account name when the file is shared.
+func abbreviateHome(p string) string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" || !strings.HasPrefix(p, home) {
+		return p
+	}
+	return "~" + strings.TrimPrefix(p, home)
+}
 
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">{{.CBO.Summary.TotalClasses}}</div>
-                        <div class="metric-label">Classes Analyzed</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{printf "%.2f" .CBO.Summary.AverageCBO}}</div>
-                        <div class="metric-label">Average CBO</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{.CBO.Summary.HighRiskClasses}}</div>
-                        <div class="metric-label">High Coupling</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{.CBO.Summary.MediumRiskClasses}}</div>
-                        <div class="metric-label">Medium Coupling</div>
-                    </div>
-                </div>
+func commonDirectory(files []string) string {
+	if len(files) == 0 {
+		return ""
+	}
+	separator := string(filepath.Separator)
+	prefix := strings.Split(filepath.Dir(files[0]), separator)
+	for _, file := range files[1:] {
+		parts := strings.Split(filepath.Dir(file), separator)
+		n := 0
+		for n < len(prefix) && n < len(parts) && prefix[n] == parts[n] {
+			n++
+		}
+		prefix = prefix[:n]
+		if len(prefix) == 0 {
+			return ""
+		}
+	}
+	return strings.Join(prefix, separator)
+}
 
-                {{if gt .CBO.Summary.TotalClasses 0}}
-                <h3>Classes by Coupling</h3>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Class</th>
-                            <th>File</th>
-                            <th>CBO</th>
-                            <th>Risk</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range $i, $class := .CBO.Classes}}
-                        {{if lt $i 20}}
-                        <tr>
-                            <td>{{$class.Name}}</td>
-                            <td>{{$class.FilePath}}</td>
-                            <td>{{$class.Metrics.CouplingCount}}</td>
-                            <td class="risk-{{$class.RiskLevel}}">{{$class.RiskLevel}}</td>
-                        </tr>
-                        {{end}}
-                        {{end}}
-                    </tbody>
-                </table>
-                {{if gt (len .CBO.Classes) 20}}
-                <p style="color: #666; margin-top: 10px;">Showing top 20 of {{len .CBO.Classes}} classes</p>
-                {{end}}
-                {{else}}
-                <p style="color: #666; margin-top: 20px;">No classes found for CBO analysis</p>
-                {{end}}
-            </div>
-            {{end}}
+// reportHasFunctions reports whether the Functions tab has anything to show:
+// the function-level analyses or the per-file rollups derived from them.
+func reportHasFunctions(
+	summary *domain.AnalyzeSummary,
+	complexity *domain.ComplexityResponse,
+	moduleQuality []domain.ModuleQualityMetrics,
+) bool {
+	if summary.ComplexityEnabled || summary.DeadCodeEnabled || len(moduleQuality) > 0 {
+		return true
+	}
+	return complexity != nil && len(complexity.ByDirectory) > 0
+}
 
-            {{if .HasDeps}}
-            <div id="deps" class="tab-content">
-                <div class="tab-header-with-score">
-                    <h2 style="margin: 0;">Dependency Analysis</h2>
-                    <div class="score-badge-compact score-{{scoreQuality .Summary.DependencyScore}}">
-                        {{.Summary.DependencyScore}}/100
-                    </div>
-                </div>
+func buildReportTabs(
+	summary *domain.AnalyzeSummary,
+	complexity *domain.ComplexityResponse,
+	moduleQuality []domain.ModuleQualityMetrics,
+	deps *domain.DependencyGraphResponse,
+) []reportTab {
+	tabs := []reportTab{{ID: "overview", Label: "Overview"}}
 
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Summary.DepsTotalModules}}</div>
-                        <div class="metric-label">Total Modules</div>
-                    </div>
-                    {{if .Deps.Analysis}}
-                    <div class="metric-card">
-                        <div class="metric-value">{{len .Deps.Analysis.RootModules}}</div>
-                        <div class="metric-label">Entry Points</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Deps.Analysis.MaxDepth}}</div>
-                        <div class="metric-label">Max Depth</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">{{.Summary.DepsModulesInCycles}}</div>
-                        <div class="metric-label">In Cycles</div>
-                    </div>
-                    {{end}}
-                </div>
+	if reportHasFunctions(summary, complexity, moduleQuality) {
+		tab := reportTab{ID: "functions", Label: "Functions", Count: summary.HighComplexityCount + summary.DeadCodeCount}
+		switch {
+		case summary.HighComplexityCount > 0 || summary.CriticalDeadCode > 0:
+			tab.CountBand = "bad"
+		case tab.Count > 0:
+			tab.CountBand = "warn"
+		}
+		tabs = append(tabs, tab)
+	}
+	if summary.CloneEnabled {
+		tab := reportTab{ID: "duplication", Label: "Duplication", Count: summary.CloneGroups}
+		if tab.Count == 0 {
+			tab.Count = summary.ClonePairs
+		}
+		if tab.Count > 0 {
+			tab.CountBand = "warn"
+		}
+		tabs = append(tabs, tab)
+	}
+	if summary.CBOEnabled {
+		tab := reportTab{ID: "classes", Label: "Classes", Count: summary.HighCouplingClasses}
+		if tab.Count > 0 {
+			tab.CountBand = "bad"
+		}
+		tabs = append(tabs, tab)
+	}
+	if reportHasArchitecture(deps) {
+		tab := reportTab{ID: "architecture", Label: "Architecture"}
+		if deps.Analysis.CircularDependencies != nil {
+			tab.Count = deps.Analysis.CircularDependencies.TotalCycles
+		}
+		if tab.Count > 0 {
+			tab.CountBand = "bad"
+		}
+		tabs = append(tabs, tab)
+	}
+	return tabs
+}
 
-                {{if .Deps.Analysis}}
-                {{if .Deps.Analysis.CircularDependencies}}
-                {{if .Deps.Analysis.CircularDependencies.HasCircularDependencies}}
-                <h3 style="color: #f44336;">Circular Dependencies</h3>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Severity</th>
-                            <th>Modules in Cycle</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range $i, $cycle := .Deps.Analysis.CircularDependencies.CircularDependencies}}
-                        {{if lt $i 10}}
-                        <tr>
-                            <td>{{add $i 1}}</td>
-                            <td class="severity-{{$cycle.Severity}}">{{$cycle.Severity}}</td>
-                            <td>{{join $cycle.Modules " → "}}</td>
-                        </tr>
-                        {{end}}
-                        {{end}}
-                    </tbody>
-                </table>
-                {{if gt (len .Deps.Analysis.CircularDependencies.CircularDependencies) 10}}
-                <p style="color: #666; margin-top: 10px;">Showing 10 of {{len .Deps.Analysis.CircularDependencies.CircularDependencies}} cycles</p>
-                {{end}}
-                {{else}}
-                <p style="color: #4caf50; font-weight: bold; margin-top: 20px;">✓ No circular dependencies detected</p>
-                {{end}}
-                {{end}}
-                {{end}}
-            </div>
-            {{end}}
+// reportHasArchitecture reports whether dependency analysis produced the result
+// the Architecture tab renders. The graph alone is not enough: every block on
+// that tab reads from the analysis.
+func reportHasArchitecture(deps *domain.DependencyGraphResponse) bool {
+	return deps != nil && deps.Analysis != nil
+}
 
-            {{if .HasModuleQuality}}
-            <div id="modules" class="tab-content">
-                <h2>Module Quality Hotspots</h2>
-                <p style="color: #666; margin-bottom: 20px;">Per-module metrics ranked by high-risk functions, maximum complexity, average complexity, and dead-code findings</p>
-                <div style="overflow-x: auto;">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Module</th>
-                                <th>File</th>
-                                <th>LOC</th>
-                                <th>Analyzed</th>
-                                <th>Avg CC</th>
-                                <th>Max CC</th>
-                                <th>High Risk</th>
-                                <th>Handlers</th>
-                                <th>Dead Findings</th>
-                                <th>Dead Blocks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{range $i, $module := .ModuleQuality}}
-                            {{if lt $i 20}}
-                            <tr>
-                                <td>{{if $module.ModuleName}}{{$module.ModuleName}}{{else}}&mdash;{{end}}</td>
-                                <td>{{$module.FilePath}}</td>
-                                <td>{{$module.LinesOfCode}}</td>
-                                <td>{{$module.AnalyzedFunctionCount}}</td>
-                                <td>{{printf "%.2f" $module.AverageComplexity}}</td>
-                                <td>{{$module.MaxComplexity}}</td>
-                                <td>{{$module.HighRiskFunctionCount}}</td>
-                                <td>{{$module.ExceptionHandlerCount}}</td>
-                                <td>{{$module.DeadCodeFindingCount}}</td>
-                                <td>{{$module.DeadCodeBlockCount}}</td>
-                            </tr>
-                            {{end}}
-                            {{end}}
-                        </tbody>
-                    </table>
-                </div>
-                {{if gt (len .ModuleQuality) 20}}
-                <p style="color: #666; margin-top: 10px;">Showing top 20 of {{len .ModuleQuality}} modules</p>
-                {{end}}
-            </div>
-            {{end}}
-        </div>
-    </div>
+func buildReportDimensions(summary *domain.AnalyzeSummary, tabs []reportTab) []reportDimension {
+	rendered := make(map[string]bool, len(tabs))
+	for _, tab := range tabs {
+		rendered[tab.ID] = true
+	}
 
-    <script>
-        function showTab(tabName, el) {
-            const tabs = document.querySelectorAll('.tab-content');
-            tabs.forEach(tab => tab.classList.remove('active'));
+	var dims []reportDimension
+	// A dimension can be scored while its detail tab is absent (dependency
+	// scoring runs off the summary, but the tab needs the analysis result), so
+	// only link cards whose target tab is actually rendered.
+	add := func(name string, score int, left, right, tab string) {
+		if !rendered[tab] {
+			tab = ""
+		}
+		dims = append(dims, reportDimension{Name: name, Score: score, Band: scoreBand(score), Left: left, Right: right, Tab: tab})
+	}
 
-            const buttons = document.querySelectorAll('.tab-button');
-            buttons.forEach(btn => btn.classList.remove('active'));
+	if summary.ComplexityEnabled {
+		add("Complexity", summary.ComplexityScore,
+			fmt.Sprintf("avg CC %.2f", summary.AverageComplexity),
+			fmt.Sprintf("%d high-risk", summary.HighComplexityCount), "functions")
+	}
+	if summary.DeadCodeEnabled {
+		add("Dead code", summary.DeadCodeScore,
+			pluralize(summary.DeadCodeCount, "finding", "findings"),
+			fmt.Sprintf("%d critical", summary.CriticalDeadCode), "functions")
+	}
+	if summary.CloneEnabled {
+		add("Duplication", summary.DuplicationScore,
+			fmt.Sprintf("%.1f%% of fragments", summary.CodeDuplication),
+			pluralize(summary.CloneGroups, "group", "groups"), "duplication")
+	}
+	if summary.CBOEnabled {
+		add("Coupling", summary.CouplingScore,
+			fmt.Sprintf("avg CBO %.1f", summary.AverageCoupling),
+			fmt.Sprintf("%d of %d high", summary.HighCouplingClasses, summary.CBOClasses), "classes")
+	}
+	if summary.DepsEnabled {
+		cycles := "no cycles"
+		if summary.DepsModulesInCycles > 0 {
+			cycles = fmt.Sprintf("%d modules in cycles", summary.DepsModulesInCycles)
+		}
+		add("Dependencies", summary.DependencyScore, cycles, fmt.Sprintf("depth %d", summary.DepsMaxDepth), "architecture")
+	}
+	return dims
+}
 
-            document.getElementById(tabName).classList.add('active');
-            if (el) { el.classList.add('active'); }
-        }
-    </script>
-</body>
-</html>`
+func pluralize(n int, singular, plural string) string {
+	if n == 1 {
+		return fmt.Sprintf("%d %s", n, singular)
+	}
+	return fmt.Sprintf("%d %s", n, plural)
+}
+
+func buildReportVerdict(summary *domain.AnalyzeSummary, dims []reportDimension) reportVerdict {
+	verdict := reportVerdict{Headline: gradeHeadline(summary.Grade)}
+
+	var clean, weak []reportDimension
+	for _, dim := range dims {
+		switch {
+		case dim.Score >= domain.ScoreThresholdExcellent:
+			clean = append(clean, dim)
+		case dim.Score < domain.ScoreThresholdGood:
+			weak = append(weak, dim)
+		}
+	}
+	sort.SliceStable(weak, func(i, j int) bool { return weak[i].Score < weak[j].Score })
+
+	text := func(s string) { verdict.Body = append(verdict.Body, reportSegment{Text: s}) }
+	strong := func(s string) { verdict.Body = append(verdict.Body, reportSegment{Text: s, Strong: true}) }
+
+	if skipped := summary.SkippedFiles; skipped > 0 {
+		strong(fmt.Sprintf("%s of %d could not be parsed", pluralize(skipped, "file", "files"), summary.TotalFiles))
+		text(" and were skipped; the health score is penalized for them. ")
+	}
+
+	switch {
+	case len(dims) == 0:
+		text("No analyses were enabled for this run.")
+		return verdict
+	case len(clean) == len(dims):
+		files := pluralize(summary.TotalFiles, "file", "files")
+		if len(dims) == 1 {
+			text(fmt.Sprintf("%s scores %d/100 across %s.", joinNames(lowerNames(dims)), dims[0].Score, files))
+		} else {
+			text(fmt.Sprintf("All %d dimensions score %d or above across %s.", len(dims), domain.ScoreThresholdExcellent, files))
+		}
+		return verdict
+	case len(clean) > 0:
+		text(joinNames(lowerNames(clean)) + " " + isAre(len(clean)) + " clean. ")
+	}
+
+	if len(weak) == 0 {
+		text(fmt.Sprintf("No dimension scores below %d.", domain.ScoreThresholdGood))
+		return verdict
+	}
+	if len(weak) > 3 {
+		weak = weak[:3]
+	}
+	if len(clean) > 0 {
+		text("Most of the remaining debt is in ")
+	} else {
+		text("Most of the debt is in ")
+	}
+	for i, dim := range weak {
+		if i > 0 {
+			if i == len(weak)-1 {
+				text(" and ")
+			} else {
+				text(", ")
+			}
+		}
+		strong(strings.ToLower(dim.Name))
+		text(fmt.Sprintf(" (%s, %s)", dim.Left, dim.Right))
+	}
+	text(".")
+	return verdict
+}
+
+func gradeHeadline(grade string) string {
+	switch strings.ToUpper(grade) {
+	case "A":
+		return "Healthy codebase"
+	case "B":
+		return "Good shape overall"
+	case "C":
+		return "Fair, with clear debt to pay down"
+	case "D":
+		return "Quality needs attention"
+	case "F":
+		return "Serious quality problems"
+	default:
+		// CalculateHealthScore rejected the summary and graded it N/A.
+		return "Health score unavailable"
+	}
+}
+
+func lowerNames(dims []reportDimension) []string {
+	names := make([]string, 0, len(dims))
+	for _, dim := range dims {
+		names = append(names, strings.ToLower(dim.Name))
+	}
+	return names
+}
+
+// joinNames renders "A", "A and B", or "A, B, and C" with the first name
+// capitalized for sentence position.
+func joinNames(names []string) string {
+	if len(names) == 0 {
+		return ""
+	}
+	first := strings.ToUpper(names[0][:1]) + names[0][1:]
+	switch len(names) {
+	case 1:
+		return first
+	case 2:
+		return first + " and " + names[1]
+	default:
+		return first + ", " + strings.Join(names[1:len(names)-1], ", ") + ", and " + names[len(names)-1]
+	}
+}
+
+func isAre(n int) string {
+	if n == 1 {
+		return "is"
+	}
+	return "are"
+}
+
+func buildReportFacts(summary *domain.AnalyzeSummary, moduleQuality []domain.ModuleQualityMetrics) []reportFact {
+	var facts []reportFact
+	lines := 0
+	for _, module := range moduleQuality {
+		lines += module.LinesOfCode
+	}
+	if lines == 0 {
+		lines = summary.TotalLOC
+	}
+	if lines > 0 {
+		facts = append(facts, reportFact{Value: formatThousands(lines), Label: "lines"})
+	}
+	facts = append(facts, reportFact{Value: formatThousands(summary.TotalFiles), Label: "files"})
+	if summary.ComplexityEnabled {
+		facts = append(facts, reportFact{Value: formatThousands(summary.TotalFunctions), Label: "functions"})
+	}
+	if summary.CBOEnabled {
+		facts = append(facts, reportFact{Value: formatThousands(summary.CBOClasses), Label: "classes"})
+	}
+	return facts
+}
+
+// formatPercent renders a 0-1 ratio as a percentage. Similarity is reported
+// this way everywhere in the report: a bare 0.95 reads as neither a score nor
+// a share.
+func formatPercent(ratio float64) string {
+	return fmt.Sprintf("%.1f%%", ratio*100)
+}
+
+func formatThousands(n int) string {
+	digits := fmt.Sprintf("%d", n)
+	if len(digits) <= 3 {
+		return digits
+	}
+	var builder strings.Builder
+	head := len(digits) % 3
+	if head > 0 {
+		builder.WriteString(digits[:head])
+	}
+	for i := head; i < len(digits); i += 3 {
+		if builder.Len() > 0 {
+			builder.WriteByte(',')
+		}
+		builder.WriteString(digits[i : i+3])
+	}
+	return builder.String()
+}
+
+func buildReportHotspots(
+	moduleQuality []domain.ModuleQualityMetrics,
+	clone *domain.CloneResponse,
+	risk complexityRisk,
+) []reportHotspot {
+	if len(moduleQuality) == 0 {
+		return nil
+	}
+	clonesByFile := countClonesByFile(clone)
+
+	modules := make([]domain.ModuleQualityMetrics, len(moduleQuality))
+	copy(modules, moduleQuality)
+	sort.SliceStable(modules, func(i, j int) bool {
+		a, b := modules[i], modules[j]
+		if a.HighRiskFunctionCount != b.HighRiskFunctionCount {
+			return a.HighRiskFunctionCount > b.HighRiskFunctionCount
+		}
+		if a.MaxComplexity != b.MaxComplexity {
+			return a.MaxComplexity > b.MaxComplexity
+		}
+		if a.DeadCodeFindingCount != b.DeadCodeFindingCount {
+			return a.DeadCodeFindingCount > b.DeadCodeFindingCount
+		}
+		if clonesByFile[a.FilePath] != clonesByFile[b.FilePath] {
+			return clonesByFile[a.FilePath] > clonesByFile[b.FilePath]
+		}
+		return a.LinesOfCode > b.LinesOfCode
+	})
+	if len(modules) > reportHotspotLimit {
+		modules = modules[:reportHotspotLimit]
+	}
+
+	maxCC := 1
+	for _, module := range modules {
+		maxCC = max(maxCC, module.MaxComplexity)
+	}
+
+	rows := make([]reportHotspot, 0, len(modules))
+	for _, module := range modules {
+		dir, file := filepath.Split(module.FilePath)
+		rows = append(rows, reportHotspot{
+			Dir:       dir,
+			File:      file,
+			Lines:     formatThousands(module.LinesOfCode),
+			Functions: module.AnalyzedFunctionCount,
+			MaxCC:     module.MaxComplexity,
+			MaxCCPct:  module.MaxComplexity * 100 / maxCC,
+			MaxCCBand: risk.band(module.MaxComplexity),
+			HighRisk:  module.HighRiskFunctionCount,
+			DeadCode:  module.DeadCodeFindingCount,
+			Clones:    clonesByFile[module.FilePath],
+		})
+	}
+	return rows
+}
+
+// complexityRisk is the pair of thresholds the run was configured with: the
+// highest complexity still rated low risk, and the highest still rated medium.
+// Known is false when the response did not report them, and then nothing is
+// banded rather than banded against a default the project may have overridden.
+type complexityRisk struct {
+	Low    int
+	Medium int
+	Known  bool
+}
+
+// readComplexityRisk takes the thresholds from the config the analysis
+// reported. Inferring them from the risk labels of the listed functions would
+// be wrong whenever a report filter removed the functions that sit on a
+// boundary.
+func readComplexityRisk(complexity *domain.ComplexityResponse) complexityRisk {
+	if complexity == nil {
+		return complexityRisk{}
+	}
+	config, ok := complexity.Config.(map[string]interface{})
+	if !ok {
+		return complexityRisk{}
+	}
+	low, lowOK := config["low_threshold"].(int)
+	medium, mediumOK := config["medium_threshold"].(int)
+	if !lowOK || !mediumOK || low < 1 || medium < low {
+		return complexityRisk{}
+	}
+	return complexityRisk{Low: low, Medium: medium, Known: true}
+}
+
+func (risk complexityRisk) band(complexity int) string {
+	switch {
+	case !risk.Known:
+		return ""
+	case complexity > risk.Medium:
+		return "bad"
+	case complexity > risk.Low:
+		return "warn"
+	default:
+		return ""
+	}
+}
+
+// countClonesByFile counts clone fragments per file. Groups are authoritative
+// when present; otherwise pairs are counted, each fragment once.
+func countClonesByFile(clone *domain.CloneResponse) map[string]int {
+	counts := make(map[string]int)
+	if clone == nil {
+		return counts
+	}
+	if len(clone.CloneGroups) > 0 {
+		for _, group := range clone.CloneGroups {
+			if group == nil {
+				continue
+			}
+			for _, fragment := range group.Clones {
+				if fragment != nil && fragment.Location != nil {
+					counts[fragment.Location.FilePath]++
+				}
+			}
+		}
+		return counts
+	}
+	// A fragment can sit in several pairs; count it once, keyed by its span, to
+	// match how CloneStatistics.TotalClones deduplicates.
+	seen := make(map[string]struct{})
+	for _, pair := range clone.ClonePairs {
+		for _, fragment := range []*domain.Clone{pair.Clone1, pair.Clone2} {
+			if fragment == nil || fragment.Location == nil {
+				continue
+			}
+			key := fmt.Sprintf("%s:%d-%d", fragment.Location.FilePath, fragment.Location.StartLine, fragment.Location.EndLine)
+			if _, duplicate := seen[key]; duplicate {
+				continue
+			}
+			seen[key] = struct{}{}
+			counts[fragment.Location.FilePath]++
+		}
+	}
+	return counts
+}
+
+// Histogram geometry (SVG user units).
+const (
+	histLeft       = 44.0
+	histRight      = 412.0
+	histTop        = 30.0
+	histBaseline   = 150.0
+	histBarFill    = 0.72
+	histTickCount  = 3
+	histLabelSpace = 6.0
+)
+
+type histogramBin struct {
+	label string
+	upper int    // inclusive; 0 means open-ended
+	band  string // "", "warn", "bad"
+}
+
+// histogramBins builds buckets that follow the run's own risk thresholds:
+// 1 | 2–5 | 6–low | low+1–medium | medium+1+, collapsing the buckets the
+// thresholds make empty (a low threshold of 1 removes both middle buckets).
+// Bucket edges that fall on the thresholds are what lets a bucket carry a
+// single risk color honestly.
+func histogramBins(risk complexityRisk) []histogramBin {
+	if risk.Medium <= risk.Low {
+		risk.Medium = risk.Low + 1
+	}
+	candidates := []int{1, risk.Low, risk.Medium}
+	if risk.Low > 5 {
+		candidates = []int{1, 5, risk.Low, risk.Medium}
+	}
+	uppers := []int{}
+	for _, upper := range candidates {
+		if len(uppers) == 0 || upper > uppers[len(uppers)-1] {
+			uppers = append(uppers, upper)
+		}
+	}
+	bins := make([]histogramBin, 0, len(uppers)+1)
+	previous := 0
+	for _, upper := range uppers {
+		bin := histogramBin{upper: upper, band: risk.band(upper)}
+		if upper == previous+1 {
+			bin.label = fmt.Sprintf("%d", upper)
+		} else {
+			bin.label = fmt.Sprintf("%d–%d", previous+1, upper)
+		}
+		bins = append(bins, bin)
+		previous = upper
+	}
+	return append(bins, histogramBin{label: fmt.Sprintf("%d+", previous+1), band: "bad"})
+}
+
+// buildReportHistogram plots the complete analyzed population from the
+// distribution the summary carries. complexity.Functions is the filtered
+// report list, so counting it would contradict the function total, the median,
+// and every score in the same report.
+func buildReportHistogram(complexity *domain.ComplexityResponse, risk complexityRisk) *reportHistogram {
+	if complexity == nil || !risk.Known {
+		return nil
+	}
+	distribution := complexity.Summary.ComplexityDistribution
+	total := 0
+	for _, count := range distribution {
+		total += count
+	}
+	if total == 0 {
+		return nil
+	}
+	defs := histogramBins(risk)
+
+	counts := make([]int, len(defs))
+	for cc, count := range distribution {
+		counts[binIndex(defs, cc)] += count
+	}
+
+	maxCount := 1
+	for _, count := range counts {
+		maxCount = max(maxCount, count)
+	}
+	niceMax := niceCeiling(maxCount)
+	scale := (histBaseline - histTop) / float64(niceMax)
+
+	slot := (histRight - histLeft) / float64(len(defs))
+	barWidth := slot * histBarFill
+	hist := &reportHistogram{Total: formatThousands(total)}
+	for i, def := range defs {
+		height := float64(counts[i]) * scale
+		if counts[i] > 0 && height < 1 {
+			height = 1
+		}
+		x := histLeft + slot*float64(i) + (slot-barWidth)/2
+		hist.Bins = append(hist.Bins, reportHistogramBin{
+			Label:  def.label,
+			Count:  counts[i],
+			X:      round1(x),
+			Y:      round1(histBaseline - height),
+			Width:  round1(barWidth),
+			Height: round1(height),
+			Band:   def.band,
+		})
+		if def.band == "warn" && hist.Threshold == "" {
+			hist.ThresholdX = round1(histLeft + slot*float64(i) - histLabelSpace/2)
+			hist.Threshold = fmt.Sprintf("risk from CC %d", risk.Low+1)
+		}
+	}
+	for i := 0; i <= histTickCount; i++ {
+		value := niceMax * i / histTickCount
+		hist.Ticks = append(hist.Ticks, reportHistogramTick{
+			Label: formatThousands(value),
+			Y:     round1(histBaseline - float64(value)*scale),
+		})
+	}
+
+	hist.Facts = append(hist.Facts, reportKV{
+		Key:   "Median complexity",
+		Value: fmt.Sprintf("CC %s", formatMedian(medianOfDistribution(distribution, total))),
+	})
+	// The two facts below need a function each, and complexity.Functions is the
+	// filtered report list. Naming the worst of a filtered list as the worst of
+	// the project would be wrong, so they are reported only when the list is
+	// the whole population.
+	if len(complexity.Functions) == total {
+		deepest, longest := extremeFunctions(complexity.Functions)
+		hist.Facts = append(hist.Facts,
+			reportKV{
+				Key:   "Deepest nesting",
+				Value: fmt.Sprintf("%d levels (%s)", deepest.Metrics.NestingDepth, deepest.Name),
+			},
+			reportKV{
+				Key:   "Longest function",
+				Value: fmt.Sprintf("%d lines (%s)", functionLineSpan(*longest), longest.Name),
+			},
+		)
+	}
+	return hist
+}
+
+// extremeFunctions returns the most deeply nested and the longest function.
+// The caller guarantees a non-empty population.
+func extremeFunctions(functions []domain.FunctionComplexity) (deepest, longest *domain.FunctionComplexity) {
+	for i := range functions {
+		function := &functions[i]
+		if deepest == nil || function.Metrics.NestingDepth > deepest.Metrics.NestingDepth {
+			deepest = function
+		}
+		if longest == nil || functionLineSpan(*function) > functionLineSpan(*longest) {
+			longest = function
+		}
+	}
+	return deepest, longest
+}
+
+func binIndex(bins []histogramBin, cc int) int {
+	for i, def := range bins {
+		if def.upper == 0 || cc <= def.upper {
+			return i
+		}
+	}
+	return len(bins) - 1
+}
+
+// functionLineSpan is how many source lines a function occupies. jscan has no
+// SLOC metric, so the span between its first and last line is the closest
+// honest measure of length.
+func functionLineSpan(function domain.FunctionComplexity) int {
+	if function.EndLine < function.StartLine {
+		return 0
+	}
+	return function.EndLine - function.StartLine + 1
+}
+
+// niceCeiling rounds n up to a tidy axis maximum so ticks land on round numbers.
+func niceCeiling(n int) int {
+	if n <= 3 {
+		return 3
+	}
+	magnitude := 1
+	for n/magnitude >= 10 {
+		magnitude *= 10
+	}
+	for _, step := range []int{1, 2, 3, 5, 6, 10} {
+		if candidate := step * magnitude; candidate >= n {
+			return candidate
+		}
+	}
+	return magnitude * 10
+}
+
+func round1(v float64) float64 {
+	return float64(int(v*10+0.5)) / 10
+}
+
+// medianOfDistribution finds the median of a population counted by value,
+// walking the values in order until half the population is behind it.
+func medianOfDistribution(distribution map[int]int, total int) float64 {
+	if total == 0 {
+		return 0
+	}
+	values := make([]int, 0, len(distribution))
+	for value := range distribution {
+		values = append(values, value)
+	}
+	sort.Ints(values)
+
+	lower, upper := (total-1)/2, total/2
+	seen, low := 0, 0
+	for _, value := range values {
+		seen += distribution[value]
+		if low == 0 && seen > lower {
+			low = value
+		}
+		if seen > upper {
+			return float64(low+value) / 2
+		}
+	}
+	return float64(low)
+}
+
+// formatMedian prints whole medians without a decimal and half values with one.
+func formatMedian(v float64) string {
+	return strconv.FormatFloat(v, 'f', -1, 64)
+}
+
+func buildReportDuplication(summary *domain.AnalyzeSummary, clone *domain.CloneResponse) *reportDuplication {
+	if !summary.CloneEnabled || clone == nil || clone.Statistics == nil {
+		return nil
+	}
+	stats := clone.Statistics
+	dup := &reportDuplication{Percent: summary.CodeDuplication, Fragments: stats.TotalFragments}
+
+	byType := make(map[domain.CloneType]int)
+	files := make(map[string]struct{})
+	unit := "fragments"
+	if len(clone.CloneGroups) > 0 {
+		for _, group := range clone.CloneGroups {
+			if group == nil {
+				continue
+			}
+			for _, fragment := range group.Clones {
+				if fragment == nil {
+					continue
+				}
+				byType[group.Type]++
+				if fragment.Location != nil {
+					files[fragment.Location.FilePath] = struct{}{}
+				}
+			}
+		}
+	} else {
+		unit = "pairs"
+		for _, pair := range clone.ClonePairs {
+			byType[pair.Type]++
+			for _, fragment := range []*domain.Clone{pair.Clone1, pair.Clone2} {
+				if fragment != nil && fragment.Location != nil {
+					files[fragment.Location.FilePath] = struct{}{}
+				}
+			}
+		}
+	}
+	total := 0
+	for _, count := range byType {
+		total += count
+	}
+	for _, cloneType := range []domain.CloneType{domain.Type1Clone, domain.Type2Clone, domain.Type3Clone, domain.Type4Clone} {
+		count := byType[cloneType]
+		if count == 0 {
+			continue
+		}
+		dup.Types = append(dup.Types, reportShare{
+			Label:   fmt.Sprintf("%s %s · %d %s", cloneType.String(), cloneTypeNoun(cloneType), count, unit),
+			Percent: float64(count) * 100 / float64(total),
+			Class:   fmt.Sprintf("t%d", int(cloneType)),
+		})
+	}
+
+	dup.Facts = []reportKV{
+		{Key: "Clone groups", Value: formatThousands(stats.TotalCloneGroups)},
+		{Key: "Clone pairs", Value: formatThousands(stats.TotalClonePairs)},
+	}
+	if stats.TotalClonePairs > 0 || stats.TotalCloneGroups > 0 {
+		dup.Facts = append(dup.Facts, reportKV{Key: "Avg similarity", Value: formatPercent(stats.AverageSimilarity)})
+	}
+	if stats.FilesAnalyzed > 0 {
+		dup.Facts = append(dup.Facts, reportKV{Key: "Files with clones", Value: fmt.Sprintf("%d of %d", len(files), stats.FilesAnalyzed)})
+	}
+	return dup
+}
+
+func cloneTypeNoun(cloneType domain.CloneType) string {
+	switch cloneType {
+	case domain.Type1Clone:
+		return "identical"
+	case domain.Type2Clone:
+		return "renamed"
+	case domain.Type3Clone:
+		return "modified"
+	case domain.Type4Clone:
+		return "semantic"
+	default:
+		return ""
+	}
+}
+
+func cloneFile(fragment *domain.Clone) string {
+	if fragment == nil || fragment.Location == nil {
+		return "unknown"
+	}
+	return fragment.Location.FilePath
+}
+
+func cloneLines(fragment *domain.Clone) string {
+	if fragment == nil || fragment.Location == nil {
+		return "—"
+	}
+	return fmt.Sprintf("%d-%d", fragment.Location.StartLine, fragment.Location.EndLine)
+}
+
+// cloneContent returns the first few lines of a fragment, or "" when the run
+// did not capture source content.
+func cloneContent(fragment *domain.Clone) string {
+	if fragment == nil || fragment.Content == "" {
+		return ""
+	}
+	const maxLines = 8
+	lines := strings.Split(fragment.Content, "\n")
+	if len(lines) <= maxLines {
+		return fragment.Content
+	}
+	return strings.Join(lines[:maxLines], "\n") + "\n..."
+}
+
+func buildReportClasses(summary *domain.AnalyzeSummary, cbo *domain.CBOResponse) *reportClasses {
+	if !summary.CBOEnabled || cbo == nil {
+		return nil
+	}
+	classes := &reportClasses{
+		Total: cbo.Summary.TotalClasses,
+		Facts: []reportKV{
+			{Key: "High coupling", Value: formatThousands(cbo.Summary.HighRiskClasses), Band: warnIfPositive(cbo.Summary.HighRiskClasses)},
+			{Key: "Medium coupling", Value: formatThousands(cbo.Summary.MediumRiskClasses)},
+			{Key: "Average CBO", Value: fmt.Sprintf("%.2f", cbo.Summary.AverageCBO)},
+		},
+	}
+	if top := mostCoupledClass(cbo.Classes); top != nil {
+		classes.Facts = append(classes.Facts, reportKV{
+			Key:   "Most coupled",
+			Value: fmt.Sprintf("%s (%d)", top.Name, top.Metrics.CouplingCount),
+			Mono:  true,
+		})
+	}
+	return classes
+}
+
+func warnIfPositive(n int) string {
+	if n > 0 {
+		return "warn"
+	}
+	return "good"
+}
+
+func mostCoupledClass(classes []domain.ClassCoupling) *domain.ClassCoupling {
+	var top *domain.ClassCoupling
+	for i := range classes {
+		if top == nil || classes[i].Metrics.CouplingCount > top.Metrics.CouplingCount {
+			top = &classes[i]
+		}
+	}
+	return top
+}
+
+func buildReportStructure(deps *domain.DependencyGraphResponse) *reportStructure {
+	if !reportHasArchitecture(deps) {
+		return nil
+	}
+	analysis := deps.Analysis
+	structure := &reportStructure{
+		Facts: []reportKV{
+			{Key: "Modules / edges", Value: fmt.Sprintf("%d / %d", analysis.TotalModules, analysis.TotalDependencies)},
+			{Key: "Max dependency depth", Value: formatThousands(analysis.MaxDepth)},
+		},
+	}
+	if analysis.CircularDependencies != nil {
+		structure.Cycles = analysis.CircularDependencies.TotalCycles
+	}
+	if analysis.CouplingAnalysis != nil {
+		structure.Facts = append(structure.Facts,
+			reportKV{Key: "Avg instability", Value: fmt.Sprintf("%.2f", analysis.CouplingAnalysis.AverageInstability)},
+			reportKV{Key: "Main sequence deviation", Value: fmt.Sprintf("%.2f", analysis.CouplingAnalysis.MainSequenceDeviation)},
+		)
+	}
+	return structure
+}

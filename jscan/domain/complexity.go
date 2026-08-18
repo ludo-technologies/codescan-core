@@ -139,8 +139,12 @@ type ComplexitySummary struct {
 	MediumRiskFunctions int `json:"medium_risk_functions" yaml:"medium_risk_functions"`
 	HighRiskFunctions   int `json:"high_risk_functions" yaml:"high_risk_functions"`
 
-	// Complexity distribution
-	ComplexityDistribution map[string]int `json:"complexity_distribution,omitempty" yaml:"complexity_distribution,omitempty"`
+	// ComplexityDistribution counts the analyzed functions that have each
+	// cyclomatic complexity, keyed by that complexity. Like every aggregate
+	// here it describes the complete analyzed population, so a report that
+	// filters which functions it lists can still show the distribution its
+	// scores were computed from.
+	ComplexityDistribution map[int]int `json:"complexity_distribution,omitempty" yaml:"complexity_distribution,omitempty"`
 }
 
 // DirectoryComplexityMetrics aggregates the complete analyzed function
