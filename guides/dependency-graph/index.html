@@ -1873,7 +1873,7 @@
 <p>Dynamic imports written as <code>import("./module")</code> are excluded from cycle detection, because a dynamic import resolves at call time rather than at load time and therefore does not create a load-time cycle. This is often the cheapest way to break a cycle you cannot otherwise untangle.</p>
 <p>Find them with:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.analysis.circular_dependencies.circular_dependencies[].description&#39;</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.analysis.circular_dependencies.circular_dependencies[].description'</span>
 </span></code></pre></div>
 <p>Or fail the build on them:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>jscan<span class="w"> </span>check<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/

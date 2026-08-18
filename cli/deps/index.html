@@ -1961,7 +1961,7 @@
 <p><code>--format json</code> emits the full graph together with the analysis results, which suits scripting and dashboards:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># List every module involved in a circular import</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.analysis.circular_dependencies.circular_dependencies[].description&#39;</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.analysis.circular_dependencies.circular_dependencies[].description'</span>
 </span></code></pre></div>
 <p>The document contains a <code>graph</code> object with the nodes and edges, and an <code>analysis</code> object holding the cycle detection results, the depth calculation, and the coupling metrics.</p>
 <h2 id="external-and-type-only-dependencies">External and type-only dependencies<a class="headerlink" href="#external-and-type-only-dependencies" title="Permanent link">&para;</a></h2>

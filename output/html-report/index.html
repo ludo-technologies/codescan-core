@@ -1292,6 +1292,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1306,10 +1323,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reading-the-summary-tab" class="md-nav__link">
+  <a href="#sorting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reading the summary tab
+        Sorting
       
     </span>
   </a>
@@ -1317,10 +1334,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#sorting" class="md-nav__link">
+  <a href="#dark-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Sorting
+        Dark mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linking-to-a-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linking to a tab
       
     </span>
   </a>
@@ -1646,6 +1674,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Layout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1660,10 +1705,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reading-the-summary-tab" class="md-nav__link">
+  <a href="#sorting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reading the summary tab
+        Sorting
       
     </span>
   </a>
@@ -1671,10 +1716,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#sorting" class="md-nav__link">
+  <a href="#dark-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Sorting
+        Dark mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linking-to-a-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linking to a tab
       
     </span>
   </a>
@@ -1784,8 +1840,7 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--output<span class="w"> </span>reports/quality.html<span class="w"> </span>--no-open<span class="w"> </span>src/
 </span></code></pre></div>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
-<p>Above the tabs, the report header carries the health score badge, and directly below it the project scale line reports how large the analyzed repository is. See <a href="../health-score/#project-scale">Project scale</a> for the size labels.</p>
-<p>The report opens on a summary and has one tab per analysis, plus a Modules tab that joins them. Tabs appear only for the analyses that ran, so a report produced with <code>--select complexity</code> has three tabs rather than seven.</p>
+<p>The report opens on an Overview and puts the per-analysis detail behind four more tabs. Tabs appear only for the analyses that ran, so a report produced with <code>--select complexity</code> has two tabs rather than five. A tab carries a badge with the number of problems it holds, colored red when any of them is high risk.</p>
 <table>
 <thead>
 <tr>
@@ -1795,98 +1850,95 @@
 </thead>
 <tbody>
 <tr>
-<td>Summary</td>
-<td>The overall score and grade, the six category scores, and file statistics</td>
+<td>Overview</td>
+<td>The verdict, the score breakdown, hotspot files, the complexity distribution, and one summary card per remaining analysis</td>
 </tr>
 <tr>
-<td>Complexity</td>
-<td>Function count, average and maximum complexity, a table of directory rollups, and a table of functions</td>
+<td>Functions</td>
+<td>Complexity and dead code, plus the sortable per-file and per-directory rollups</td>
 </tr>
 <tr>
-<td>Dead Code</td>
-<td>Finding counts by severity and a table of every issue</td>
+<td>Duplication</td>
+<td>Clone statistics and the clone groups, or the individual pairs when no group formed</td>
 </tr>
 <tr>
-<td>Clones</td>
-<td>Clone pair and group counts and a table of the most similar pairs</td>
+<td>Classes</td>
+<td>Coupling statistics and the most coupled classes</td>
 </tr>
 <tr>
-<td>Coupling</td>
-<td>Module count, average CBO, and a table ranked by coupling</td>
-</tr>
-<tr>
-<td>Dependencies</td>
-<td>Module count, entry points, maximum depth, and any circular imports</td>
-</tr>
-<tr>
-<td>Modules</td>
-<td>Per-file quality hotspots joined across the analyses that ran</td>
+<td>Architecture</td>
+<td>Module dependencies, main sequence zones, circular imports, and the longest dependency chains</td>
 </tr>
 </tbody>
 </table>
-<p>Each analysis tab header carries that category's score out of 100, colored by quality band, so you can see where the problem is without opening every tab. The Modules tab has no score of its own: it reports where the other categories' problems are concentrated rather than a category.</p>
+<p>Above the tabs, the header names the project and reports how many files were analyzed, how many were skipped, and how long the run took.</p>
+<h3 id="the-overview">The Overview<a class="headerlink" href="#the-overview" title="Permanent link">&para;</a></h3>
+<p>The Overview answers "what is wrong and where" without opening another tab.</p>
+<p>The <strong>verdict</strong> pairs the health score ring with a sentence naming which dimensions are clean and which hold most of the debt, each with the numbers behind the judgement. When files failed to parse, the verdict says so first, because every score below excludes them. The line underneath reports how large the analyzed repository is; see <a href="../health-score/#project-scale">Project scale</a> for the size labels.</p>
+<p>The <strong>score breakdown</strong> gives each dimension its own card with the score, a bar, and the two figures that produced it. Clicking a card jumps to the tab that explains it.</p>
+<p>The <strong>complexity distribution</strong> buckets every analyzed function by cyclomatic complexity. The bucket edges follow the thresholds the run actually used, so the colored buckets hold only functions that really are medium or high risk, and the dashed line marks the complexity where risk begins. Change the thresholds with <a href="../../configuration/reference/#complexitylow_threshold"><code>complexity.low_threshold</code></a> and <a href="../../configuration/reference/#complexitymedium_threshold"><code>complexity.medium_threshold</code></a>.</p>
+<p><strong>Hotspot files</strong> ranks the eight files with the most high-risk functions, then by maximum complexity, joining complexity, dead code, and clone counts per file. The Functions tab has the complete list.</p>
 <h2 id="row-limits">Row limits<a class="headerlink" href="#row-limits" title="Permanent link">&para;</a></h2>
-<p>Tables are truncated so that the file stays a reasonable size on a large codebase.</p>
+<p>Tables are truncated so that the file stays a reasonable size on a large codebase. Every truncated table says how many rows it is hiding.</p>
 <table>
 <thead>
 <tr>
 <th>Table</th>
 <th>Limit</th>
-<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Functions</td>
+<td>Hotspot files</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Most complex functions</td>
 <td>20</td>
-<td>A line below the table reports the true total</td>
+</tr>
+<tr>
+<td>Dead code findings</td>
+<td>20</td>
+</tr>
+<tr>
+<td>Most coupled classes</td>
+<td>20</td>
+</tr>
+<tr>
+<td>Clone groups</td>
+<td>10 groups, 10 fragments each</td>
 </tr>
 <tr>
 <td>Clone pairs</td>
 <td>20</td>
-<td>A line below the table reports the true total</td>
-</tr>
-<tr>
-<td>Modules by coupling</td>
-<td>20</td>
-<td>A line below the table reports the true total</td>
 </tr>
 <tr>
 <td>Circular dependencies</td>
-<td>10</td>
-<td>A line below the table reports the true total</td>
+<td>20</td>
 </tr>
 <tr>
-<td>Modules</td>
-<td>20</td>
-<td>A line below the table reports the true total</td>
+<td>Longest dependency chains</td>
+<td>10</td>
+</tr>
+<tr>
+<td>All modules</td>
+<td>no limit</td>
 </tr>
 <tr>
 <td>Directory complexity</td>
 <td>no limit</td>
-<td>One row per directory that had a reported function</td>
-</tr>
-<tr>
-<td>Dead code, per function</td>
-<td>20</td>
-<td><strong>No line is printed</strong>, so the truncation is silent</td>
-</tr>
-<tr>
-<td>Dead code, file level</td>
-<td>no limit</td>
-<td>Every file level finding is shown</td>
 </tr>
 </tbody>
 </table>
-<p>The dead code limit applies per function rather than to the table as a whole. A function with more than 20 findings shows the first 20 and nothing indicates that others exist. Use <code>--json</code> or <code>--text</code> when you need the complete list.</p>
-<h2 id="reading-the-summary-tab">Reading the summary tab<a class="headerlink" href="#reading-the-summary-tab" title="Permanent link">&para;</a></h2>
-<p>The headline is the health score and its grade. Below it sit the six category scores, and below those the file statistics.</p>
-<p>Two details in this tab are easy to misread.</p>
-<p>The <strong>Total Functions</strong> card changes meaning when <code>output.min_complexity</code> filtered anything out. In that case it shows two numbers and relabels itself <strong>Reported / Parsed</strong>, for example <code>12 / 340</code>. The first is what the report contains and the second is what jscan actually parsed. When the label says <strong>Total Functions</strong> with a single number, nothing was filtered.</p>
-<p>The <strong>architecture score</strong> is not shown, because architecture validation is not implemented in jscan. Only five category scores carry meaning. See <a href="../health-score/">the health score page</a> for what each one measures.</p>
+<p>The dead code limit applies to the table as a whole rather than per function. Use <code>--json</code> or <code>--text</code> when you need the complete list.</p>
 <h2 id="sorting">Sorting<a class="headerlink" href="#sorting" title="Permanent link">&para;</a></h2>
-<p>Every table is sorted by the metric it is about, worst first. Functions are ordered by descending complexity, modules by descending coupling, and clone pairs by descending similarity. Since the tables are truncated at 20 rows, this means you always see the worst offenders rather than an arbitrary sample.</p>
-<p>The functions table is the one exception: it follows <a href="../../configuration/reference/#outputsort_by"><code>output.sort_by</code></a>. Setting that key to <code>name</code> therefore leaves you with the first 20 functions alphabetically rather than the 20 worst, which is rarely what you want in the HTML report. The other tables ignore it.</p>
+<p>Each table is sorted by the metric it is about, worst first. Functions are ordered by descending complexity, classes by descending coupling, and clone groups by descending similarity. Since the tables are truncated, this means you always see the worst offenders rather than an arbitrary sample.</p>
+<p>The two full-length tables on the Functions tab, <strong>All modules</strong> and <strong>Directory complexity</strong>, are sortable in the browser: click a column heading to sort by it and click again to reverse.</p>
+<p>The most-complex-functions table is the one exception to worst-first: it follows <a href="../../configuration/reference/#outputsort_by"><code>output.sort_by</code></a>. Setting that key to <code>name</code> therefore leaves you with the first 20 functions alphabetically rather than the 20 worst, which is rarely what you want in the HTML report. The other tables ignore it.</p>
+<h2 id="dark-mode">Dark mode<a class="headerlink" href="#dark-mode" title="Permanent link">&para;</a></h2>
+<p>The report follows the theme of whatever is displaying it. Nothing needs to be configured, and the file is the same either way.</p>
+<h2 id="linking-to-a-tab">Linking to a tab<a class="headerlink" href="#linking-to-a-tab" title="Permanent link">&para;</a></h2>
+<p>The address bar tracks the open tab, so <code>jscan-report.html#architecture</code> opens straight to Architecture. An unrecognized fragment is ignored and the Overview stays open.</p>
 <h2 id="sharing-and-archiving">Sharing and archiving<a class="headerlink" href="#sharing-and-archiving" title="Permanent link">&para;</a></h2>
 <p>The report embeds its own styles and scripts and loads nothing over the network, so it works offline and inside a restricted environment. That also makes it a good continuous integration artifact:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Analyze</span>
