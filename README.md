@@ -45,6 +45,17 @@ Every analyzer scores your codebase (0-100 with an A-F grade) and generates an H
 
 **Built with Go + tree-sitter** — fast enough to run on every commit.
 
+## polyscan for GitHub
+
+Want this running continuously? The polyscan GitHub App runs the same analyzers on your repositories automatically:
+
+- 📅 **Weekly code audit** — scores the entire codebase once a week and files the report as a GitHub Issue (free while in beta)
+- 🔍 **PR code review** — on every pull request, analyzes the changed files with the static analyzers and posts AI-generated improvement suggestions (Pro)
+
+Unlike diff-only review bots, reports are grounded in the quantitative metrics above — complexity, clones, dead code, dependencies. Configured with a single YAML file: report language (en / ja / zh / ko / es / fr / de / pt), target directories, and audit interval.
+
+**[Get started at codescan.dev →](https://codescan.dev/pyscn-bot)**
+
 ## AI Agent Integration
 
 The analyzers ship Agent Skills that teach AI coding agents when and how to run each analysis: health checks, refactoring, architecture review, and CI-friendly reports.
