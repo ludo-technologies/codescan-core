@@ -30,8 +30,15 @@ uvx pyscn@latest analyze .
 
 See: [**pyscn**](https://github.com/ludo-technologies/pyscn)
 
+### Go
+```
+npx polyscan analyze .
+```
+
+See: [**polyscan**](polyscan/)
+
 ### Others
-We are also planning to support other languages (C++, Go, Rust, and more).
+We are also planning to support other languages (Rust, C++, and more).
 
 ## What You Get
 

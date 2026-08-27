@@ -1,0 +1,168 @@
+name: Release polyscan
+
+on:
+  push:
+    tags:
+      - "polyscan/v*"
+
+permissions:
+  contents: write
+
+# polyscan depends on tree-sitter (cgo), so binaries must be built natively on
+# each platform's runner — cross-compilation with CGO_ENABLED=0 does not work.
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      commit: ${{ steps.meta.outputs.commit }}
+      date: ${{ steps.meta.outputs.date }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute release metadata
+        id: meta
+        shell: bash
+        run: |
+          echo "version=${GITHUB_REF_NAME#polyscan/v}" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: meta
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - os: ubuntu-24.04-arm
+            goos: linux
+            goarch: arm64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: polyscan
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: polyscan/go.mod
+
+      - name: Build
+        shell: bash
+        env:
+          VERSION: ${{ needs.meta.outputs.version }}
+          COMMIT: ${{ needs.meta.outputs.commit }}
+          DATE: ${{ needs.meta.outputs.date }}
+        run: |
+          EXT=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            EXT=".exe"
+          fi
+
+          go build -ldflags="-s -w \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/version.Version=${VERSION} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/version.Commit=${COMMIT} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/version.Date=${DATE} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/version.BuiltBy=release" \
+            -o polyscan${EXT} ./cmd/polyscan
+
+          ARCHIVE_NAME="polyscan_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            7z a "${ARCHIVE_NAME}.zip" polyscan${EXT}
+          else
+            tar -czvf "${ARCHIVE_NAME}.tar.gz" polyscan${EXT}
+          fi
+
+      - name: Upload archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polyscan-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: polyscan/polyscan_*
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: polyscan/polyscan${{ matrix.goos == 'windows' && '.exe' || '' }}
+
+  release:
+    needs: [meta, build]
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ needs.meta.outputs.version }}
+    steps:
+
+      - name: Download archive artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: polyscan-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: cd dist && sha256sum polyscan_* > checksums.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+
+  npm-publish:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC)
+    defaults:
+      run:
+        working-directory: polyscan
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+
+      - name: Download binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+          pattern: binary-*
+
+      - name: Place binaries into platform packages
+        run: |
+          cp ../binaries/binary-darwin-arm64/polyscan npm/platforms/darwin-arm64/bin/polyscan
+          cp ../binaries/binary-linux-amd64/polyscan npm/platforms/linux-x64/bin/polyscan
+          cp ../binaries/binary-linux-arm64/polyscan npm/platforms/linux-arm64/bin/polyscan
+          cp ../binaries/binary-windows-amd64/polyscan.exe npm/platforms/windows-x64/bin/polyscan.exe
+          chmod +x npm/platforms/darwin-arm64/bin/polyscan npm/platforms/linux-x64/bin/polyscan npm/platforms/linux-arm64/bin/polyscan
+
+      - name: Set package versions
+        run: |
+          VERSION="${GITHUB_REF_NAME#polyscan/v}"
+          for dir in npm/platforms/*/; do
+            (cd "$dir" && npm version "$VERSION" --no-git-tag-version)
+          done
+          (cd npm && npm version "$VERSION" --no-git-tag-version)
+          node -e "const fs=require('fs');const p=require('./npm/package.json');for(const d of Object.keys(p.optionalDependencies))p.optionalDependencies[d]='$VERSION';fs.writeFileSync('npm/package.json',JSON.stringify(p,null,2)+'\n')"
+
+      - name: Publish platform packages
+        run: |
+          for dir in npm/platforms/*/; do
+            (cd "$dir" && npm publish --access public --provenance)
+          done
+
+      - name: Publish main package
+        run: |
+          cd npm && npm publish --access public --provenance

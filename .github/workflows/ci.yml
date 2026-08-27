@@ -13,6 +13,7 @@ jobs:
       pull-requests: read
     outputs:
       jscan: ${{ steps.filter.outputs.jscan }}
+      polyscan: ${{ steps.filter.outputs.polyscan }}
       benchmarks: ${{ steps.filter.outputs.benchmarks }}
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +24,9 @@ jobs:
             jscan:
               - 'jscan/**'
               - 'core/**'
+              - '.github/workflows/ci.yml'
+            polyscan:
+              - 'polyscan/**'
               - '.github/workflows/ci.yml'
             benchmarks:
               - 'benchmarks/**'
@@ -55,6 +59,23 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: jscan/go.mod
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test -race ./...
+
+  polyscan:
+    needs: changes
+    if: ${{ !startsWith(github.ref, 'refs/tags/') && needs.changes.outputs.polyscan == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: polyscan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: polyscan/go.mod
+      - run: test -z "$(gofmt -l .)"
       - run: go build ./...
       - run: go vet ./...
       - run: go test -race ./...
