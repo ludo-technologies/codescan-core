@@ -36,6 +36,8 @@ func Write(w io.Writer, doc *Document, format domain.OutputFormat) error {
 	case domain.OutputFormatText:
 		writeText(w, doc)
 		return nil
+	case domain.OutputFormatHTML:
+		return writeHTML(w, doc)
 	default:
 		return fmt.Errorf("unsupported output format %q", format)
 	}

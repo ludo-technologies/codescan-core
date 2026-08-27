@@ -17,7 +17,7 @@ npx polyscan analyze .
 ## Usage
 
 ```bash
-# Text report
+# HTML report, opened in the browser
 polyscan analyze .
 
 # JSON report

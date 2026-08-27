@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -21,7 +23,7 @@ func run(t *testing.T, args ...string) (string, error) {
 }
 
 func TestAnalyzeText(t *testing.T) {
-	out, err := run(t, "analyze", "../../testdata/go/sample.go")
+	out, err := run(t, "analyze", "--format", "text", "../../testdata/go/sample.go")
 	if err != nil {
 		t.Fatalf("analyze: %v\n%s", err, out)
 	}
@@ -47,8 +49,28 @@ func TestAnalyzeJSON(t *testing.T) {
 	}
 }
 
+func TestAnalyzeHTML(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "report.html")
+	out, err := run(t, "analyze", "--no-open", "-o", path, "../../testdata/go")
+	if err != nil {
+		t.Fatalf("analyze: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "HTML report written to ") {
+		t.Errorf("unexpected output:\n%s", out)
+	}
+	html, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"<title>polyscan report</title>", "Server.Handle", "Clone groups", "SumPositive"} {
+		if !strings.Contains(string(html), want) {
+			t.Errorf("HTML report lacks %q", want)
+		}
+	}
+}
+
 func TestAnalyzeSelect(t *testing.T) {
-	out, err := run(t, "analyze", "--select", "clone", "../../testdata/go/clones")
+	out, err := run(t, "analyze", "--format", "text", "--select", "clone", "../../testdata/go/clones")
 	if err != nil {
 		t.Fatalf("analyze: %v\n%s", err, out)
 	}
@@ -62,7 +84,7 @@ func TestAnalyzeRejectsBadArguments(t *testing.T) {
 		{"analyze"},
 		{"analyze", "--select", "deadcode", "../../testdata/go"},
 		{"analyze", "--select=", "../../testdata/go"},
-		{"analyze", "--format", "html", "../../testdata/go"},
+		{"analyze", "--format", "yaml", "../../testdata/go"},
 		{"analyze", "--min-complexity", "0", "../../testdata/go"},
 		{"analyze", "does-not-exist"},
 	} {
@@ -79,5 +101,16 @@ func TestVersion(t *testing.T) {
 	}
 	if !strings.HasPrefix(out, "polyscan version ") {
 		t.Errorf("unexpected output %q", out)
+	}
+}
+
+func TestFileURL(t *testing.T) {
+	for path, want := range map[string]string{
+		"/tmp/report.html":        "file:///tmp/report.html",
+		"/tmp/a b#1/report?.html": "file:///tmp/a%20b%231/report%3F.html",
+	} {
+		if got := fileURL(path); got != want {
+			t.Errorf("fileURL(%q) = %q, want %q", path, got, want)
+		}
 	}
 }

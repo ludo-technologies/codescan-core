@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>polyscan report</title>
+<style>{{.CSS}}</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">polyscan{{if .Version}} <span class="ver">{{.Version}}</span>{{end}}</div>
+    <div class="meta">
+      <span>{{.GeneratedAt.Format "2006-01-02 15:04"}}</span>
+      <span>{{if .Files.Skipped}}<span class="bad">{{.Files.Analyzed}} of {{.Files.Total}} files analyzed, {{.Files.Skipped}} skipped</span>{{else}}{{.Files.Total}} files{{end}} in {{.DurationMs}}ms</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+{{with .Complexity}}
+<div class="section-h"><h2>Complexity</h2></div>
+<div class="card">
+  <div class="strip">
+    <div class="s"><div class="v num">{{.Summary.TotalFunctions}}</div><div class="l">functions</div></div>
+    <div class="s"><div class="v num">{{printf "%.2f" .Summary.AverageComplexity}}</div><div class="l">average CC</div></div>
+    <div class="s"><div class="v num">{{.Summary.MaxComplexity}}</div><div class="l">max CC</div></div>
+    <div class="s"><div class="v num{{if .Summary.HighRiskFunctions}} bad{{end}}">{{.Summary.HighRiskFunctions}}</div><div class="l">high risk</div></div>
+    <div class="s"><div class="v num{{if .Summary.MediumRiskFunctions}} warn{{end}}">{{.Summary.MediumRiskFunctions}}</div><div class="l">medium risk</div></div>
+  </div>
+</div>
+
+{{with $.Histogram}}
+<div class="card">
+  <div class="card-h"><h2>Complexity distribution</h2><span class="muted small">{{.Total}} functions</span></div>
+  <svg class="chart" viewBox="0 0 420 190" role="img" aria-label="Histogram of cyclomatic complexity">
+    <g class="grid">{{range .Ticks}}<line x1="44" y1="{{.Y}}" x2="412" y2="{{.Y}}"/>{{end}}</g>
+    {{range .Ticks}}<text x="38" y="{{printf "%.1f" (addf .Y 3.5)}}" text-anchor="end">{{.Label}}</text>{{end}}
+    {{range .Bins}}<rect class="b {{.Band}}" x="{{.X}}" y="{{.Y}}" width="{{.Width}}" height="{{.Height}}" rx="3"><title>CC {{.Label}}: {{.Count}} functions</title></rect>{{end}}
+    {{range .Bins}}<text class="lbl {{.Band}}" x="{{printf "%.1f" (addf .X (divf .Width 2))}}" y="{{printf "%.1f" (addf .Y -6)}}" text-anchor="middle">{{.Count}}</text>{{end}}
+    {{range .Bins}}<text x="{{printf "%.1f" (addf .X (divf .Width 2))}}" y="170" text-anchor="middle">{{.Label}}</text>{{end}}
+    <text x="228" y="186" text-anchor="middle">cyclomatic complexity</text>
+  </svg>
+</div>
+{{end}}
+
+{{if $.Functions}}
+<div class="card">
+  <div class="card-h"><h2>Most complex functions</h2><span class="muted small">{{if gt $.MinComplexity 1}}complexity {{$.MinComplexity}} and above{{end}}</span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Function</th><th>File</th><th class="r">CC</th><th class="r">Lines</th><th>Risk</th></tr></thead>
+      <tbody>
+        {{range $.Functions}}
+        <tr>
+          <td class="mono">{{.Name}}</td>
+          <td class="mono muted">{{.FilePath}}:{{.StartLine}}</td>
+          <td class="r num">{{.Complexity}}</td>
+          <td class="r num">{{lineSpan .}}</td>
+          <td><span class="pill risk-{{.RiskLevel}}">{{.RiskLevel}}</span></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{if gt $.ListedFunctions (len $.Functions)}}<p class="muted small note">Showing top {{len $.Functions}} of {{$.ListedFunctions}} functions. Use --format json or --format text for the complete list.</p>{{end}}
+</div>
+{{end}}
+{{end}}
+
+{{with .Clones}}
+<div class="section-h"><h2>Duplication</h2><span class="muted small">test files are not compared</span></div>
+<div class="card">
+  <div class="strip">
+    <div class="s"><div class="v num">{{.Statistics.TotalClones}}<small> / {{.Statistics.TotalFragments}}</small></div><div class="l">fragments cloned</div></div>
+    <div class="s"><div class="v num">{{.Statistics.TotalCloneGroups}}</div><div class="l">clone groups</div></div>
+    <div class="s"><div class="v num">{{.Statistics.TotalClonePairs}}</div><div class="l">clone pairs</div></div>
+    <div class="s"><div class="v num">{{percent .Statistics.AverageSimilarity}}</div><div class="l">avg similarity</div></div>
+  </div>
+  {{if $.Duplication}}
+  <div class="stack" role="img" aria-label="Clone pairs by type">{{range $.Duplication}}<i class="{{.Class}}" style="width:{{printf "%.1f" .Percent}}%" title="{{.Label}}"></i>{{end}}</div>
+  <div class="legend">{{range $.Duplication}}<span><i class="{{.Class}}"></i>{{.Label}}</span>{{end}}</div>
+  {{end}}
+</div>
+
+{{if .Groups}}
+<div class="card">
+  <div class="card-h"><h2>Clone groups</h2><span class="muted small">functions grouped by similarity</span></div>
+  {{range $.Groups}}
+  <div class="clone-group">
+    <div class="clone-group-h">
+      <span class="pill t{{int .Type}}">{{.Type}}</span>
+      <b>Group {{add .ID 1}}</b>
+      <span class="muted">{{len .Fragments}} fragments · similarity {{percent .Similarity}}</span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl compact">
+        <thead><tr><th>Function</th><th>File</th><th class="r">Lines</th></tr></thead>
+        <tbody>
+          {{range $j, $fragment := .Fragments}}{{if lt $j 10}}
+          <tr>
+            <td class="mono">{{$fragment.Name}}</td>
+            <td class="mono muted">{{$fragment.FilePath}}</td>
+            <td class="r num">{{$fragment.StartLine}}-{{$fragment.EndLine}}</td>
+          </tr>
+          {{with preview $fragment}}
+          <tr class="preview-row"><td colspan="3">
+            <div class="code-preview-card"><div class="code-preview-title">Code preview</div><pre class="code-preview">{{.}}</pre></div>
+          </td></tr>
+          {{end}}
+          {{end}}{{end}}
+          {{if gt (len .Fragments) 10}}<tr><td colspan="3" class="muted">... and {{sub (len .Fragments) 10}} more fragments</td></tr>{{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{end}}
+  {{if gt (len .Groups) (len $.Groups)}}<p class="muted small note">Showing top {{len $.Groups}} of {{len .Groups}} clone groups. Use --format json for the complete list.</p>{{end}}
+</div>
+{{else if .Pairs}}
+<div class="card">
+  <div class="card-h"><h2>Clone pairs</h2><span class="muted small">no groups formed, showing individual pairs</span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Function 1</th><th>Function 2</th><th class="r">Similarity</th><th>Type</th></tr></thead>
+      <tbody>
+        {{range $i, $pair := .Pairs}}{{if lt $i 20}}
+        <tr>
+          <td class="mono">{{$pair.Fragment1.Name}} <span class="muted">{{$pair.Fragment1.FilePath}}:{{$pair.Fragment1.StartLine}}</span></td>
+          <td class="mono">{{$pair.Fragment2.Name}} <span class="muted">{{$pair.Fragment2.FilePath}}:{{$pair.Fragment2.StartLine}}</span></td>
+          <td class="r num">{{percent $pair.Similarity}}</td>
+          <td><span class="pill t{{int $pair.Type}}">{{$pair.Type}}</span></td>
+        </tr>
+        {{end}}{{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{else}}
+<div class="card"><p class="ok-msg">No code clones detected</p></div>
+{{end}}
+{{end}}
+
+{{if .Errors}}
+<div class="callout"><b>{{len .Errors}} {{if eq (len .Errors) 1}}file was{{else}}files were{{end}} skipped</b><ul>{{range .Errors}}<li class="mono">{{.}}</li>{{end}}</ul></div>
+{{end}}
+
+</main>
+
+<footer>
+  <span>Generated by polyscan{{if .Version}} {{.Version}}{{end}} · {{.GeneratedAt.Format "2006-01-02 15:04:05"}}</span>
+  <a href="https://github.com/ludo-technologies/polyscan" target="_blank" rel="noopener noreferrer">polyscan on GitHub</a>
+</footer>
+</body>
+</html>

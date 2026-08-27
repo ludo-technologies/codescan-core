@@ -117,6 +117,9 @@ type Fragment struct {
 	// LineCount counts lines of code: blank lines and comments excluded.
 	LineCount int `json:"line_count"`
 	NodeCount int `json:"node_count"`
+	// Content is the fragment's source text with comments removed, for
+	// previews. It is not part of the JSON report.
+	Content string `json:"-"`
 }
 
 // Statistics summarizes a detection run.
@@ -500,5 +503,6 @@ func (d *Detector) fragment(f *coreclone.CodeFragment) Fragment {
 		EndLine:   f.EndLine,
 		LineCount: f.LineCount,
 		NodeCount: f.NodeCount,
+		Content:   f.Content,
 	}
 }
