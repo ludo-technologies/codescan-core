@@ -7,10 +7,11 @@ import (
 
 	"github.com/ludo-technologies/polyscan/polyscan/internal/engine"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/lang/golang"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/lang/rust"
 )
 
 // All lists every supported language.
-var All = []*engine.Language{golang.Language}
+var All = []*engine.Language{golang.Language, rust.Language}
 
 // ByPath returns the language that owns the file's extension.
 func ByPath(path string) (*engine.Language, bool) {

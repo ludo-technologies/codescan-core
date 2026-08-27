@@ -123,7 +123,9 @@ func Analyze(paths []string, options Options) (*Report, error) {
 				detectors[language] = detector
 			}
 			for _, fn := range functions {
-				detector.Add(fn, display)
+				if !fn.IsTest {
+					detector.Add(fn, display)
+				}
 			}
 		}
 	}

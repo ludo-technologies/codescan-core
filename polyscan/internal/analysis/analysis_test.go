@@ -115,3 +115,27 @@ func TestRiskLevel(t *testing.T) {
 		}
 	}
 }
+
+func TestAnalyzeRust(t *testing.T) {
+	report, err := Analyze([]string{"../../testdata/rust"}, Options{Complexity: true, Clones: true})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	byName := map[string]Function{}
+	for _, fn := range report.Complexity.Functions {
+		byName[fn.Name] = fn
+	}
+	if fn := byName["Server.handle"]; fn.Complexity != 8 || fn.Language != "Rust" {
+		t.Errorf("Server.handle = %+v, want complexity 8 in Rust", fn)
+	}
+	if _, ok := byName["sums_positive_values"]; !ok {
+		t.Error("test functions must still be analyzed for complexity")
+	}
+
+	// sums_positive_values is a copy of sum_positive but lies in #[cfg(test)].
+	stats := report.Clones.Statistics
+	if stats.TotalFragments != 3 || stats.TotalClonePairs != 1 || stats.ClonesByType["Type-2"] != 1 {
+		t.Errorf("statistics = %+v, want one Type-2 pair among three fragments", stats)
+	}
+}
