@@ -3,7 +3,7 @@ module github.com/ludo-technologies/polyscan/polyscan
 go 1.24.6
 
 require (
-	github.com/ludo-technologies/polyscan/core v0.2.4
+	github.com/ludo-technologies/polyscan/core v0.2.5
 	github.com/smacker/go-tree-sitter v0.0.0-20240827094217-dd81d9e9be82
 	github.com/spf13/cobra v1.10.1
 )
