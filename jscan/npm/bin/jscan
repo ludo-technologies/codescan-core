@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { spawn } = require("child_process");
+const os = require("os");
 
 const platformPackages = {
   "darwin-arm64": "jscan-darwin-arm64",
@@ -42,6 +43,8 @@ child.on("error", (err) => {
   process.exit(1);
 });
 
-child.on("close", (code) => {
-  process.exit(code ?? 0);
+child.on("close", (code, signal) => {
+  // A signal-terminated scan (OOM kill, SIGPIPE) reports no exit code, so
+  // map the signal to the shell convention of 128 + signal number.
+  process.exit(signal ? 128 + os.constants.signals[signal] : code);
 });

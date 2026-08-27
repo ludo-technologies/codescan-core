@@ -16,7 +16,8 @@ var Language = &engine.Language{
 	// The definition patterns of tree-sitter-go's queries/tags.scm, with the
 	// receiver captured so methods report as "Type.Method". The Go
 	// specification allows a receiver type of T or *T, where T may carry
-	// type parameters, which the four alternatives cover.
+	// type parameters, and the whole type may be parenthesized, which gofmt
+	// removes but the compiler accepts.
 	Definitions: `
 (function_declaration
   name: (identifier) @name) @definition.function
@@ -29,6 +30,12 @@ var Language = &engine.Language{
         (pointer_type (type_identifier) @receiver)
         (generic_type type: (type_identifier) @receiver)
         (pointer_type (generic_type type: (type_identifier) @receiver))
+        (parenthesized_type [
+          (type_identifier) @receiver
+          (pointer_type (type_identifier) @receiver)
+          (generic_type type: (type_identifier) @receiver)
+          (pointer_type (generic_type type: (type_identifier) @receiver))
+        ])
       ]))
   name: (field_identifier) @name) @definition.method
 `,

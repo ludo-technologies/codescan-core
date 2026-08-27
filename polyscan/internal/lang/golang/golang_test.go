@@ -32,16 +32,22 @@ func (t T) Value() {}
 func (t *T) Pointer() {}
 func (g G[K]) Generic() {}
 func (g *G[K]) GenericPointer() {}
+func (t (T)) Parenthesized() {}
+func (t (*T)) ParenthesizedPointer() {}
+func (g (*G[K])) ParenthesizedGeneric() {}
 
 var closure = func() {}
 `)
 
 	want := map[string]string{
-		"Plain":            "function",
-		"T.Value":          "method",
-		"T.Pointer":        "method",
-		"G.Generic":        "method",
-		"G.GenericPointer": "method",
+		"Plain":                  "function",
+		"T.Value":                "method",
+		"T.Pointer":              "method",
+		"G.Generic":              "method",
+		"G.GenericPointer":       "method",
+		"T.Parenthesized":        "method",
+		"T.ParenthesizedPointer": "method",
+		"G.ParenthesizedGeneric": "method",
 	}
 	if len(functions) != len(want) {
 		t.Fatalf("got %d functions, want %d: %v", len(functions), len(want), functions)
