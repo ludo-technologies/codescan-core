@@ -93,6 +93,7 @@ A language is declarative: a tree-sitter grammar and two queries. See `internal/
 
 - The definitions query matches each function once. `@definition.<kind>` spans the function, `@name` its name, and an optional `@receiver` is prefixed to the name. The bundled `queries/tags.scm` of a grammar is the starting point.
 - In the decisions query every capture is one decision point, attributed to the innermost function that contains it and reported under the capture's name.
+- The optional scopes query names the scopes that enclose functions, such as classes, impl blocks and namespaces, so members read `Type::method`; a `@receiver` capture in the definitions query names a receiver declared on the function itself, as Go methods have.
 - The clone spec lists the node types of identifiers, literals and structural patterns, the cost tiers of the tree edit distance, and pairs of related node types. `TestFiles` names test files by file name glob or, with a trailing slash, by directory, and `TestCode` is a query capturing test code inside a file; both are excluded from clone detection.
 
 ## Development

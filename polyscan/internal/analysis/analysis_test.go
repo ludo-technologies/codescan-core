@@ -137,7 +137,7 @@ func TestAnalyzeRust(t *testing.T) {
 	if fn := byName["Server::handle"]; fn.Complexity != 8 || fn.Language != "Rust" {
 		t.Errorf("Server::handle = %+v, want complexity 8 in Rust", fn)
 	}
-	if _, ok := byName["sums_positive_values"]; !ok {
+	if _, ok := byName["tests::sums_positive_values"]; !ok {
 		t.Error("test functions must still be analyzed for complexity")
 	}
 

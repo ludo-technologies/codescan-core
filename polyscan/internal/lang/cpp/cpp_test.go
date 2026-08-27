@@ -127,6 +127,7 @@ func TestTestFiles(t *testing.T) {
 		"src/foo_tests.cpp":    true,
 		"src/test_foo.cpp":     true,
 		"src/FooTest.cpp":      true,
+		"src/FooTests.cxx":     true,
 		"test/foo.cc":          true,
 		"tests/unit/foo.cpp":   true,
 		"src/latest/foo.cpp":   false,

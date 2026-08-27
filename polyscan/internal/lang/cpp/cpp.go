@@ -38,7 +38,8 @@ var Language = &engine.Language{
 	// the code or in a test directory.
 	TestFiles: []string{
 		"*_test.cc", "*_test.cpp", "*_test.cxx", "*_tests.cc", "*_tests.cpp", "*_tests.cxx",
-		"test_*.cc", "test_*.cpp", "test_*.cxx", "*Test.cc", "*Test.cpp", "*Tests.cc", "*Tests.cpp",
+		"test_*.cc", "test_*.cpp", "test_*.cxx",
+		"*Test.cc", "*Test.cpp", "*Test.cxx", "*Tests.cc", "*Tests.cpp", "*Tests.cxx",
 		"test/", "tests/",
 	},
 	// The function pattern of tree-sitter-cpp's queries/tags.scm, widened

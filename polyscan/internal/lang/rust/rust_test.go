@@ -38,12 +38,12 @@ fn with_closure() { let f = |x| x; f(1); }
 
 	want := map[string]string{
 		"free":          "function",
-		"S::method":     "method",
-		"G<T>::generic": "method",
-		"S::fmt":        "method",
-		"Tr::provided":  "method",
-		"inner":         "function",
-		"nested":        "function",
+		"S::method":     "function",
+		"G<T>::generic": "function",
+		"S::fmt":        "function",
+		"Tr::provided":  "function",
+		"m::inner":      "function",
+		"m::nested":     "function",
 		"with_closure":  "function",
 	}
 	if len(functions) != len(want) {
@@ -153,9 +153,9 @@ fn real() {}
 fn maybe() {}
 `)
 	for name, want := range map[string]bool{
-		"production": false, "unit": true, "helper": true, "in_module": true, "gated": false,
-		"test_then_cfg": true, "cfg_then_test": true, "helper2": true,
-		"test_helper": true, "S::fixture": true, "TestOnly::provided": true, "helper3": true,
+		"production": false, "unit": true, "tests::helper": true, "tests::in_module": true, "feature::gated": false,
+		"test_then_cfg": true, "cfg_then_test": true, "more_tests::helper2": true,
+		"test_helper": true, "S::fixture": true, "TestOnly::provided": true, "unix_tests::helper3": true,
 		"real": false, "maybe": false,
 	} {
 		if got := functions[name].IsTest; got != want {

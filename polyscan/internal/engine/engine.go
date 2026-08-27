@@ -28,19 +28,16 @@ type Language struct {
 	Grammar *sitter.Language
 	// Definitions is a tree-sitter query that matches every function once.
 	// Its @definition.<kind> capture spans the whole function and @name its
-	// name. An optional @receiver capture holds the receiver type of a
-	// method and is prefixed to the name with the ScopeSeparator.
-	//
-	// A function node that several patterns match is reported once, under
-	// the match that captured a receiver when there is one, so a grammar
-	// that uses one node type for functions and methods can name methods
-	// through their enclosing type.
+	// name. An optional @receiver capture holds a receiver type declared on
+	// the function itself, as Go methods do, and is prefixed to the name
+	// with the ScopeSeparator.
 	Definitions string
-	// Scopes is an optional tree-sitter query for named scopes such as
-	// classes and namespaces: @scope spans the scope and @receiver holds
-	// its name. A function inside scopes is named after them, outermost
-	// first, so a member defined inside its class and one defined outside
-	// it with a qualified name read the same.
+	// Scopes is an optional tree-sitter query for the named scopes that
+	// enclose functions, such as classes, impl blocks and namespaces:
+	// @scope spans the scope and @receiver holds its name. A function is
+	// named after the scopes that contain it, outermost first, so a member
+	// defined inside its class and one defined outside it with a qualified
+	// name read the same.
 	Scopes string
 	// ScopeSeparator joins scope and receiver names to function names;
 	// empty means ".".
@@ -275,7 +272,6 @@ func set(names []string) map[string]struct{} {
 
 func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function {
 	var functions []Function
-	byStart := map[uint32]int{}
 	forEachMatch(l.definitions, root, source, func(match *sitter.QueryMatch) {
 		var fn Function
 		var node *sitter.Node
@@ -298,14 +294,6 @@ func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function
 		if receiver != "" {
 			fn.Name = receiver + l.separator() + fn.Name
 		}
-		if index, seen := byStart[node.StartByte()]; seen {
-			if receiver != "" {
-				functions[index].Name = fn.Name
-				functions[index].Kind = fn.Kind
-			}
-			return
-		}
-		byStart[node.StartByte()] = len(functions)
 		fn.StartLine = int(node.StartPoint().Row) + 1
 		fn.StartColumn = int(node.StartPoint().Column) + 1
 		fn.EndLine = int(node.EndPoint().Row) + 1
@@ -418,7 +406,8 @@ type scope struct {
 }
 
 // applyScopes prefixes each function with the names of the scopes that
-// contain it, outermost first.
+// contain it, outermost first. Functions and scopes are both in start
+// order, so one sweep with a stack of the open scopes covers them.
 func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Function) {
 	if l.scopes == nil {
 		return
@@ -440,13 +429,19 @@ func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Fun
 	})
 	sort.Slice(scopes, func(i, j int) bool { return scopes[i].start < scopes[j].start })
 
+	var open []scope
+	next := 0
 	for i := range functions {
 		fn := &functions[i]
+		for next < len(scopes) && scopes[next].start <= fn.startByte {
+			open = append(open, scopes[next])
+			next++
+		}
+		for len(open) > 0 && open[len(open)-1].end < fn.startByte {
+			open = open[:len(open)-1]
+		}
 		var names []string
-		for _, s := range scopes {
-			if s.start > fn.startByte {
-				break
-			}
+		for _, s := range open {
 			if s.end >= fn.endByte {
 				names = append(names, s.name)
 			}
