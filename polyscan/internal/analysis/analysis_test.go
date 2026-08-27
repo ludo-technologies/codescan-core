@@ -180,3 +180,41 @@ func TestAnalyzeMergesLanguages(t *testing.T) {
 		}
 	}
 }
+
+func TestRankOrdersGroupsLikeCore(t *testing.T) {
+	fragment := func(path string, line int) clone.Fragment { return clone.Fragment{FilePath: path, StartLine: line} }
+	report := &clone.Report{
+		Groups: []clone.Group{
+			{Similarity: 0.9, Fragments: []clone.Fragment{fragment("a.rs", 1), fragment("b.rs", 1)}},
+			{Similarity: 0.9 + 1e-12, Fragments: []clone.Fragment{fragment("z.go", 1), fragment("z.go", 50), fragment("y.go", 1)}},
+			{Similarity: 1, Fragments: []clone.Fragment{fragment("c.rs", 1), fragment("d.rs", 1)}},
+		},
+		Pairs: []clone.Pair{
+			{Similarity: 0.8, Fragment1: fragment("b.go", 1), Fragment2: fragment("c.go", 1)},
+			{Similarity: 0.8, Fragment1: fragment("a.rs", 1), Fragment2: fragment("c.rs", 1)},
+			{Similarity: 1, Fragment1: fragment("x.go", 1), Fragment2: fragment("y.go", 1)},
+		},
+	}
+	rank(report)
+
+	var groups []string
+	for _, group := range report.Groups {
+		groups = append(groups, group.Fragments[0].FilePath)
+	}
+	// Equal similarity within epsilon: the larger group comes first.
+	if want := []string{"c.rs", "z.go", "a.rs"}; strings.Join(groups, ",") != strings.Join(want, ",") {
+		t.Errorf("groups = %v, want %v", groups, want)
+	}
+	var pairs []string
+	for _, pair := range report.Pairs {
+		pairs = append(pairs, pair.Fragment1.FilePath)
+	}
+	if want := []string{"x.go", "a.rs", "b.go"}; strings.Join(pairs, ",") != strings.Join(want, ",") {
+		t.Errorf("pairs = %v, want %v", pairs, want)
+	}
+	for i, group := range report.Groups {
+		if group.ID != i {
+			t.Errorf("group %d has ID %d", i, group.ID)
+		}
+	}
+}

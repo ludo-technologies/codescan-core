@@ -130,10 +130,30 @@ fn cfg_then_test() {}
 #[allow(dead_code)]
 #[cfg(test)]
 mod more_tests { fn helper2() {} }
+
+#[cfg(test)]
+fn test_helper() {}
+
+#[cfg(test)]
+impl S { fn fixture(&self) {} }
+
+#[cfg(test)]
+trait TestOnly { fn provided(&self) {} }
+
+#[cfg(all(test, unix))]
+mod unix_tests { fn helper3() {} }
+
+#[cfg(not(test))]
+fn real() {}
+
+#[cfg(any(test, feature = "x"))]
+fn maybe() {}
 `)
 	for name, want := range map[string]bool{
 		"production": false, "unit": true, "helper": true, "in_module": true, "gated": false,
 		"test_then_cfg": true, "cfg_then_test": true, "helper2": true,
+		"test_helper": true, "S.fixture": true, "TestOnly.provided": true, "helper3": true,
+		"real": false, "maybe": false,
 	} {
 		if got := functions[name].IsTest; got != want {
 			t.Errorf("%s: IsTest = %v, want %v", name, got, want)

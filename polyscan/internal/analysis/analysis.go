@@ -4,6 +4,7 @@ package analysis
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -205,33 +206,49 @@ func detectClones(detectors map[*engine.Language]*clone.Detector) *clone.Report 
 		}
 	}
 
-	// Rank across languages the way each detector ranks within one.
-	sort.SliceStable(merged.Pairs, func(i, j int) bool {
-		a, b := merged.Pairs[i], merged.Pairs[j]
-		if a.Similarity != b.Similarity {
-			return a.Similarity > b.Similarity
-		}
-		return fragmentPrecedes(a.Fragment1, b.Fragment1) || a.Fragment1 == b.Fragment1 && fragmentPrecedes(a.Fragment2, b.Fragment2)
-	})
-	sort.SliceStable(merged.Groups, func(i, j int) bool {
-		a, b := merged.Groups[i], merged.Groups[j]
-		if a.Similarity != b.Similarity {
-			return a.Similarity > b.Similarity
-		}
-		return fragmentPrecedes(a.Fragments[0], b.Fragments[0])
-	})
-	for i := range merged.Pairs {
-		merged.Pairs[i].ID = i
-	}
-	for i := range merged.Groups {
-		merged.Groups[i].ID = i
-	}
+	rank(merged)
 	merged.Statistics.TotalClonePairs = len(merged.Pairs)
 	merged.Statistics.TotalCloneGroups = len(merged.Groups)
 	if len(merged.Pairs) > 0 {
 		merged.Statistics.AverageSimilarity = totalSimilarity / float64(len(merged.Pairs))
 	}
 	return merged
+}
+
+// rank orders pairs and groups across languages the way core/clone orders
+// them within one: by similarity, then larger groups first, then by
+// location. IDs follow the order.
+func rank(report *clone.Report) {
+	sort.SliceStable(report.Pairs, func(i, j int) bool {
+		a, b := report.Pairs[i], report.Pairs[j]
+		if !almostEqual(a.Similarity, b.Similarity) {
+			return a.Similarity > b.Similarity
+		}
+		if a.Fragment1.FilePath != b.Fragment1.FilePath || a.Fragment1.StartLine != b.Fragment1.StartLine {
+			return fragmentPrecedes(a.Fragment1, b.Fragment1)
+		}
+		return fragmentPrecedes(a.Fragment2, b.Fragment2)
+	})
+	sort.SliceStable(report.Groups, func(i, j int) bool {
+		a, b := report.Groups[i], report.Groups[j]
+		if !almostEqual(a.Similarity, b.Similarity) {
+			return a.Similarity > b.Similarity
+		}
+		if len(a.Fragments) != len(b.Fragments) {
+			return len(a.Fragments) > len(b.Fragments)
+		}
+		return fragmentPrecedes(a.Fragments[0], b.Fragments[0])
+	})
+	for i := range report.Pairs {
+		report.Pairs[i].ID = i
+	}
+	for i := range report.Groups {
+		report.Groups[i].ID = i
+	}
+}
+
+func almostEqual(a, b float64) bool {
+	return math.Abs(a-b) < 1e-9
 }
 
 func fragmentPrecedes(a, b clone.Fragment) bool {
