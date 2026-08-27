@@ -160,11 +160,12 @@ func TestSyntaxErrorIsReported(t *testing.T) {
 
 func TestTestFiles(t *testing.T) {
 	for path, want := range map[string]bool{
-		"src/lib.rs":           false,
-		"src/parser/tests.rs":  true,
-		"src/tests/mod.rs":     true,
-		"tests/integration.rs": true,
-		"src/contests/x.rs":    false,
+		"src/lib.rs":                   false,
+		"src/parser/tests.rs":          true,
+		"src/bin/integration_tests.rs": true,
+		"src/tests/mod.rs":             true,
+		"tests/integration.rs":         true,
+		"src/contests/x.rs":            false,
 	} {
 		if got := Language.IsTestFile(path); got != want {
 			t.Errorf("IsTestFile(%q) = %v, want %v", path, got, want)

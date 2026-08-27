@@ -17,9 +17,10 @@ var Language = &engine.Language{
 	Grammar:    tsrust.GetLanguage(),
 	// A test module split into its own file is declared as
 	// #[cfg(test)] mod tests; in the parent, which a single file cannot
-	// see, so the conventional names stand in for the attribute: tests.rs,
-	// and a tests directory, which also holds Cargo's integration tests.
-	TestFiles: []string{"tests.rs", "tests/"},
+	// see, so the conventional names stand in for the attribute: tests.rs and
+	// *_tests.rs, and a tests directory, which also holds Cargo's
+	// integration tests.
+	TestFiles: []string{"tests.rs", "*_tests.rs", "tests/"},
 	// Tests kept next to the code are found by attribute: #[test]
 	// functions and #[cfg(test)] modules, with any other attributes
 	// between the marker and the item.

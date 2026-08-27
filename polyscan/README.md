@@ -70,7 +70,7 @@ Every function of at least 10 lines of code (blank lines and comments excluded) 
 | Type-2 | Same structure with renamed identifiers or changed literals | Similarity ≥ 0.75 and matching normalized trees |
 | Type-3 | Near copy with statements added, removed or changed | Similarity ≥ 0.70 |
 
-Pairs below 0.70 are not reported. Test code is analyzed for complexity but excluded from clone detection: test functions share a skeleton by convention, and on this repository they made up 92% of the pairs. For Go that is `*_test.go`; for Rust it is `#[test]` functions, `#[cfg(test)]` modules, `tests.rs` files and any `tests` directory, the conventional homes of a test module split into its own file and of Cargo's integration tests.
+Pairs below 0.70 are not reported. Test code is analyzed for complexity but excluded from clone detection: test functions share a skeleton by convention, and on this repository they made up 92% of the pairs. For Go that is `*_test.go`; for Rust it is `#[test]` functions, `#[cfg(test)]` modules, `tests.rs` and `*_tests.rs` files and any `tests` directory, the conventional homes of a test module split into its own file and of Cargo's integration tests.
 
 Rust macro invocations parse as token trees, so the code inside a macro call contributes tokens but no structure. Clone detection recall is lower on macro-heavy code. The bundled tree-sitter-rust grammar predates Rust 2024 edition syntax such as `unsafe extern` blocks; a file that uses it is reported as a syntax error and skipped, which affected 0.75% of the files in a sample of 369 crates.
 
