@@ -75,11 +75,14 @@ func detectWith(t *testing.T, config Config, sources ...string) *Report {
 	t.Helper()
 	detector := NewDetector(golang.Language.Clone, config)
 	for i, source := range sources {
-		functions, err := golang.Language.Analyze([]byte("package p\n\nimport \"fmt\"\n\n" + source))
+		result, err := golang.Language.Analyze([]byte("package p\n\nimport \"fmt\"\n\n" + source))
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, fn := range functions {
+		if result.SyntaxError != nil {
+			t.Fatal(result.SyntaxError)
+		}
+		for _, fn := range result.Functions {
 			detector.Add(fn, "file"+string(rune('a'+i))+".go")
 		}
 	}

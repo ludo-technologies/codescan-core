@@ -12,9 +12,10 @@ import (
 // code inside a macro call contributes tokens but no structure, which
 // lowers clone detection recall on macro-heavy code.
 var Language = &engine.Language{
-	Name:       "Rust",
-	Extensions: []string{".rs"},
-	Grammar:    tsrust.GetLanguage(),
+	Name:           "Rust",
+	Extensions:     []string{".rs"},
+	Grammar:        tsrust.GetLanguage(),
+	ScopeSeparator: "::",
 	// A test module split into its own file is declared as
 	// #[cfg(test)] mod tests; in the parent, which a single file cannot
 	// see, so the conventional names stand in for the attribute: tests.rs and
@@ -41,7 +42,7 @@ var Language = &engine.Language{
 `,
 	// The function pattern of tree-sitter-rust's queries/tags.scm, plus
 	// the same node inside an impl or trait body, where the implemented
-	// type or the trait becomes the receiver. The engine merges the two
+	// type or the trait becomes the receiver, as in Type::method. The engine merges the two
 	// matches of one function node and keeps the receiver.
 	Definitions: `
 (function_item name: (identifier) @name) @definition.function

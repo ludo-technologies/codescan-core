@@ -6,6 +6,8 @@
     "go",
     "golang",
     "rust",
+    "cpp",
+    "c++",
     "code-quality",
     "static-analysis",
     "analyzer",

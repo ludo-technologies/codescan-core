@@ -11,8 +11,9 @@ import (
 )
 
 // fixtures copies the Go fixtures into a temporary directory and adds a
-// file that does not parse. The broken file is generated here rather than
-// committed so that gofmt and go vet never trip over it.
+// file that does not parse and one that cannot be read. The broken file is
+// generated here rather than committed so that gofmt and go vet never trip
+// over it.
 func fixtures(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -23,7 +24,10 @@ func fixtures(t *testing.T) string {
 	if err := os.WriteFile(filepath.Join(dir, "sample.go"), sample, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "broken.go"), []byte("package broken\n\nfunc Unclosed() {\n\tif true {\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "broken.go"), []byte("package broken\n\nfunc Broken() {\n\tif {\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "unreadable.go"), []byte("package p\n"), 0o000); err != nil {
 		t.Fatal(err)
 	}
 	return dir
@@ -35,11 +39,14 @@ func TestAnalyzeComplexity(t *testing.T) {
 		t.Fatalf("Analyze: %v", err)
 	}
 
-	if report.Files != (Files{Total: 2, Analyzed: 1, Skipped: 1}) {
-		t.Errorf("files = %+v, want 2/1/1", report.Files)
+	if report.Files != (Files{Total: 3, Analyzed: 2, Partial: 1, Skipped: 1}) {
+		t.Errorf("files = %+v, want total 3, analyzed 2, partial 1, skipped 1", report.Files)
 	}
-	if len(report.Errors) != 1 || !strings.Contains(report.Errors[0], "broken.go: syntax error") {
-		t.Errorf("errors = %v, want the broken file's syntax error", report.Errors)
+	if len(report.Warnings) != 1 || !strings.Contains(report.Warnings[0], "broken.go: syntax error at line 4") {
+		t.Errorf("warnings = %v, want the broken file's syntax error", report.Warnings)
+	}
+	if len(report.Errors) != 1 || !strings.Contains(report.Errors[0], "unreadable.go") {
+		t.Errorf("errors = %v, want the unreadable file", report.Errors)
 	}
 	if report.Clones != nil {
 		t.Error("clones were not selected but are present")
@@ -127,8 +134,8 @@ func TestAnalyzeRust(t *testing.T) {
 	for _, fn := range report.Complexity.Functions {
 		byName[fn.Name] = fn
 	}
-	if fn := byName["Server.handle"]; fn.Complexity != 8 || fn.Language != "Rust" {
-		t.Errorf("Server.handle = %+v, want complexity 8 in Rust", fn)
+	if fn := byName["Server::handle"]; fn.Complexity != 8 || fn.Language != "Rust" {
+		t.Errorf("Server::handle = %+v, want complexity 8 in Rust", fn)
 	}
 	if _, ok := byName["sums_positive_values"]; !ok {
 		t.Error("test functions must still be analyzed for complexity")
@@ -216,5 +223,27 @@ func TestRankOrdersGroupsLikeCore(t *testing.T) {
 		if group.ID != i {
 			t.Errorf("group %d has ID %d", i, group.ID)
 		}
+	}
+}
+
+func TestAnalyzeCpp(t *testing.T) {
+	report, err := Analyze([]string{"../../testdata/cpp"}, Options{Complexity: true, Clones: true})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	byName := map[string]Function{}
+	for _, fn := range report.Complexity.Functions {
+		byName[fn.Name] = fn
+	}
+	if fn := byName["Server::handle"]; fn.Complexity != 9 || fn.Language != "C++" {
+		t.Errorf("Server::handle = %+v, want complexity 9 in C++", fn)
+	}
+	if _, ok := byName["sumPositiveAgain"]; !ok {
+		t.Error("functions in test files must still be analyzed for complexity")
+	}
+	// sumPositiveAgain is a copy of sumPositive but lies in sample_test.cpp.
+	stats := report.Clones.Statistics
+	if stats.TotalFragments != 3 || stats.TotalClonePairs != 1 || stats.ClonesByType["Type-2"] != 1 {
+		t.Errorf("statistics = %+v, want one Type-2 pair among three fragments", stats)
 	}
 }
