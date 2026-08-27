@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/ludo-technologies/polyscan/core/domain"
+	"github.com/ludo-technologies/polyscan/core/util"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/analysis"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/report"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/version"
@@ -14,12 +17,16 @@ import (
 const (
 	selectComplexity = "complexity"
 	selectClone      = "clone"
+
+	defaultReportPath = "polyscan-report.html"
 )
 
 func analyzeCmd() *cobra.Command {
 	var (
 		selected      []string
 		format        string
+		outputPath    string
+		noOpen        bool
 		minComplexity int
 	)
 
@@ -30,16 +37,22 @@ func analyzeCmd() *cobra.Command {
 
 The language of each file is detected from its extension. Supported: Go.
 
+By default, generates an HTML report and opens it in your browser.
+
 Examples:
-  polyscan analyze .                        # Text report to stdout
+  polyscan analyze .                        # HTML report, opened in the browser
+  polyscan analyze --no-open -o out.html .  # HTML report written to out.html
   polyscan analyze --format json src/       # JSON report to stdout
+  polyscan analyze --format text src/       # Text report to stdout
   polyscan analyze --select clone .         # Clone detection only
   polyscan analyze --min-complexity 10 .    # List only functions at or above 10`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			outputFormat := domain.OutputFormat(format)
-			if outputFormat != domain.OutputFormatText && outputFormat != domain.OutputFormatJSON {
-				return fmt.Errorf("invalid format %q, must be one of: text, json", format)
+			switch outputFormat {
+			case domain.OutputFormatHTML, domain.OutputFormatJSON, domain.OutputFormatText:
+			default:
+				return fmt.Errorf("invalid format %q, must be one of: html, json, text", format)
 			}
 			if minComplexity < 1 {
 				return fmt.Errorf("--min-complexity must be at least 1")
@@ -54,22 +67,57 @@ Examples:
 			if err != nil {
 				return err
 			}
-
-			return report.Write(cmd.OutOrStdout(), &report.Document{
+			doc := &report.Document{
 				Version:       version.Version,
 				GeneratedAt:   start,
 				DurationMs:    time.Since(start).Milliseconds(),
 				Report:        result,
 				MinComplexity: minComplexity,
-			}, outputFormat)
+			}
+
+			if outputFormat != domain.OutputFormatHTML {
+				return report.Write(cmd.OutOrStdout(), doc, outputFormat)
+			}
+			if outputPath == "" {
+				outputPath = defaultReportPath
+			}
+			if err := writeReportFile(outputPath, doc); err != nil {
+				return err
+			}
+			absPath, err := filepath.Abs(outputPath)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "HTML report written to %s\n", absPath)
+			if noOpen || util.IsSSH() {
+				return nil
+			}
+			if err := util.OpenBrowser("file://" + absPath); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Could not open the browser: %v\n", err)
+			}
+			return nil
 		},
 	}
 
 	cmd.Flags().StringSliceVarP(&selected, "select", "s", []string{selectComplexity, selectClone},
 		"Analyses to run (comma-separated): complexity,clone")
-	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json")
+	cmd.Flags().StringVarP(&format, "format", "f", "html", "Output format: html, json, text")
+	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "HTML report path (default: "+defaultReportPath+")")
+	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Don't open the HTML report in the browser")
 	cmd.Flags().IntVar(&minComplexity, "min-complexity", 1, "List only functions with at least this complexity")
 	return cmd
+}
+
+func writeReportFile(path string, doc *report.Document) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create HTML report: %w", err)
+	}
+	if err := report.Write(file, doc, domain.OutputFormatHTML); err != nil {
+		file.Close()
+		return err
+	}
+	return file.Close()
 }
 
 func parseSelection(selected []string) (analysis.Options, error) {
