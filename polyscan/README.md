@@ -17,11 +17,15 @@ go install github.com/ludo-technologies/polyscan/polyscan/cmd/polyscan@latest
 ## Usage
 
 ```bash
-# Text report to stdout
+# HTML report, written to polyscan-report.html and opened in the browser
 polyscan analyze .
 
-# JSON report to stdout
+# HTML report to a chosen path, without opening the browser
+polyscan analyze --no-open -o report.html .
+
+# JSON or text report to stdout
 polyscan analyze --format json src/
+polyscan analyze --format text src/
 
 # Clone detection only
 polyscan analyze --select clone .

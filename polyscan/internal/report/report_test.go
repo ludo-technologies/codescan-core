@@ -13,7 +13,7 @@ import (
 )
 
 func document(minComplexity int) *Document {
-	a := clone.Fragment{ID: 0, Name: "Big", FilePath: "a.go", StartLine: 1, EndLine: 40, LineCount: 40, NodeCount: 90}
+	a := clone.Fragment{ID: 0, Name: "Big", FilePath: "a.go", StartLine: 1, EndLine: 40, LineCount: 40, NodeCount: 90, Content: "func Big() {\n\tif a < b {\n\t}\n}"}
 	b := clone.Fragment{ID: 1, Name: "Copy", FilePath: "c.go", StartLine: 10, EndLine: 49, LineCount: 40, NodeCount: 90}
 	return &Document{
 		Version:     "test",
@@ -113,8 +113,52 @@ func TestWriteJSON(t *testing.T) {
 	}
 }
 
+func TestWriteHTML(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Write(&buf, document(10), domain.OutputFormatHTML); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	for _, want := range []string{
+		"<title>polyscan report</title>",
+		"2 of 3 files analyzed, 1 skipped",
+		`<td class="mono">Big</td>`,
+		"complexity 10 and above",
+		"Type-1 Exact · 1 pairs",
+		"Group 1",
+		"if a &lt; b {", // the preview is escaped
+		"d.go: syntax error at line 9",
+		"CC 20&#43;: 1 functions", // html/template escapes the plus
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("HTML lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "Small") {
+		t.Errorf("HTML lists a function below the filter:\n%s", out)
+	}
+}
+
 func TestWriteRejectsUnknownFormat(t *testing.T) {
-	if err := Write(&bytes.Buffer{}, document(1), domain.OutputFormatHTML); err == nil {
-		t.Error("expected an error for html")
+	if err := Write(&bytes.Buffer{}, document(1), domain.OutputFormatYAML); err == nil {
+		t.Error("expected an error for yaml")
+	}
+}
+
+func TestHistogramBins(t *testing.T) {
+	functions := []analysis.Function{{Complexity: 1}, {Complexity: 3}, {Complexity: 9}, {Complexity: 10}, {Complexity: 19}, {Complexity: 20}, {Complexity: 20}}
+	hist := buildHistogram(functions)
+	counts := []int{}
+	for _, bin := range hist.Bins {
+		counts = append(counts, bin.Count)
+	}
+	if want := []int{1, 1, 1, 2, 2}; len(counts) != len(want) || counts[0] != 1 || counts[1] != 1 || counts[2] != 1 || counts[3] != 2 || counts[4] != 2 {
+		t.Errorf("bin counts = %v, want %v", counts, want)
+	}
+	if hist.Bins[3].Band != "warn" || hist.Bins[4].Band != "bad" || hist.Bins[2].Band != "" {
+		t.Errorf("bands = %+v", hist.Bins)
+	}
+	if buildHistogram(nil) != nil {
+		t.Error("empty population must have no histogram")
 	}
 }
