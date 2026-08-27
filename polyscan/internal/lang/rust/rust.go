@@ -15,9 +15,13 @@ var Language = &engine.Language{
 	Name:       "Rust",
 	Extensions: []string{".rs"},
 	Grammar:    tsrust.GetLanguage(),
-	// Rust keeps tests next to the code, so they are found by attribute:
-	// #[test] functions and #[cfg(test)] modules, with any other
-	// attributes between the marker and the item.
+	// A test module split into its own file is declared as
+	// #[cfg(test)] mod tests; in the parent, which a single file cannot
+	// see, so the conventional file name stands in for the attribute.
+	TestFiles: []string{"tests.rs"},
+	// Tests kept next to the code are found by attribute: #[test]
+	// functions and #[cfg(test)] modules, with any other attributes
+	// between the marker and the item.
 	TestCode: `
 ((attribute_item (attribute (identifier) @attr)) . (attribute_item)* . (function_item) @test
   (#eq? @attr "test"))

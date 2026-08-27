@@ -133,7 +133,12 @@ func TestAnalyzeRust(t *testing.T) {
 		t.Error("test functions must still be analyzed for complexity")
 	}
 
-	// sums_positive_values is a copy of sum_positive but lies in #[cfg(test)].
+	if _, ok := byName["roundtrip"]; !ok {
+		t.Error("functions in tests.rs must still be analyzed for complexity")
+	}
+
+	// sums_positive_values is a copy of sum_positive but lies in #[cfg(test)],
+	// and roundtrip is another copy but lies in tests.rs.
 	stats := report.Clones.Statistics
 	if stats.TotalFragments != 3 || stats.TotalClonePairs != 1 || stats.ClonesByType["Type-2"] != 1 {
 		t.Errorf("statistics = %+v, want one Type-2 pair among three fragments", stats)
