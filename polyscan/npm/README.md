@@ -1,0 +1,29 @@
+# polyscan
+
+Multi-language code quality analyzer. It currently measures cyclomatic complexity for Go.
+
+## Installation
+
+```bash
+npm install -g polyscan
+```
+
+Or use with npx:
+
+```bash
+npx polyscan analyze .
+```
+
+## Usage
+
+```bash
+# Text report
+polyscan analyze .
+
+# JSON report
+polyscan analyze --format json src/
+```
+
+## Documentation
+
+For full documentation, visit [GitHub](https://github.com/ludo-technologies/polyscan/tree/main/polyscan).

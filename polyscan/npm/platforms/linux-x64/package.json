@@ -1,0 +1,13 @@
+{
+  "name": "polyscan-linux-x64",
+  "version": "0.0.0",
+  "description": "polyscan binary for Linux x64",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "files": ["bin/"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ludo-technologies/polyscan.git"
+  }
+}

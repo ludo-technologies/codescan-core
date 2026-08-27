@@ -4,10 +4,10 @@ const { spawn } = require("child_process");
 const os = require("os");
 
 const platformPackages = {
-  "darwin-arm64": "jscan-darwin-arm64",
-  "linux-x64": "jscan-linux-x64",
-  "linux-arm64": "jscan-linux-arm64",
-  "win32-x64": "jscan-windows-x64",
+  "darwin-arm64": "polyscan-darwin-arm64",
+  "linux-x64": "polyscan-linux-x64",
+  "linux-arm64": "polyscan-linux-arm64",
+  "win32-x64": "polyscan-windows-x64",
 };
 
 const key = `${process.platform}-${process.arch}`;
@@ -16,7 +16,7 @@ const pkg = platformPackages[key];
 if (!pkg) {
   console.error(
     `Unsupported platform: ${process.platform}-${process.arch}\n` +
-      `jscan supports: ${Object.keys(platformPackages).join(", ")}`
+      `polyscan supports: ${Object.keys(platformPackages).join(", ")}`
   );
   process.exit(1);
 }
@@ -24,12 +24,12 @@ if (!pkg) {
 const ext = process.platform === "win32" ? ".exe" : "";
 let binaryPath;
 try {
-  binaryPath = require.resolve(`${pkg}/bin/jscan${ext}`);
+  binaryPath = require.resolve(`${pkg}/bin/polyscan${ext}`);
 } catch {
   console.error(
-    `Could not find the jscan binary for ${process.platform}-${process.arch}.\n` +
+    `Could not find the polyscan binary for ${process.platform}-${process.arch}.\n` +
       `The platform package "${pkg}" may not be installed.\n` +
-      `Try reinstalling: npm install jscan`
+      `Try reinstalling: npm install polyscan`
   );
   process.exit(1);
 }
@@ -39,7 +39,7 @@ const child = spawn(binaryPath, process.argv.slice(2), {
 });
 
 child.on("error", (err) => {
-  console.error(`Failed to start jscan: ${err.message}`);
+  console.error(`Failed to start polyscan: ${err.message}`);
   process.exit(1);
 });
 

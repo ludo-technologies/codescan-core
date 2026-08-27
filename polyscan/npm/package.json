@@ -1,0 +1,40 @@
+{
+  "name": "polyscan",
+  "version": "0.0.0",
+  "description": "Multi-language code quality analyzer",
+  "keywords": [
+    "go",
+    "golang",
+    "code-quality",
+    "static-analysis",
+    "analyzer",
+    "complexity"
+  ],
+  "homepage": "https://github.com/ludo-technologies/polyscan",
+  "bugs": {
+    "url": "https://github.com/ludo-technologies/polyscan/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ludo-technologies/polyscan.git",
+    "directory": "polyscan/npm"
+  },
+  "license": "MIT",
+  "author": "Ludo Technologies",
+  "files": [
+    "bin/",
+    "package.json"
+  ],
+  "bin": {
+    "polyscan": "./bin/polyscan"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "optionalDependencies": {
+    "polyscan-darwin-arm64": "0.0.0",
+    "polyscan-linux-arm64": "0.0.0",
+    "polyscan-linux-x64": "0.0.0",
+    "polyscan-windows-x64": "0.0.0"
+  }
+}

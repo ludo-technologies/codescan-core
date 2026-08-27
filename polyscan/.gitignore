@@ -1,0 +1,9 @@
+# Build output
+/polyscan
+/polyscan.exe
+/dist/
+
+# Test and coverage output
+*.test
+*.out
+coverage.html
