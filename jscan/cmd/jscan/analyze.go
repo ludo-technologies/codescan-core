@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -298,7 +300,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 
 		// Open in browser unless disabled
 		if !noOpenBrowser && !service.IsSSH() {
-			if err := service.OpenBrowser("file://" + absPath); err != nil {
+			if err := service.OpenBrowser(fileURL(absPath)); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: Could not open browser: %v\n", err)
 			}
 		}
@@ -539,4 +541,15 @@ func runDepsAnalysisInternal(ctx context.Context, snapshot *service.ProjectSnaps
 		return svc.AnalyzeSnapshot(ctx, snapshot, req)
 	}
 	return svc.Analyze(ctx, req)
+}
+
+// fileURL turns an absolute path into a file URL, escaping characters such
+// as # and ? that would otherwise be read as a fragment or query, and
+// giving Windows drive paths the leading slash the scheme requires.
+func fileURL(absPath string) string {
+	path := filepath.ToSlash(absPath)
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return (&url.URL{Scheme: "file", Path: path}).String()
 }
