@@ -45,9 +45,9 @@ Every analyzer scores your codebase (0-100 with an A-F grade) and generates an H
 
 **Built with Go + tree-sitter** — fast enough to run on every commit.
 
-## polyscan for GitHub
+## Polyscan for GitHub
 
-Want this running continuously? The polyscan GitHub App runs the same analyzers on your repositories automatically:
+Want this running continuously? The Polyscan App runs the same analyzers on your repositories automatically:
 
 - 📅 **Weekly code audit** — scores the entire codebase once a week and files the report as a GitHub Issue (free while in beta)
 - 🔍 **PR code review** — on every pull request, analyzes the changed files with the static analyzers and posts AI-generated improvement suggestions (Pro)
