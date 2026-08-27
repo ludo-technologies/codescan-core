@@ -49,7 +49,7 @@ Risk levels use the thresholds shared by every polyscan analyzer: low up to 9, m
 
 ## Clone detection
 
-Every function of at least 10 lines and 20 syntax nodes is a fragment. Fragments are compared with the APTED tree edit distance over a tree of named syntax nodes, with comments dropped and identifiers, literals and operators carried in the node labels. Pairs are classified the way pyscn and jscan classify them:
+Every function of at least 10 lines of code (blank lines and comments excluded) and 20 syntax nodes is a fragment. Fragments are compared with the APTED tree edit distance over a tree of named syntax nodes, with comments dropped and identifiers, literals and operators carried in the node labels. Pairs are classified the way pyscn and jscan classify them:
 
 | Type | Meaning | Reported when |
 | --- | --- | --- |
@@ -59,7 +59,7 @@ Every function of at least 10 lines and 20 syntax nodes is a fragment. Fragments
 
 Pairs below 0.70 are not reported. Test files (`*_test.go`) are analyzed for complexity but excluded from clone detection: test functions share a skeleton by convention, and on this repository they made up 92% of the pairs.
 
-Pairs are merged into groups by connected components, and the groups are deduplicated by the shared `core/clone` passes. When there are more than 10,000 candidate pairs, an LSH index over MinHash signatures selects the pairs to compare.
+Pairs are merged into groups by connected components, and the groups are deduplicated by the shared `core/clone` passes. When there are more than 10,000 candidate pairs, only pairs that share a MinHash band are compared, and within a band each function is compared with at most 1,024 of the functions that follow it. Neighbours in a band are always compared, so a large set of near-identical functions still ends up in one group.
 
 ## Adding a language
 

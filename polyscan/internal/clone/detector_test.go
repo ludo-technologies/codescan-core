@@ -125,13 +125,14 @@ func TestDetectSkipsSmallAndUnrelatedFunctions(t *testing.T) {
 	}
 }
 
-// TestDetectCappedLSHCandidatesReachEveryFragment forces the LSH path with
-// a candidate cap smaller than the number of identical functions. A capped
-// query lists the lowest indexes, so without the reverse visit the later
-// fragments would never be paired with anything.
-func TestDetectCappedLSHCandidatesReachEveryFragment(t *testing.T) {
+// TestDetectCappedLSHCandidatesChainEveryFragment forces the LSH path with
+// a candidate cap smaller than the number of identical functions. Each
+// fragment is paired with the members that follow it in the bucket, so the
+// last two are compared with each other even though they lie beyond the
+// cap of every earlier fragment.
+func TestDetectCappedLSHCandidatesChainEveryFragment(t *testing.T) {
 	config := DefaultConfig()
-	config.MaxPairs = 10 // Six fragments make 15 pairs, so the LSH path runs.
+	config.MaxPairs = 12 // Six fragments make 15 pairs, so the LSH path runs.
 	config.LSH.MaxCandidates = 3
 
 	sources := make([]string, 6)
@@ -140,15 +141,36 @@ func TestDetectCappedLSHCandidatesReachEveryFragment(t *testing.T) {
 	}
 	report := detectWith(t, config, sources...)
 
-	if report.Statistics.TotalClones != 6 {
-		t.Errorf("clones = %d, want every fragment paired", report.Statistics.TotalClones)
+	// 3+3+3+2+1 pairs: every fragment with the next three.
+	if len(report.Pairs) != 12 || report.Statistics.TotalClones != 6 {
+		t.Errorf("pairs = %d, clones = %d, want 12 and 6", len(report.Pairs), report.Statistics.TotalClones)
 	}
-	if len(report.Pairs) != config.MaxPairs {
-		t.Errorf("pairs = %d, want the MaxPairs strongest", len(report.Pairs))
-	}
+	last := false
 	for _, pair := range report.Pairs {
 		if pair.Type != domain.Type1Clone {
 			t.Errorf("pair = %+v, want Type-1", pair)
 		}
+		if pair.Fragment1.ID == 4 && pair.Fragment2.ID == 5 {
+			last = true
+		}
+	}
+	if !last {
+		t.Error("the last two fragments were not compared with each other")
+	}
+	if len(report.Groups) != 1 || len(report.Groups[0].Fragments) != 6 {
+		t.Errorf("groups = %+v, want one group of six", report.Groups)
+	}
+}
+
+func TestDetectIgnoresCommentsAndSpacing(t *testing.T) {
+	commented := "// Sum adds the values.\n//\n// It skips nothing.\nfunc Sum(values []int) int { // start\n" +
+		strings.ReplaceAll(strings.ReplaceAll(body, "\n\t\t", "\n\t\t// a comment line\n\n\t\t"), "return total", "return/* the result */total")
+	report := detect(t, "func Sum(values []int) int {"+body, commented)
+
+	if len(report.Pairs) != 1 || report.Pairs[0].Type != domain.Type1Clone {
+		t.Fatalf("pairs = %+v, want one Type-1 pair", report.Pairs)
+	}
+	if a, b := report.Pairs[0].Fragment1.LineCount, report.Pairs[0].Fragment2.LineCount; a != b {
+		t.Errorf("line counts %d and %d differ, want lines of code only", a, b)
 	}
 }

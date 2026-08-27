@@ -131,3 +131,14 @@ func TestSyntaxErrorIsReported(t *testing.T) {
 		t.Errorf("error = %q, want the first error line", err)
 	}
 }
+
+func TestContentDropsCommentsButKeepsTokensApart(t *testing.T) {
+	fn := analyze(t, "package p\n\n// F returns one.\nfunc F() int {\n\t// a line comment\n\n\treturn/* one */1 /* trailing */\n}\n")["F"]
+	want := "func F() int {\n\t \n\n\treturn 1  \n}"
+	if fn.Content != want {
+		t.Errorf("content = %q, want %q", fn.Content, want)
+	}
+	if fn.CodeLines != 3 {
+		t.Errorf("code lines = %d, want 3", fn.CodeLines)
+	}
+}

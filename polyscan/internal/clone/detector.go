@@ -3,9 +3,10 @@
 package clone
 
 import (
+	"encoding/binary"
+	"hash/fnv"
 	"runtime"
 	"sort"
-	"strconv"
 	"sync"
 
 	"github.com/ludo-technologies/polyscan/core/apted"
@@ -17,7 +18,9 @@ import (
 
 // Config tunes clone detection.
 type Config struct {
-	// MinLines and MinNodes drop fragments too small to be meaningful clones.
+	// MinLines and MinNodes drop fragments too small to be meaningful
+	// clones. Lines are lines of code: blank lines and comments do not
+	// count.
 	MinLines int
 	MinNodes int
 	// Type thresholds classify a pair by its structural similarity, with
@@ -44,7 +47,13 @@ type Config struct {
 	LSH LSHConfig
 }
 
-// LSHConfig configures the MinHash index used on large inputs.
+// LSHConfig configures the MinHash banding used on large inputs. A
+// signature of Hashes values is cut into Bands bands of Rows values each,
+// and two fragments are candidates when any band matches. Within one
+// band's bucket a fragment is paired with at most MaxCandidates of the
+// fragments that follow it, which bounds the work on a bucket that holds
+// hundreds of near-identical functions while still chaining every member
+// to its neighbours, so that grouping recovers the whole set.
 type LSHConfig struct {
 	SimilarityThreshold float64
 	Bands               int
@@ -105,8 +114,9 @@ type Fragment struct {
 	FilePath  string `json:"file_path"`
 	StartLine int    `json:"start_line"`
 	EndLine   int    `json:"end_line"`
-	LineCount int    `json:"line_count"`
-	NodeCount int    `json:"node_count"`
+	// LineCount counts lines of code: blank lines and comments excluded.
+	LineCount int `json:"line_count"`
+	NodeCount int `json:"node_count"`
 }
 
 // Statistics summarizes a detection run.
@@ -172,7 +182,7 @@ func NewDetector(spec engine.CloneSpec, config Config) *Detector {
 // display name is kept for the report.
 func (d *Detector) Add(fn engine.Function, filePath string) {
 	nodeCount := fn.Tree.Size()
-	lineCount := fn.EndLine - fn.StartLine + 1
+	lineCount := fn.CodeLines
 	if nodeCount < d.config.MinNodes || lineCount < d.config.MinLines {
 		return
 	}
@@ -234,9 +244,9 @@ func (d *Detector) Detect() *Report {
 
 // eachCandidate visits every fragment index pair worth comparing, as (i, j)
 // with i < j, each pair once, in a deterministic order. Every pair is a
-// candidate until the count exceeds MaxPairs; past that, only pairs whose
-// MinHash signatures collide in the LSH index and estimate at least the LSH
-// similarity threshold are.
+// candidate until the count exceeds MaxPairs; past that, only pairs that
+// share a MinHash band and estimate at least the LSH similarity threshold
+// are, as described on LSHConfig.
 func (d *Detector) eachCandidate(visit func(i, j int)) {
 	n := len(d.fragments)
 	if n*(n-1)/2 <= d.config.MaxPairs {
@@ -249,57 +259,60 @@ func (d *Detector) eachCandidate(visit func(i, j int)) {
 	}
 
 	hasher := lsh.NewMinHasher(d.config.LSH.Hashes)
-	index := lsh.NewLSHIndex(d.config.LSH.Bands, d.config.LSH.Rows)
 	signatures := make([]*lsh.MinHashSignature, n)
+	buckets := make([]map[uint64][]int, d.config.LSH.Bands)
+	for band := range buckets {
+		buckets[band] = map[uint64][]int{}
+	}
 	for i, fragment := range d.fragments {
 		signatures[i] = hasher.ComputeSignature(fragment.Features)
-		if err := index.AddFragment(strconv.Itoa(i), signatures[i]); err != nil {
-			panic(err) // Only a duplicate ID fails, and IDs are sequential.
+		for band, key := range bandKeys(signatures[i], d.config.LSH) {
+			buckets[band][key] = append(buckets[band][key], i)
 		}
-	}
-	similar := func(i, j int) bool {
-		return hasher.EstimateJaccardSimilarity(signatures[i], signatures[j]) >= d.config.LSH.SimilarityThreshold
 	}
 
-	// Sharing a bucket is symmetric, so an unordered pair shows up in both
-	// members' queries and is visited from the lower index. A query that
-	// hits MaxCandidates lists the lowest indexes of its buckets, though,
-	// and can stop short of a higher index, so the candidates of capped
-	// queries are kept and the higher index visits the pair instead when
-	// the lower one missed it.
-	capped := map[int]map[int]struct{}{}
+	// Buckets hold ascending indexes, so a fragment's candidates are the
+	// members after it in each of its buckets; the union over bands is
+	// deduplicated per fragment, which keeps the bookkeeping bounded by
+	// Bands times MaxCandidates.
 	for i := range d.fragments {
-		ids := index.FindCandidatesLimit(signatures[i], d.config.LSH.MaxCandidates)
-		var mine map[int]struct{}
-		if len(ids) == d.config.LSH.MaxCandidates {
-			mine = make(map[int]struct{}, len(ids))
-		}
-		for _, id := range ids {
-			j, err := strconv.Atoi(id)
-			if err != nil {
-				panic(err)
-			}
-			if mine != nil {
-				mine[j] = struct{}{}
-			}
-			switch {
-			case j == i:
-			case j > i:
-				if similar(i, j) {
-					visit(i, j)
+		seen := map[int]struct{}{}
+		var candidates []int
+		for band, key := range bandKeys(signatures[i], d.config.LSH) {
+			members := buckets[band][key]
+			position := sort.SearchInts(members, i)
+			for _, j := range members[position+1 : min(position+1+d.config.LSH.MaxCandidates, len(members))] {
+				if _, ok := seen[j]; ok {
+					continue
 				}
-			default:
-				if listed, ok := capped[j]; ok {
-					if _, seen := listed[i]; !seen && similar(j, i) {
-						visit(j, i)
-					}
-				}
+				seen[j] = struct{}{}
+				candidates = append(candidates, j)
 			}
 		}
-		if mine != nil {
-			capped[i] = mine
+		sort.Ints(candidates)
+		for _, j := range candidates {
+			if hasher.EstimateJaccardSimilarity(signatures[i], signatures[j]) >= d.config.LSH.SimilarityThreshold {
+				visit(i, j)
+			}
 		}
 	}
+}
+
+// bandKeys hashes each band of a signature, following the banding of
+// core/lsh: band b covers the Rows values from b*Rows.
+func bandKeys(signature *lsh.MinHashSignature, config LSHConfig) []uint64 {
+	values := signature.Signatures()
+	keys := make([]uint64, config.Bands)
+	for band := range keys {
+		hash := fnv.New64a()
+		var buf [8]byte
+		for _, value := range values[band*config.Rows : min((band+1)*config.Rows, len(values))] {
+			binary.LittleEndian.PutUint64(buf[:], value)
+			hash.Write(buf[:])
+		}
+		keys[band] = hash.Sum64()
+	}
+	return keys
 }
 
 // strongest returns the limit strongest pairs in order.

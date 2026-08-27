@@ -101,9 +101,12 @@ type Function struct {
 	// Tree is the function's syntax tree in the form the tree edit distance
 	// consumes: named nodes only, comments dropped, labeled per CloneSpec.
 	Tree *apted.TreeNode
-	// Content is the function's source text with comments removed, for
-	// exact-match (Type-1) clone classification.
+	// Content is the function's source text with each comment replaced by
+	// a space, for exact-match (Type-1) clone classification.
 	Content string
+	// CodeLines counts the lines of Content that are not blank, so that
+	// comments and spacing do not change how large a function is.
+	CodeLines int
 
 	startByte uint32
 	endByte   uint32
@@ -218,6 +221,7 @@ func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function
 		converter := treeConverter{language: l, source: source}
 		fn.Tree = converter.convert(node)
 		fn.Content = converter.contentWithoutComments(node)
+		fn.CodeLines = countCodeLines(fn.Content)
 		functions = append(functions, fn)
 	})
 	sort.Slice(functions, func(i, j int) bool {
@@ -272,17 +276,30 @@ func (c *treeConverter) label(node *sitter.Node) string {
 	return nodeType
 }
 
-// contentWithoutComments returns the node's source text with the comments
-// that convert recorded cut out. It must run after convert.
+// contentWithoutComments returns the node's source text with each comment
+// that convert recorded replaced by a space, so that the tokens around a
+// comment stay apart. It must run after convert.
 func (c *treeConverter) contentWithoutComments(node *sitter.Node) string {
 	var b strings.Builder
 	cursor := node.StartByte()
 	for _, comment := range c.comments {
 		b.Write(c.source[cursor:comment[0]])
+		b.WriteByte(' ')
 		cursor = comment[1]
 	}
 	b.Write(c.source[cursor:node.EndByte()])
 	return b.String()
+}
+
+// countCodeLines counts the lines that hold something other than whitespace.
+func countCodeLines(content string) int {
+	lines := 0
+	for _, line := range strings.Split(content, "\n") {
+		if strings.TrimSpace(line) != "" {
+			lines++
+		}
+	}
+	return lines
 }
 
 func (l *Language) countDecisions(root *sitter.Node, source []byte, functions []Function) {
