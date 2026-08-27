@@ -11,8 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	selectComplexity = "complexity"
+	selectClone      = "clone"
+)
+
 func analyzeCmd() *cobra.Command {
 	var (
+		selected      []string
 		format        string
 		minComplexity int
 	)
@@ -20,13 +26,14 @@ func analyzeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "analyze [path...]",
 		Short: "Analyze source files",
-		Long: `Analyze source files for cyclomatic complexity.
+		Long: `Analyze source files for cyclomatic complexity and code clones.
 
 The language of each file is detected from its extension. Supported: Go.
 
 Examples:
   polyscan analyze .                        # Text report to stdout
   polyscan analyze --format json src/       # JSON report to stdout
+  polyscan analyze --select clone .         # Clone detection only
   polyscan analyze --min-complexity 10 .    # List only functions at or above 10`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -37,9 +44,13 @@ Examples:
 			if minComplexity < 1 {
 				return fmt.Errorf("--min-complexity must be at least 1")
 			}
+			options, err := parseSelection(selected)
+			if err != nil {
+				return err
+			}
 
 			start := time.Now()
-			result, err := analysis.Analyze(args)
+			result, err := analysis.Analyze(args, options)
 			if err != nil {
 				return err
 			}
@@ -48,13 +59,30 @@ Examples:
 				Version:       version.Version,
 				GeneratedAt:   start,
 				DurationMs:    time.Since(start).Milliseconds(),
-				Complexity:    result,
+				Report:        result,
 				MinComplexity: minComplexity,
 			}, outputFormat)
 		},
 	}
 
+	cmd.Flags().StringSliceVarP(&selected, "select", "s", []string{selectComplexity, selectClone},
+		"Analyses to run (comma-separated): complexity,clone")
 	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format: text, json")
 	cmd.Flags().IntVar(&minComplexity, "min-complexity", 1, "List only functions with at least this complexity")
 	return cmd
+}
+
+func parseSelection(selected []string) (analysis.Options, error) {
+	var options analysis.Options
+	for _, name := range selected {
+		switch name {
+		case selectComplexity:
+			options.Complexity = true
+		case selectClone:
+			options.Clones = true
+		default:
+			return options, fmt.Errorf("invalid analysis %q, must be one of: complexity, clone", name)
+		}
+	}
+	return options, nil
 }

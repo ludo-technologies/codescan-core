@@ -39,14 +39,28 @@ func TestAnalyzeJSON(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &doc); err != nil {
 		t.Fatalf("invalid JSON: %v\n%s", err, out)
 	}
-	if len(doc.Complexity.Functions) != 2 || doc.Complexity.Summary.TotalFunctions != 6 || doc.Complexity.Summary.SkippedFiles != 0 {
-		t.Errorf("listed %d functions of %d, want 2 of 6", len(doc.Complexity.Functions), doc.Complexity.Summary.TotalFunctions)
+	if len(doc.Complexity.Functions) != 3 || doc.Complexity.Summary.TotalFunctions != 10 || doc.Files.Skipped != 0 {
+		t.Errorf("listed %d functions of %d, want 3 of 10", len(doc.Complexity.Functions), doc.Complexity.Summary.TotalFunctions)
+	}
+	if doc.Clones == nil || doc.Clones.Statistics.TotalClonePairs != 3 {
+		t.Errorf("clones = %+v, want 3 pairs", doc.Clones)
+	}
+}
+
+func TestAnalyzeSelect(t *testing.T) {
+	out, err := run(t, "analyze", "--select", "clone", "../../testdata/go/clones")
+	if err != nil {
+		t.Fatalf("analyze: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "Complexity Analysis") || !strings.Contains(out, "Clone Detection") {
+		t.Errorf("unexpected output:\n%s", out)
 	}
 }
 
 func TestAnalyzeRejectsBadArguments(t *testing.T) {
 	for _, args := range [][]string{
 		{"analyze"},
+		{"analyze", "--select", "deadcode", "../../testdata/go"},
 		{"analyze", "--format", "html", "../../testdata/go"},
 		{"analyze", "--min-complexity", "0", "../../testdata/go"},
 		{"analyze", "does-not-exist"},
