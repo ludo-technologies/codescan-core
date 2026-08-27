@@ -45,8 +45,11 @@ func OpenBrowser(url string) error {
 			return fmt.Errorf("no suitable browser opener found for Linux")
 		}
 	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start", url}
+		// rundll32 hands the URL to the file protocol handler without a
+		// shell. "cmd /c start" would let cmd.exe parse the URL, where an
+		// & in a path is a command separator.
+		cmd = "rundll32"
+		args = []string{"url.dll,FileProtocolHandler", url}
 	default:
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
