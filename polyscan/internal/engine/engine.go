@@ -1,7 +1,8 @@
 // Package engine runs declarative, per-language tree-sitter queries and turns
 // their captures into per-function metrics. A language contributes no Go
 // code beyond its Language value: which grammar to load, which query finds
-// its functions, and which query marks its decision points.
+// its functions, which query marks its decision points, and which node
+// types matter for clone detection.
 package engine
 
 import (
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ludo-technologies/polyscan/core/apted"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
@@ -33,11 +35,45 @@ type Language struct {
 	// that contains it and counted under the capture's name, so the capture
 	// names double as the breakdown reported next to the complexity.
 	Decisions string
+	// Clone names the node types clone detection prices and compares.
+	Clone CloneSpec
+	// TestFiles are file name globs of test files. Test files are analyzed
+	// for complexity but excluded from clone detection, where the shared
+	// skeleton of test functions swamps the report.
+	TestFiles []string
 
 	compileOnce sync.Once
 	compileErr  error
 	definitions *sitter.Query
 	decisions   *sitter.Query
+	identifiers map[string]struct{}
+	literals    map[string]struct{}
+}
+
+// CloneSpec names the node types clone detection needs to know about. Node
+// types are the tree-sitter names, such as "if_statement". Anything not
+// listed is handled with the default cost and no special feature.
+type CloneSpec struct {
+	// Identifiers are node types whose text is a name. Their tree label
+	// carries the name, as in "identifier(count)", so an exact structural
+	// match with different names is still told apart from an exact clone.
+	Identifiers []string
+	// Literals are node types whose text is a literal value, labeled the
+	// same way. A literal node becomes a leaf of the tree.
+	Literals []string
+	// Patterns are node types whose presence in a fragment is a structural
+	// feature for similarity hashing and the Jaccard pre-filter.
+	Patterns []string
+	// Structural, ControlFlow and Expressions are the cost tiers of the tree
+	// edit distance: editing a structural or control-flow node is priced
+	// above the default, editing an expression node below it.
+	Structural  []string
+	ControlFlow []string
+	Expressions []string
+	// Related pairs node types that express the same construct in different
+	// syntactic forms, so renaming between them is cheaper than between
+	// unrelated types.
+	Related [][2]string
 }
 
 // Function is one function or method found in a source file.
@@ -47,10 +83,12 @@ type Function struct {
 	// Kind is the suffix of the @definition capture that matched, such as
 	// "function" or "method".
 	Kind string
-	// StartLine, StartColumn and EndLine are 1-based source positions.
+	// StartLine, StartColumn, EndLine and EndColumn are 1-based source
+	// positions.
 	StartLine   int
 	StartColumn int
 	EndLine     int
+	EndColumn   int
 	// Complexity is the McCabe cyclomatic complexity: one plus the number of
 	// decision points, following the same conventions core/cfg applies to a
 	// control flow graph. A two-way branch or loop counts one, a switch
@@ -60,6 +98,15 @@ type Function struct {
 	// Decisions breaks the decision points down by the name of the capture
 	// that produced them.
 	Decisions map[string]int
+	// Tree is the function's syntax tree in the form the tree edit distance
+	// consumes: named nodes only, comments dropped, labeled per CloneSpec.
+	Tree *apted.TreeNode
+	// Content is the function's source text with each comment replaced by
+	// a space, for exact-match (Type-1) clone classification.
+	Content string
+	// CodeLines counts the lines of Content that are not blank, so that
+	// comments and spacing do not change how large a function is.
+	CodeLines int
 
 	startByte uint32
 	endByte   uint32
@@ -69,6 +116,7 @@ const (
 	definitionPrefix = "definition."
 	nameCapture      = "name"
 	receiverCapture  = "receiver"
+	operatorField    = "operator"
 )
 
 // Analyze parses source and returns every function the language defines,
@@ -124,8 +172,18 @@ func (l *Language) compile() error {
 		}
 		l.definitions = definitions
 		l.decisions = decisions
+		l.identifiers = set(l.Clone.Identifiers)
+		l.literals = set(l.Clone.Literals)
 	})
 	return l.compileErr
+}
+
+func set(names []string) map[string]struct{} {
+	result := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		result[name] = struct{}{}
+	}
+	return result
 }
 
 func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function {
@@ -155,15 +213,93 @@ func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function
 		fn.StartLine = int(node.StartPoint().Row) + 1
 		fn.StartColumn = int(node.StartPoint().Column) + 1
 		fn.EndLine = int(node.EndPoint().Row) + 1
+		fn.EndColumn = int(node.EndPoint().Column) + 1
 		fn.startByte = node.StartByte()
 		fn.endByte = node.EndByte()
 		fn.Decisions = map[string]int{}
+
+		converter := treeConverter{language: l, source: source}
+		fn.Tree = converter.convert(node)
+		fn.Content = converter.contentWithoutComments(node)
+		fn.CodeLines = countCodeLines(fn.Content)
 		functions = append(functions, fn)
 	})
 	sort.Slice(functions, func(i, j int) bool {
 		return functions[i].startByte < functions[j].startByte
 	})
 	return functions
+}
+
+// treeConverter builds the tree edit distance tree of one function and
+// remembers where its comments were.
+type treeConverter struct {
+	language *Language
+	source   []byte
+	nextID   int
+	comments [][2]uint32
+}
+
+// convert turns a syntax node into a labeled tree of its named descendants.
+// Comments, which tree-sitter marks as extra nodes, are left out and their
+// byte ranges recorded. A literal becomes a leaf because its label already
+// carries the value.
+func (c *treeConverter) convert(node *sitter.Node) *apted.TreeNode {
+	tree := apted.NewTreeNode(c.nextID, c.label(node))
+	c.nextID++
+	if _, isLiteral := c.language.literals[node.Type()]; isLiteral {
+		return tree
+	}
+	for i := 0; i < int(node.NamedChildCount()); i++ {
+		child := node.NamedChild(i)
+		if child.IsExtra() {
+			c.comments = append(c.comments, [2]uint32{child.StartByte(), child.EndByte()})
+			continue
+		}
+		tree.AddChild(c.convert(child))
+	}
+	return tree
+}
+
+// label is the node type, carrying the text of identifiers and literals and
+// the operator of any node that has one, as in "binary_expression(+)".
+func (c *treeConverter) label(node *sitter.Node) string {
+	nodeType := node.Type()
+	if _, ok := c.language.identifiers[nodeType]; ok {
+		return nodeType + "(" + node.Content(c.source) + ")"
+	}
+	if _, ok := c.language.literals[nodeType]; ok {
+		return nodeType + "(" + node.Content(c.source) + ")"
+	}
+	if operator := node.ChildByFieldName(operatorField); operator != nil {
+		return nodeType + "(" + operator.Type() + ")"
+	}
+	return nodeType
+}
+
+// contentWithoutComments returns the node's source text with each comment
+// that convert recorded replaced by a space, so that the tokens around a
+// comment stay apart. It must run after convert.
+func (c *treeConverter) contentWithoutComments(node *sitter.Node) string {
+	var b strings.Builder
+	cursor := node.StartByte()
+	for _, comment := range c.comments {
+		b.Write(c.source[cursor:comment[0]])
+		b.WriteByte(' ')
+		cursor = comment[1]
+	}
+	b.Write(c.source[cursor:node.EndByte()])
+	return b.String()
+}
+
+// countCodeLines counts the lines that hold something other than whitespace.
+func countCodeLines(content string) int {
+	lines := 0
+	for _, line := range strings.Split(content, "\n") {
+		if strings.TrimSpace(line) != "" {
+			lines++
+		}
+	}
+	return lines
 }
 
 func (l *Language) countDecisions(root *sitter.Node, source []byte, functions []Function) {
