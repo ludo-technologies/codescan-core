@@ -200,32 +200,52 @@ func (d *Detector) Add(fn engine.Function, filePath string) {
 	d.names = append(d.names, fn.Name)
 }
 
+// candidateChunkSize bounds how many candidate pairs are verified at once,
+// so that the candidate bookkeeping stays a few megabytes however many
+// candidates the index produces.
+const candidateChunkSize = 1 << 16
+
 // Detect compares the registered fragments and reports the clone pairs and
 // groups among them.
 func (d *Detector) Detect() *Report {
-	pairs := d.verify(d.candidates())
-	sort.Slice(pairs, func(i, j int) bool { return pairPrecedes(pairs[i], pairs[j]) })
-	if len(pairs) > d.config.MaxPairs {
-		pairs = pairs[:d.config.MaxPairs]
+	var pairs []*pair
+	chunk := make([][2]int, 0, candidateChunkSize)
+	flush := func() {
+		pairs = append(pairs, d.verify(chunk)...)
+		chunk = chunk[:0]
+		// The strongest MaxPairs of a prefix are among the strongest
+		// MaxPairs overall, so trimming early bounds memory on clone-rich
+		// input without changing the result.
+		if len(pairs) > 2*d.config.MaxPairs {
+			pairs = strongest(pairs, d.config.MaxPairs)
+		}
 	}
+	d.eachCandidate(func(i, j int) {
+		chunk = append(chunk, [2]int{i, j})
+		if len(chunk) == candidateChunkSize {
+			flush()
+		}
+	})
+	flush()
+	pairs = strongest(pairs, d.config.MaxPairs)
 	pairs, groups := d.group(pairs)
 	return d.report(pairs, groups)
 }
 
-// candidates lists the fragment index pairs worth comparing, as (i, j) with
-// i < j in index order. Every pair is a candidate until the count exceeds
-// MaxPairs; past that, only pairs whose MinHash signatures collide in the
-// LSH index and estimate at least the LSH similarity threshold are.
-func (d *Detector) candidates() [][2]int {
+// eachCandidate visits every fragment index pair worth comparing, as (i, j)
+// with i < j, each pair once, in a deterministic order. Every pair is a
+// candidate until the count exceeds MaxPairs; past that, only pairs whose
+// MinHash signatures collide in the LSH index and estimate at least the LSH
+// similarity threshold are.
+func (d *Detector) eachCandidate(visit func(i, j int)) {
 	n := len(d.fragments)
 	if n*(n-1)/2 <= d.config.MaxPairs {
-		var result [][2]int
 		for i := 0; i < n; i++ {
 			for j := i + 1; j < n; j++ {
-				result = append(result, [2]int{i, j})
+				visit(i, j)
 			}
 		}
-		return result
+		return
 	}
 
 	hasher := lsh.NewMinHasher(d.config.LSH.Hashes)
@@ -237,26 +257,58 @@ func (d *Detector) candidates() [][2]int {
 			panic(err) // Only a duplicate ID fails, and IDs are sequential.
 		}
 	}
+	similar := func(i, j int) bool {
+		return hasher.EstimateJaccardSimilarity(signatures[i], signatures[j]) >= d.config.LSH.SimilarityThreshold
+	}
 
-	var result [][2]int
+	// Sharing a bucket is symmetric, so an unordered pair shows up in both
+	// members' queries and is visited from the lower index. A query that
+	// hits MaxCandidates lists the lowest indexes of its buckets, though,
+	// and can stop short of a higher index, so the candidates of capped
+	// queries are kept and the higher index visits the pair instead when
+	// the lower one missed it.
+	capped := map[int]map[int]struct{}{}
 	for i := range d.fragments {
-		for _, id := range index.FindCandidatesLimit(signatures[i], d.config.LSH.MaxCandidates) {
+		ids := index.FindCandidatesLimit(signatures[i], d.config.LSH.MaxCandidates)
+		var mine map[int]struct{}
+		if len(ids) == d.config.LSH.MaxCandidates {
+			mine = make(map[int]struct{}, len(ids))
+		}
+		for _, id := range ids {
 			j, err := strconv.Atoi(id)
 			if err != nil {
 				panic(err)
 			}
-			// Each unordered pair is produced by both of its members; keep
-			// the visit from the lower index.
-			if j <= i {
-				continue
+			if mine != nil {
+				mine[j] = struct{}{}
 			}
-			if hasher.EstimateJaccardSimilarity(signatures[i], signatures[j]) < d.config.LSH.SimilarityThreshold {
-				continue
+			switch {
+			case j == i:
+			case j > i:
+				if similar(i, j) {
+					visit(i, j)
+				}
+			default:
+				if listed, ok := capped[j]; ok {
+					if _, seen := listed[i]; !seen && similar(j, i) {
+						visit(j, i)
+					}
+				}
 			}
-			result = append(result, [2]int{i, j})
+		}
+		if mine != nil {
+			capped[i] = mine
 		}
 	}
-	return result
+}
+
+// strongest returns the limit strongest pairs in order.
+func strongest(pairs []*pair, limit int) []*pair {
+	sort.Slice(pairs, func(i, j int) bool { return pairPrecedes(pairs[i], pairs[j]) })
+	if len(pairs) > limit {
+		return pairs[:limit]
+	}
+	return pairs
 }
 
 // measurement is what comparing two fragments yields.
@@ -278,6 +330,9 @@ type pair struct {
 // returns the pairs that classify as clones, in candidate order so that the
 // result does not depend on scheduling.
 func (d *Detector) verify(candidates [][2]int) []*pair {
+	if len(candidates) == 0 {
+		return nil
+	}
 	measurements := make([]measurement, len(candidates))
 	accepted := make([]bool, len(candidates))
 

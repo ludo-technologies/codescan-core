@@ -61,6 +61,7 @@ func TestAnalyzeRejectsBadArguments(t *testing.T) {
 	for _, args := range [][]string{
 		{"analyze"},
 		{"analyze", "--select", "deadcode", "../../testdata/go"},
+		{"analyze", "--select=", "../../testdata/go"},
 		{"analyze", "--format", "html", "../../testdata/go"},
 		{"analyze", "--min-complexity", "0", "../../testdata/go"},
 		{"analyze", "does-not-exist"},

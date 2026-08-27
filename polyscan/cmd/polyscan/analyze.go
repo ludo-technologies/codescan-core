@@ -84,5 +84,8 @@ func parseSelection(selected []string) (analysis.Options, error) {
 			return options, fmt.Errorf("invalid analysis %q, must be one of: complexity, clone", name)
 		}
 	}
+	if !options.Complexity && !options.Clones {
+		return options, fmt.Errorf("no analysis selected")
+	}
 	return options, nil
 }

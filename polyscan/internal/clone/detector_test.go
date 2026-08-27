@@ -68,7 +68,12 @@ const body = `
 
 func detect(t *testing.T, sources ...string) *Report {
 	t.Helper()
-	detector := NewDetector(golang.Language.Clone, DefaultConfig())
+	return detectWith(t, DefaultConfig(), sources...)
+}
+
+func detectWith(t *testing.T, config Config, sources ...string) *Report {
+	t.Helper()
+	detector := NewDetector(golang.Language.Clone, config)
 	for i, source := range sources {
 		functions, err := golang.Language.Analyze([]byte("package p\n\nimport \"fmt\"\n\n" + source))
 		if err != nil {
@@ -117,5 +122,33 @@ func TestDetectSkipsSmallAndUnrelatedFunctions(t *testing.T) {
 	}
 	if len(report.Pairs) != 0 || len(report.Groups) != 0 {
 		t.Errorf("unexpected clones: %+v", report.Pairs)
+	}
+}
+
+// TestDetectCappedLSHCandidatesReachEveryFragment forces the LSH path with
+// a candidate cap smaller than the number of identical functions. A capped
+// query lists the lowest indexes, so without the reverse visit the later
+// fragments would never be paired with anything.
+func TestDetectCappedLSHCandidatesReachEveryFragment(t *testing.T) {
+	config := DefaultConfig()
+	config.MaxPairs = 10 // Six fragments make 15 pairs, so the LSH path runs.
+	config.LSH.MaxCandidates = 3
+
+	sources := make([]string, 6)
+	for i := range sources {
+		sources[i] = "func Sum(values []int) int {" + body
+	}
+	report := detectWith(t, config, sources...)
+
+	if report.Statistics.TotalClones != 6 {
+		t.Errorf("clones = %d, want every fragment paired", report.Statistics.TotalClones)
+	}
+	if len(report.Pairs) != config.MaxPairs {
+		t.Errorf("pairs = %d, want the MaxPairs strongest", len(report.Pairs))
+	}
+	for _, pair := range report.Pairs {
+		if pair.Type != domain.Type1Clone {
+			t.Errorf("pair = %+v, want Type-1", pair)
+		}
 	}
 }
