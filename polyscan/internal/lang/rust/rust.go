@@ -17,8 +17,9 @@ var Language = &engine.Language{
 	Grammar:    tsrust.GetLanguage(),
 	// A test module split into its own file is declared as
 	// #[cfg(test)] mod tests; in the parent, which a single file cannot
-	// see, so the conventional file name stands in for the attribute.
-	TestFiles: []string{"tests.rs"},
+	// see, so the conventional names stand in for the attribute: tests.rs,
+	// and a tests directory, which also holds Cargo's integration tests.
+	TestFiles: []string{"tests.rs", "tests/"},
 	// Tests kept next to the code are found by attribute: #[test]
 	// functions and #[cfg(test)] modules, with any other attributes
 	// between the marker and the item.
@@ -42,16 +43,21 @@ var Language = &engine.Language{
   body: (declaration_list (function_item name: (identifier) @name) @definition.method))
 `,
 	// A match is exhaustive, so its last arm is the path the other arms
-	// branch away from and only arms followed by another arm count. The ?
-	// operator is an early return and counts like the exception edge
-	// core/cfg counts.
+	// branch away from and only arms followed by another arm count; an
+	// arm's guard is a further branch. let-else branches on the pattern.
+	// In a let chain the && are tokens of the chain rather than binary
+	// expressions. The ? operator is an early return and counts like the
+	// exception edge core/cfg counts.
 	Decisions: `
 (if_expression) @branch
+(match_pattern condition: (_)) @branch
+(let_declaration alternative: (_)) @branch
 (match_block (match_arm) @case . (match_arm))
 (for_expression) @loop
 (while_expression) @loop
 (loop_expression) @loop
 (binary_expression operator: ["&&" "||"]) @logical_operator
+(let_chain "&&" @logical_operator)
 (try_expression) @try_operator
 `,
 	Clone: engine.CloneSpec{

@@ -8,6 +8,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -42,11 +43,13 @@ type Language struct {
 	Decisions string
 	// Clone names the node types clone detection prices and compares.
 	Clone CloneSpec
-	// TestFiles are file name globs of test files, and TestCode is an
-	// optional tree-sitter query whose captures span test code inside a
-	// file, such as attribute-marked test functions or modules. Both are
-	// analyzed for complexity but excluded from clone detection, where the
-	// shared skeleton of test functions swamps the report.
+	// TestFiles names test files: a glob matches the file name, and a
+	// pattern ending in a slash names a directory anywhere on the path.
+	// TestCode is an optional tree-sitter query whose captures span test
+	// code inside a file, such as attribute-marked test functions or
+	// modules. Both are analyzed for complexity but excluded from clone
+	// detection, where the shared skeleton of test functions swamps the
+	// report.
 	TestFiles []string
 	TestCode  string
 
@@ -130,6 +133,27 @@ const (
 	receiverCapture  = "receiver"
 	operatorField    = "operator"
 )
+
+// IsTestFile reports whether the path matches one of the language's
+// TestFiles patterns.
+func (l *Language) IsTestFile(path string) bool {
+	components := strings.Split(filepath.ToSlash(filepath.Clean(path)), "/")
+	base := components[len(components)-1]
+	for _, pattern := range l.TestFiles {
+		if dir, ok := strings.CutSuffix(pattern, "/"); ok {
+			for _, component := range components[:len(components)-1] {
+				if component == dir {
+					return true
+				}
+			}
+			continue
+		}
+		if matched, err := filepath.Match(pattern, base); err == nil && matched {
+			return true
+		}
+	}
+	return false
+}
 
 // Analyze parses source and returns every function the language defines,
 // with its complexity computed. Source that does not parse is an error: a

@@ -78,6 +78,9 @@ func TestComplexityCountsDecisionPoints(t *testing.T) {
 		{"logical operators", `if a && b || c { }`, 4, map[string]int{"branch": 1, "logical_operator": 2}},
 		{"bitwise operators do not count", `n & 1 | 2`, 1, map[string]int{}},
 		{"question mark", `let v = r?; v`, 2, map[string]int{"try_operator": 1}},
+		{"match guard", `match o { Some(v) if v > 0 => v, _ => 0 }`, 3, map[string]int{"case": 1, "branch": 1}},
+		{"let else", `let Some(v) = o else { return 0 }; v`, 2, map[string]int{"branch": 1}},
+		{"let chain", `if let Some(v) = o && v > 0 && a { v } else { 0 }`, 4, map[string]int{"branch": 1, "logical_operator": 2}},
 		{"closure counts toward its enclosing function", `let f = |x| if x { 1 } else { 2 }; f(a)`, 2, map[string]int{"branch": 1}},
 	}
 	for _, tc := range cases {
@@ -152,5 +155,19 @@ func TestSyntaxErrorIsReported(t *testing.T) {
 	_, err := Language.Analyze([]byte("fn f() {\n\tif {\n"))
 	if err == nil || !strings.Contains(err.Error(), "syntax error") {
 		t.Fatalf("err = %v, want a syntax error", err)
+	}
+}
+
+func TestTestFiles(t *testing.T) {
+	for path, want := range map[string]bool{
+		"src/lib.rs":           false,
+		"src/parser/tests.rs":  true,
+		"src/tests/mod.rs":     true,
+		"tests/integration.rs": true,
+		"src/contests/x.rs":    false,
+	} {
+		if got := Language.IsTestFile(path); got != want {
+			t.Errorf("IsTestFile(%q) = %v, want %v", path, got, want)
+		}
 	}
 }

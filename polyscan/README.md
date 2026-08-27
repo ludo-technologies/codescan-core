@@ -51,8 +51,9 @@ Cyclomatic complexity is one plus the number of decision points in a function, c
 | --- | --- |
 | `if`, `else if`, `if let` | 1 each |
 | `for`, `while`, `while let`, `loop` | 1 each |
-| `match` | 1 per arm except the last, which is the path the other arms branch away from |
-| `&&`, `\|\|` | 1 each |
+| `match` | 1 per arm except the last, which is the path the other arms branch away from, plus 1 per arm guard |
+| `let ... else` | 1 |
+| `&&`, `\|\|`, including `&&` in a let chain | 1 each |
 | `?` | 1, the early return that `core/cfg` counts as an exception edge |
 
 Function literals and closures are not reported on their own. Their decision points count toward the enclosing function, so the Go numbers match gocyclo.
@@ -69,7 +70,7 @@ Every function of at least 10 lines of code (blank lines and comments excluded) 
 | Type-2 | Same structure with renamed identifiers or changed literals | Similarity ≥ 0.75 and matching normalized trees |
 | Type-3 | Near copy with statements added, removed or changed | Similarity ≥ 0.70 |
 
-Pairs below 0.70 are not reported. Test code is analyzed for complexity but excluded from clone detection: test functions share a skeleton by convention, and on this repository they made up 92% of the pairs. For Go that is `*_test.go`; for Rust it is `#[test]` functions, `#[cfg(test)]` modules and `tests.rs` files, the conventional name of a test module split into its own file.
+Pairs below 0.70 are not reported. Test code is analyzed for complexity but excluded from clone detection: test functions share a skeleton by convention, and on this repository they made up 92% of the pairs. For Go that is `*_test.go`; for Rust it is `#[test]` functions, `#[cfg(test)]` modules, `tests.rs` files and any `tests` directory, the conventional homes of a test module split into its own file and of Cargo's integration tests.
 
 Rust macro invocations parse as token trees, so the code inside a macro call contributes tokens but no structure. Clone detection recall is lower on macro-heavy code. The bundled tree-sitter-rust grammar predates Rust 2024 edition syntax such as `unsafe extern` blocks; a file that uses it is reported as a syntax error and skipped, which affected 0.75% of the files in a sample of 369 crates.
 
@@ -81,7 +82,7 @@ A language is declarative: a tree-sitter grammar and two queries. See `internal/
 
 - The definitions query matches each function once. `@definition.<kind>` spans the function, `@name` its name, and an optional `@receiver` is prefixed to the name. The bundled `queries/tags.scm` of a grammar is the starting point.
 - In the decisions query every capture is one decision point, attributed to the innermost function that contains it and reported under the capture's name.
-- The clone spec lists the node types of identifiers, literals and structural patterns, the cost tiers of the tree edit distance, and pairs of related node types. `TestFiles` names the test file globs and `TestCode` is a query capturing test code inside a file; both are excluded from clone detection.
+- The clone spec lists the node types of identifiers, literals and structural patterns, the cost tiers of the tree edit distance, and pairs of related node types. `TestFiles` names test files by file name glob or, with a trailing slash, by directory, and `TestCode` is a query capturing test code inside a file; both are excluded from clone detection.
 
 ## Development
 

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ludo-technologies/polyscan/core/domain"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/clone"
 )
 
 // fixtures copies the Go fixtures into a temporary directory and adds a
@@ -142,5 +143,40 @@ func TestAnalyzeRust(t *testing.T) {
 	stats := report.Clones.Statistics
 	if stats.TotalFragments != 3 || stats.TotalClonePairs != 1 || stats.ClonesByType["Type-2"] != 1 {
 		t.Errorf("statistics = %+v, want one Type-2 pair among three fragments", stats)
+	}
+}
+
+func TestAnalyzeMergesLanguages(t *testing.T) {
+	report, err := Analyze([]string{"../../testdata/go/clones", "../../testdata/rust"}, Options{Clones: true})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	pairs := report.Clones.Pairs
+	if len(pairs) != 4 || report.Clones.Statistics.TotalFragments != 6 {
+		t.Fatalf("pairs = %d, fragments = %d, want 4 and 6", len(pairs), report.Clones.Statistics.TotalFragments)
+	}
+	// The Type-1 Go pair outranks the Type-2 pairs whatever the language order.
+	if pairs[0].Type != domain.Type1Clone || pairs[0].Fragment1.Language != "Go" {
+		t.Errorf("first pair = %+v, want the Go Type-1 pair", pairs[0])
+	}
+	seen := map[int]string{}
+	for i, pair := range pairs {
+		if pair.ID != i || i > 0 && pair.Similarity > pairs[i-1].Similarity {
+			t.Errorf("pair %d is out of order: %+v", i, pair)
+		}
+		for _, fragment := range []clone.Fragment{pair.Fragment1, pair.Fragment2} {
+			if name, ok := seen[fragment.ID]; ok && name != fragment.Name {
+				t.Errorf("fragment ID %d names both %s and %s", fragment.ID, name, fragment.Name)
+			}
+			seen[fragment.ID] = fragment.Name
+			if fragment.Language == "" {
+				t.Errorf("fragment %+v has no language", fragment)
+			}
+		}
+	}
+	for i, group := range report.Clones.Groups {
+		if group.ID != i {
+			t.Errorf("group %d has ID %d", i, group.ID)
+		}
 	}
 }

@@ -116,7 +116,7 @@ func Analyze(paths []string, options Options) (*Report, error) {
 				report.Complexity.Functions = append(report.Complexity.Functions, newFunction(fn, language, display))
 			}
 		}
-		if options.Clones && !source.MatchesAnyPattern(filepath.Base(file), language.TestFiles) {
+		if options.Clones && !language.IsTestFile(display) {
 			detector, ok := detectors[language]
 			if !ok {
 				detector = clone.NewDetector(language.Clone, clone.DefaultConfig())
@@ -179,13 +179,23 @@ func detectClones(detectors map[*engine.Language]*clone.Detector) *clone.Report 
 	totalSimilarity := 0.0
 	for _, language := range languages {
 		report := detectors[language].Detect()
+		// Each detector numbers its fragments from zero, so they are
+		// rebased to stay unique across languages.
+		offset := merged.Statistics.TotalFragments
+		rebase := func(fragment *clone.Fragment) {
+			fragment.ID += offset
+			fragment.Language = language.Name
+		}
 		for _, pair := range report.Pairs {
-			pair.ID = len(merged.Pairs)
+			rebase(&pair.Fragment1)
+			rebase(&pair.Fragment2)
 			merged.Pairs = append(merged.Pairs, pair)
 			totalSimilarity += pair.Similarity
 		}
 		for _, group := range report.Groups {
-			group.ID = len(merged.Groups)
+			for i := range group.Fragments {
+				rebase(&group.Fragments[i])
+			}
 			merged.Groups = append(merged.Groups, group)
 		}
 		merged.Statistics.TotalFragments += report.Statistics.TotalFragments
@@ -194,12 +204,41 @@ func detectClones(detectors map[*engine.Language]*clone.Detector) *clone.Report 
 			merged.Statistics.ClonesByType[cloneType] += count
 		}
 	}
+
+	// Rank across languages the way each detector ranks within one.
+	sort.SliceStable(merged.Pairs, func(i, j int) bool {
+		a, b := merged.Pairs[i], merged.Pairs[j]
+		if a.Similarity != b.Similarity {
+			return a.Similarity > b.Similarity
+		}
+		return fragmentPrecedes(a.Fragment1, b.Fragment1) || a.Fragment1 == b.Fragment1 && fragmentPrecedes(a.Fragment2, b.Fragment2)
+	})
+	sort.SliceStable(merged.Groups, func(i, j int) bool {
+		a, b := merged.Groups[i], merged.Groups[j]
+		if a.Similarity != b.Similarity {
+			return a.Similarity > b.Similarity
+		}
+		return fragmentPrecedes(a.Fragments[0], b.Fragments[0])
+	})
+	for i := range merged.Pairs {
+		merged.Pairs[i].ID = i
+	}
+	for i := range merged.Groups {
+		merged.Groups[i].ID = i
+	}
 	merged.Statistics.TotalClonePairs = len(merged.Pairs)
 	merged.Statistics.TotalCloneGroups = len(merged.Groups)
 	if len(merged.Pairs) > 0 {
 		merged.Statistics.AverageSimilarity = totalSimilarity / float64(len(merged.Pairs))
 	}
 	return merged
+}
+
+func fragmentPrecedes(a, b clone.Fragment) bool {
+	if a.FilePath != b.FilePath {
+		return a.FilePath < b.FilePath
+	}
+	return a.StartLine < b.StartLine
 }
 
 // RiskLevel classifies a complexity with the thresholds shared by every
