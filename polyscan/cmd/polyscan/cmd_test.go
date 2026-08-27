@@ -103,3 +103,14 @@ func TestVersion(t *testing.T) {
 		t.Errorf("unexpected output %q", out)
 	}
 }
+
+func TestFileURL(t *testing.T) {
+	for path, want := range map[string]string{
+		"/tmp/report.html":        "file:///tmp/report.html",
+		"/tmp/a b#1/report?.html": "file:///tmp/a%20b%231/report%3F.html",
+	} {
+		if got := fileURL(path); got != want {
+			t.Errorf("fileURL(%q) = %q, want %q", path, got, want)
+		}
+	}
+}

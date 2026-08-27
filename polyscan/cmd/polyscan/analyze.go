@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ludo-technologies/polyscan/core/domain"
@@ -92,7 +94,7 @@ Examples:
 			if noOpen || util.IsSSH() {
 				return nil
 			}
-			if err := util.OpenBrowser("file://" + absPath); err != nil {
+			if err := util.OpenBrowser(fileURL(absPath)); err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Could not open the browser: %v\n", err)
 			}
 			return nil
@@ -106,6 +108,17 @@ Examples:
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Don't open the HTML report in the browser")
 	cmd.Flags().IntVar(&minComplexity, "min-complexity", 1, "List only functions with at least this complexity")
 	return cmd
+}
+
+// fileURL turns an absolute path into a file URL, escaping characters such
+// as # and ? that would otherwise be read as a fragment or query, and
+// giving Windows drive paths the leading slash the scheme requires.
+func fileURL(absPath string) string {
+	path := filepath.ToSlash(absPath)
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return (&url.URL{Scheme: "file", Path: path}).String()
 }
 
 func writeReportFile(path string, doc *report.Document) error {
