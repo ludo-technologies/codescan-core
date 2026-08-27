@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ludo-technologies/polyscan/core/domain"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/clone"
 )
 
 // fixtures copies the Go fixtures into a temporary directory and adds a
@@ -112,6 +113,108 @@ func TestRiskLevel(t *testing.T) {
 	for complexity, want := range cases {
 		if got := RiskLevel(complexity); got != want {
 			t.Errorf("RiskLevel(%d) = %s, want %s", complexity, got, want)
+		}
+	}
+}
+
+func TestAnalyzeRust(t *testing.T) {
+	report, err := Analyze([]string{"../../testdata/rust"}, Options{Complexity: true, Clones: true})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	byName := map[string]Function{}
+	for _, fn := range report.Complexity.Functions {
+		byName[fn.Name] = fn
+	}
+	if fn := byName["Server.handle"]; fn.Complexity != 8 || fn.Language != "Rust" {
+		t.Errorf("Server.handle = %+v, want complexity 8 in Rust", fn)
+	}
+	if _, ok := byName["sums_positive_values"]; !ok {
+		t.Error("test functions must still be analyzed for complexity")
+	}
+
+	if _, ok := byName["roundtrip"]; !ok {
+		t.Error("functions in tests.rs must still be analyzed for complexity")
+	}
+
+	// sums_positive_values is a copy of sum_positive but lies in #[cfg(test)],
+	// and roundtrip is another copy but lies in tests.rs.
+	stats := report.Clones.Statistics
+	if stats.TotalFragments != 3 || stats.TotalClonePairs != 1 || stats.ClonesByType["Type-2"] != 1 {
+		t.Errorf("statistics = %+v, want one Type-2 pair among three fragments", stats)
+	}
+}
+
+func TestAnalyzeMergesLanguages(t *testing.T) {
+	report, err := Analyze([]string{"../../testdata/go/clones", "../../testdata/rust"}, Options{Clones: true})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	pairs := report.Clones.Pairs
+	if len(pairs) != 4 || report.Clones.Statistics.TotalFragments != 6 {
+		t.Fatalf("pairs = %d, fragments = %d, want 4 and 6", len(pairs), report.Clones.Statistics.TotalFragments)
+	}
+	// The Type-1 Go pair outranks the Type-2 pairs whatever the language order.
+	if pairs[0].Type != domain.Type1Clone || pairs[0].Fragment1.Language != "Go" {
+		t.Errorf("first pair = %+v, want the Go Type-1 pair", pairs[0])
+	}
+	seen := map[int]string{}
+	for i, pair := range pairs {
+		if pair.ID != i || i > 0 && pair.Similarity > pairs[i-1].Similarity {
+			t.Errorf("pair %d is out of order: %+v", i, pair)
+		}
+		for _, fragment := range []clone.Fragment{pair.Fragment1, pair.Fragment2} {
+			if name, ok := seen[fragment.ID]; ok && name != fragment.Name {
+				t.Errorf("fragment ID %d names both %s and %s", fragment.ID, name, fragment.Name)
+			}
+			seen[fragment.ID] = fragment.Name
+			if fragment.Language == "" {
+				t.Errorf("fragment %+v has no language", fragment)
+			}
+		}
+	}
+	for i, group := range report.Clones.Groups {
+		if group.ID != i {
+			t.Errorf("group %d has ID %d", i, group.ID)
+		}
+	}
+}
+
+func TestRankOrdersGroupsLikeCore(t *testing.T) {
+	fragment := func(path string, line int) clone.Fragment { return clone.Fragment{FilePath: path, StartLine: line} }
+	report := &clone.Report{
+		Groups: []clone.Group{
+			{Similarity: 0.9, Fragments: []clone.Fragment{fragment("a.rs", 1), fragment("b.rs", 1)}},
+			{Similarity: 0.9 + 1e-12, Fragments: []clone.Fragment{fragment("z.go", 1), fragment("z.go", 50), fragment("y.go", 1)}},
+			{Similarity: 1, Fragments: []clone.Fragment{fragment("c.rs", 1), fragment("d.rs", 1)}},
+		},
+		Pairs: []clone.Pair{
+			{Similarity: 0.8, Fragment1: fragment("b.go", 1), Fragment2: fragment("c.go", 1)},
+			{Similarity: 0.8, Fragment1: fragment("a.rs", 1), Fragment2: fragment("c.rs", 1)},
+			{Similarity: 1, Fragment1: fragment("x.go", 1), Fragment2: fragment("y.go", 1)},
+		},
+	}
+	rank(report)
+
+	var groups []string
+	for _, group := range report.Groups {
+		groups = append(groups, group.Fragments[0].FilePath)
+	}
+	// Equal similarity within epsilon: the larger group comes first.
+	if want := []string{"c.rs", "z.go", "a.rs"}; strings.Join(groups, ",") != strings.Join(want, ",") {
+		t.Errorf("groups = %v, want %v", groups, want)
+	}
+	var pairs []string
+	for _, pair := range report.Pairs {
+		pairs = append(pairs, pair.Fragment1.FilePath)
+	}
+	if want := []string{"x.go", "a.rs", "b.go"}; strings.Join(pairs, ",") != strings.Join(want, ",") {
+		t.Errorf("pairs = %v, want %v", pairs, want)
+	}
+	for i, group := range report.Groups {
+		if group.ID != i {
+			t.Errorf("group %d has ID %d", i, group.ID)
 		}
 	}
 }

@@ -8,6 +8,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -30,6 +31,11 @@ type Language struct {
 	// name. An optional @receiver capture holds the receiver type of a
 	// method and is prefixed to the name as "Receiver.Name".
 	Definitions string
+	// A function node that several patterns match is reported once, under
+	// the match that captured a receiver when there is one, so a grammar
+	// that uses one node type for functions and methods can name methods
+	// through their enclosing type.
+	//
 	// Decisions is a tree-sitter query in which every capture is one
 	// decision point. The point is attributed to the innermost function
 	// that contains it and counted under the capture's name, so the capture
@@ -37,15 +43,21 @@ type Language struct {
 	Decisions string
 	// Clone names the node types clone detection prices and compares.
 	Clone CloneSpec
-	// TestFiles are file name globs of test files. Test files are analyzed
-	// for complexity but excluded from clone detection, where the shared
-	// skeleton of test functions swamps the report.
+	// TestFiles names test files: a glob matches the file name, and a
+	// pattern ending in a slash names a directory anywhere on the path.
+	// TestCode is an optional tree-sitter query whose captures span test
+	// code inside a file, such as attribute-marked test functions or
+	// modules. Both are analyzed for complexity but excluded from clone
+	// detection, where the shared skeleton of test functions swamps the
+	// report.
 	TestFiles []string
+	TestCode  string
 
 	compileOnce sync.Once
 	compileErr  error
 	definitions *sitter.Query
 	decisions   *sitter.Query
+	testCode    *sitter.Query
 	identifiers map[string]struct{}
 	literals    map[string]struct{}
 }
@@ -107,6 +119,9 @@ type Function struct {
 	// CodeLines counts the lines of Content that are not blank, so that
 	// comments and spacing do not change how large a function is.
 	CodeLines int
+	// IsTest reports that the function lies in a span the language's
+	// TestCode query captured.
+	IsTest bool
 
 	startByte uint32
 	endByte   uint32
@@ -118,6 +133,27 @@ const (
 	receiverCapture  = "receiver"
 	operatorField    = "operator"
 )
+
+// IsTestFile reports whether the path matches one of the language's
+// TestFiles patterns.
+func (l *Language) IsTestFile(path string) bool {
+	components := strings.Split(filepath.ToSlash(filepath.Clean(path)), "/")
+	base := components[len(components)-1]
+	for _, pattern := range l.TestFiles {
+		if dir, ok := strings.CutSuffix(pattern, "/"); ok {
+			for _, component := range components[:len(components)-1] {
+				if component == dir {
+					return true
+				}
+			}
+			continue
+		}
+		if matched, err := filepath.Match(pattern, base); err == nil && matched {
+			return true
+		}
+	}
+	return false
+}
 
 // Analyze parses source and returns every function the language defines,
 // with its complexity computed. Source that does not parse is an error: a
@@ -146,6 +182,7 @@ func (l *Language) Analyze(source []byte) ([]Function, error) {
 
 	functions := l.extractFunctions(root, source)
 	l.countDecisions(root, source, functions)
+	l.markTests(root, source, functions)
 	for i := range functions {
 		functions[i].Complexity = 1
 		for _, count := range functions[i].Decisions {
@@ -170,6 +207,14 @@ func (l *Language) compile() error {
 			l.compileErr = fmt.Errorf("%s decisions query: %w", l.Name, err)
 			return
 		}
+		if l.TestCode != "" {
+			testCode, err := sitter.NewQuery([]byte(l.TestCode), l.Grammar)
+			if err != nil {
+				l.compileErr = fmt.Errorf("%s test code query: %w", l.Name, err)
+				return
+			}
+			l.testCode = testCode
+		}
 		l.definitions = definitions
 		l.decisions = decisions
 		l.identifiers = set(l.Clone.Identifiers)
@@ -188,6 +233,7 @@ func set(names []string) map[string]struct{} {
 
 func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function {
 	var functions []Function
+	byStart := map[uint32]int{}
 	forEachMatch(l.definitions, root, source, func(match *sitter.QueryMatch) {
 		var fn Function
 		var node *sitter.Node
@@ -210,6 +256,14 @@ func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function
 		if receiver != "" {
 			fn.Name = receiver + "." + fn.Name
 		}
+		if index, seen := byStart[node.StartByte()]; seen {
+			if receiver != "" {
+				functions[index].Name = fn.Name
+				functions[index].Kind = fn.Kind
+			}
+			return
+		}
+		byStart[node.StartByte()] = len(functions)
 		fn.StartLine = int(node.StartPoint().Row) + 1
 		fn.StartColumn = int(node.StartPoint().Column) + 1
 		fn.EndLine = int(node.EndPoint().Row) + 1
@@ -310,6 +364,23 @@ func (l *Language) countDecisions(root *sitter.Node, source []byte, functions []
 				continue
 			}
 			fn.Decisions[l.decisions.CaptureNameForId(capture.Index)]++
+		}
+	})
+}
+
+// markTests flags every function inside a span the TestCode query captures.
+func (l *Language) markTests(root *sitter.Node, source []byte, functions []Function) {
+	if l.testCode == nil {
+		return
+	}
+	forEachMatch(l.testCode, root, source, func(match *sitter.QueryMatch) {
+		for _, capture := range match.Captures {
+			start, end := capture.Node.StartByte(), capture.Node.EndByte()
+			for i := range functions {
+				if functions[i].startByte >= start && functions[i].endByte <= end {
+					functions[i].IsTest = true
+				}
+			}
 		}
 	})
 }
