@@ -28,7 +28,7 @@
     "package.json"
   ],
   "bin": {
-    "jscan": "./bin/jscan"
+    "jscan": "bin/jscan"
   },
   "engines": {
     "node": ">=14"

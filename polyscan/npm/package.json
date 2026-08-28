@@ -29,7 +29,7 @@
     "package.json"
   ],
   "bin": {
-    "polyscan": "./bin/polyscan"
+    "polyscan": "bin/polyscan"
   },
   "engines": {
     "node": ">=14"
