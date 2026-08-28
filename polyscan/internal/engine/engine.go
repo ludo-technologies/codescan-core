@@ -28,14 +28,20 @@ type Language struct {
 	Grammar *sitter.Language
 	// Definitions is a tree-sitter query that matches every function once.
 	// Its @definition.<kind> capture spans the whole function and @name its
-	// name. An optional @receiver capture holds the receiver type of a
-	// method and is prefixed to the name as "Receiver.Name".
+	// name. An optional @receiver capture holds a receiver type declared on
+	// the function itself, as Go methods do, and is prefixed to the name
+	// with the ScopeSeparator.
 	Definitions string
-	// A function node that several patterns match is reported once, under
-	// the match that captured a receiver when there is one, so a grammar
-	// that uses one node type for functions and methods can name methods
-	// through their enclosing type.
-	//
+	// Scopes is an optional tree-sitter query for the named scopes that
+	// enclose functions, such as classes, impl blocks and namespaces:
+	// @scope spans the scope and @receiver holds its name. A function is
+	// named after the scopes that contain it, outermost first, so a member
+	// defined inside its class and one defined outside it with a qualified
+	// name read the same.
+	Scopes string
+	// ScopeSeparator joins scope and receiver names to function names;
+	// empty means ".".
+	ScopeSeparator string
 	// Decisions is a tree-sitter query in which every capture is one
 	// decision point. The point is attributed to the innermost function
 	// that contains it and counted under the capture's name, so the capture
@@ -57,6 +63,7 @@ type Language struct {
 	compileErr  error
 	definitions *sitter.Query
 	decisions   *sitter.Query
+	scopes      *sitter.Query
 	testCode    *sitter.Query
 	identifiers map[string]struct{}
 	literals    map[string]struct{}
@@ -125,14 +132,23 @@ type Function struct {
 
 	startByte uint32
 	endByte   uint32
+	hasError  bool
 }
 
 const (
 	definitionPrefix = "definition."
 	nameCapture      = "name"
 	receiverCapture  = "receiver"
+	scopeCapture     = "scope"
 	operatorField    = "operator"
 )
+
+func (l *Language) separator() string {
+	if l.ScopeSeparator == "" {
+		return "."
+	}
+	return l.ScopeSeparator
+}
 
 // IsTestFile reports whether the path matches one of the language's
 // TestFiles patterns.
@@ -155,12 +171,23 @@ func (l *Language) IsTestFile(path string) bool {
 	return false
 }
 
+// Result is the analysis of one file.
+type Result struct {
+	Functions []Function
+	// SyntaxError is the first syntax error in the file, or nil when the
+	// file parsed cleanly. A tree-sitter parse always yields a tree and
+	// recovers around what it cannot parse, so the functions that contain
+	// no error are still reported; the ones that do are left out, because
+	// their metrics would describe only the fragments the grammar managed
+	// to salvage. This matters most for C++, where a macro that opens a
+	// namespace or declares an attribute is a syntax error to a parser
+	// that does not run the preprocessor.
+	SyntaxError error
+}
+
 // Analyze parses source and returns every function the language defines,
-// with its complexity computed. Source that does not parse is an error: a
-// tree-sitter parse always yields a tree, so the syntax check is what keeps
-// a broken file from being reported as if its salvageable fragments were
-// the whole program.
-func (l *Language) Analyze(source []byte) ([]Function, error) {
+// with its complexity computed.
+func (l *Language) Analyze(source []byte) (*Result, error) {
 	if err := l.compile(); err != nil {
 		return nil, err
 	}
@@ -176,11 +203,10 @@ func (l *Language) Analyze(source []byte) ([]Function, error) {
 	defer tree.Close()
 
 	root := tree.RootNode()
-	if err := checkSyntax(root); err != nil {
-		return nil, err
-	}
+	result := &Result{SyntaxError: checkSyntax(root)}
 
 	functions := l.extractFunctions(root, source)
+	l.applyScopes(root, source, functions)
 	l.countDecisions(root, source, functions)
 	l.markTests(root, source, functions)
 	for i := range functions {
@@ -189,7 +215,12 @@ func (l *Language) Analyze(source []byte) ([]Function, error) {
 			functions[i].Complexity += count
 		}
 	}
-	return functions, nil
+	for _, fn := range functions {
+		if !fn.hasError {
+			result.Functions = append(result.Functions, fn)
+		}
+	}
+	return result, nil
 }
 
 // compile builds the queries once. A query that does not compile against
@@ -206,6 +237,14 @@ func (l *Language) compile() error {
 		if err != nil {
 			l.compileErr = fmt.Errorf("%s decisions query: %w", l.Name, err)
 			return
+		}
+		if l.Scopes != "" {
+			scopes, err := sitter.NewQuery([]byte(l.Scopes), l.Grammar)
+			if err != nil {
+				l.compileErr = fmt.Errorf("%s scopes query: %w", l.Name, err)
+				return
+			}
+			l.scopes = scopes
 		}
 		if l.TestCode != "" {
 			testCode, err := sitter.NewQuery([]byte(l.TestCode), l.Grammar)
@@ -233,7 +272,6 @@ func set(names []string) map[string]struct{} {
 
 func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function {
 	var functions []Function
-	byStart := map[uint32]int{}
 	forEachMatch(l.definitions, root, source, func(match *sitter.QueryMatch) {
 		var fn Function
 		var node *sitter.Node
@@ -254,22 +292,15 @@ func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function
 			return
 		}
 		if receiver != "" {
-			fn.Name = receiver + "." + fn.Name
+			fn.Name = receiver + l.separator() + fn.Name
 		}
-		if index, seen := byStart[node.StartByte()]; seen {
-			if receiver != "" {
-				functions[index].Name = fn.Name
-				functions[index].Kind = fn.Kind
-			}
-			return
-		}
-		byStart[node.StartByte()] = len(functions)
 		fn.StartLine = int(node.StartPoint().Row) + 1
 		fn.StartColumn = int(node.StartPoint().Column) + 1
 		fn.EndLine = int(node.EndPoint().Row) + 1
 		fn.EndColumn = int(node.EndPoint().Column) + 1
 		fn.startByte = node.StartByte()
 		fn.endByte = node.EndByte()
+		fn.hasError = node.HasError()
 		fn.Decisions = map[string]int{}
 
 		converter := treeConverter{language: l, source: source}
@@ -366,6 +397,59 @@ func (l *Language) countDecisions(root *sitter.Node, source []byte, functions []
 			fn.Decisions[l.decisions.CaptureNameForId(capture.Index)]++
 		}
 	})
+}
+
+// scope is a named span from the Scopes query.
+type scope struct {
+	start, end uint32
+	name       string
+}
+
+// applyScopes prefixes each function with the names of the scopes that
+// contain it, outermost first. Functions and scopes are both in start
+// order, so one sweep with a stack of the open scopes covers them.
+func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Function) {
+	if l.scopes == nil {
+		return
+	}
+	var scopes []scope
+	forEachMatch(l.scopes, root, source, func(match *sitter.QueryMatch) {
+		var s scope
+		for _, capture := range match.Captures {
+			switch l.scopes.CaptureNameForId(capture.Index) {
+			case scopeCapture:
+				s.start, s.end = capture.Node.StartByte(), capture.Node.EndByte()
+			case receiverCapture:
+				s.name = capture.Node.Content(source)
+			}
+		}
+		if s.name != "" && s.end > s.start {
+			scopes = append(scopes, s)
+		}
+	})
+	sort.Slice(scopes, func(i, j int) bool { return scopes[i].start < scopes[j].start })
+
+	var open []scope
+	next := 0
+	for i := range functions {
+		fn := &functions[i]
+		for next < len(scopes) && scopes[next].start <= fn.startByte {
+			open = append(open, scopes[next])
+			next++
+		}
+		for len(open) > 0 && open[len(open)-1].end < fn.startByte {
+			open = open[:len(open)-1]
+		}
+		var names []string
+		for _, s := range open {
+			if s.end >= fn.endByte {
+				names = append(names, s.name)
+			}
+		}
+		if len(names) > 0 {
+			fn.Name = strings.Join(names, l.separator()) + l.separator() + fn.Name
+		}
+	}
 }
 
 // markTests flags every function inside a span the TestCode query captures.

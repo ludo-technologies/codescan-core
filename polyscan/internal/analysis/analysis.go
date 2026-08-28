@@ -58,12 +58,14 @@ type Complexity struct {
 	Summary   ComplexitySummary `json:"summary"`
 }
 
-// Files counts the files a run covered. Skipped files could not be read or
-// parsed and are absent from every metric, so a consumer must read this
-// before trusting the aggregates.
+// Files counts the files a run covered. Skipped files could not be read
+// and are absent from every metric; partial files had a syntax error, and
+// the functions containing it are absent. A consumer must read this before
+// trusting the aggregates.
 type Files struct {
 	Total    int `json:"total"`
 	Analyzed int `json:"analyzed"`
+	Partial  int `json:"partial"`
 	Skipped  int `json:"skipped"`
 }
 
@@ -72,13 +74,17 @@ type Report struct {
 	Files      Files         `json:"files"`
 	Complexity *Complexity   `json:"complexity,omitempty"`
 	Clones     *clone.Report `json:"clone,omitempty"`
+	// Warnings lists, per partial file, its syntax error.
+	Warnings []string `json:"warnings,omitempty"`
 	// Errors lists, per skipped file, why it was skipped.
 	Errors []string `json:"errors,omitempty"`
 }
 
 // Analyze collects every supported source file under paths and runs the
-// selected analyses on it. A file that cannot be read or parsed is skipped
-// and reported in Errors; finding no supported file at all is an error.
+// selected analyses on it. A file that cannot be read is skipped and
+// reported in Errors, a file with a syntax error is analyzed without the
+// functions that contain it and reported in Warnings, and finding no
+// supported file at all is an error.
 func Analyze(paths []string, options Options) (*Report, error) {
 	files, err := source.CollectFiles(paths, source.FileFilter{
 		IncludePatterns: lang.IncludePatterns(),
@@ -104,13 +110,18 @@ func Analyze(paths []string, options Options) (*Report, error) {
 			panic(fmt.Sprintf("no language for %s", file))
 		}
 		display := displayPath(file)
-		functions, err := analyzeFile(language, file)
+		result, err := analyzeFile(language, file)
 		if err != nil {
 			report.Files.Skipped++
 			report.Errors = append(report.Errors, fmt.Sprintf("%s: %v", display, err))
 			continue
 		}
 		report.Files.Analyzed++
+		if result.SyntaxError != nil {
+			report.Files.Partial++
+			report.Warnings = append(report.Warnings, fmt.Sprintf("%s: %v; functions containing it were not analyzed", display, result.SyntaxError))
+		}
+		functions := result.Functions
 
 		if options.Complexity {
 			for _, fn := range functions {
@@ -141,7 +152,7 @@ func Analyze(paths []string, options Options) (*Report, error) {
 	return report, nil
 }
 
-func analyzeFile(language *engine.Language, path string) ([]engine.Function, error) {
+func analyzeFile(language *engine.Language, path string) (*engine.Result, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

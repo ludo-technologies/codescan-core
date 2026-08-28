@@ -37,7 +37,7 @@ func analyzeCmd() *cobra.Command {
 		Short: "Analyze source files",
 		Long: `Analyze source files for cyclomatic complexity and code clones.
 
-The language of each file is detected from its extension. Supported: Go, Rust.
+The language of each file is detected from its extension. Supported: Go, Rust, C++.
 
 By default, generates an HTML report and opens it in your browser.
 

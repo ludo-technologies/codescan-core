@@ -9,12 +9,15 @@ import (
 
 func analyze(t *testing.T, source string) map[string]engine.Function {
 	t.Helper()
-	functions, err := Language.Analyze([]byte(source))
+	result, err := Language.Analyze([]byte(source))
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
 	}
+	if result.SyntaxError != nil {
+		t.Fatalf("syntax error: %v", result.SyntaxError)
+	}
 	byName := map[string]engine.Function{}
-	for _, fn := range functions {
+	for _, fn := range result.Functions {
 		byName[fn.Name] = fn
 	}
 	return byName
@@ -122,13 +125,20 @@ func TestTopLevelDecisionsAreIgnored(t *testing.T) {
 	}
 }
 
-func TestSyntaxErrorIsReported(t *testing.T) {
-	_, err := Language.Analyze([]byte("package p\n\nfunc F() {\n\tif {\n"))
-	if err == nil {
-		t.Fatal("expected a syntax error")
+func TestSyntaxErrorKeepsCleanFunctions(t *testing.T) {
+	result, err := Language.Analyze([]byte("package p\n\nfunc Clean() {\n\tif true {\n\t}\n}\n\nfunc Broken() {\n\tif {\n}\n\nfunc AlsoClean() {}\n"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(err.Error(), "syntax error at line 3") {
-		t.Errorf("error = %q, want the first error line", err)
+	if result.SyntaxError == nil || !strings.Contains(result.SyntaxError.Error(), "syntax error at line 9") {
+		t.Errorf("syntax error = %v, want the first error line", result.SyntaxError)
+	}
+	var names []string
+	for _, fn := range result.Functions {
+		names = append(names, fn.Name)
+	}
+	if strings.Join(names, ",") != "Clean,AlsoClean" {
+		t.Errorf("functions = %v, want the ones without errors", names)
 	}
 }
 

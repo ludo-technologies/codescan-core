@@ -62,6 +62,9 @@ func writeText(w io.Writer, doc *Document) {
 	fmt.Fprintf(w, "Generated: %s\n", doc.GeneratedAt.Format(time.RFC3339))
 	fmt.Fprintf(w, "Version: %s\n", doc.Version)
 	fmt.Fprintf(w, "Files analyzed: %d\n", doc.Files.Analyzed)
+	if doc.Files.Partial > 0 {
+		fmt.Fprintf(w, "Files with syntax errors: %d\n", doc.Files.Partial)
+	}
 	if doc.Files.Skipped > 0 {
 		fmt.Fprintf(w, "Files skipped: %d\n", doc.Files.Skipped)
 	}
@@ -73,6 +76,12 @@ func writeText(w io.Writer, doc *Document) {
 		writeCloneText(w, doc.Clones)
 	}
 
+	if len(doc.Warnings) > 0 {
+		fmt.Fprintf(w, "\nWarnings:\n")
+		for _, warning := range doc.Warnings {
+			fmt.Fprintf(w, "  - %s\n", warning)
+		}
+	}
 	if len(doc.Errors) > 0 {
 		fmt.Fprintf(w, "\nErrors:\n")
 		for _, e := range doc.Errors {

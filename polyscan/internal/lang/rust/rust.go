@@ -12,9 +12,10 @@ import (
 // code inside a macro call contributes tokens but no structure, which
 // lowers clone detection recall on macro-heavy code.
 var Language = &engine.Language{
-	Name:       "Rust",
-	Extensions: []string{".rs"},
-	Grammar:    tsrust.GetLanguage(),
+	Name:           "Rust",
+	Extensions:     []string{".rs"},
+	Grammar:        tsrust.GetLanguage(),
+	ScopeSeparator: "::",
 	// A test module split into its own file is declared as
 	// #[cfg(test)] mod tests; in the parent, which a single file cannot
 	// see, so the conventional names stand in for the attribute: tests.rs and
@@ -39,18 +40,14 @@ var Language = &engine.Language{
   [(function_item) (impl_item) (trait_item) (mod_item)] @test
   (#eq? @attr "cfg") (#eq? @combinator "all") (#eq? @flag "test"))
 `,
-	// The function pattern of tree-sitter-rust's queries/tags.scm, plus
-	// the same node inside an impl or trait body, where the implemented
-	// type or the trait becomes the receiver. The engine merges the two
-	// matches of one function node and keeps the receiver.
-	Definitions: `
-(function_item name: (identifier) @name) @definition.function
-
-(impl_item type: (_) @receiver
-  body: (declaration_list (function_item name: (identifier) @name) @definition.method))
-
-(trait_item name: (type_identifier) @receiver
-  body: (declaration_list (function_item name: (identifier) @name) @definition.method))
+	// The function pattern of tree-sitter-rust's queries/tags.scm. Impl
+	// and trait bodies are scopes, so their functions read Type::method,
+	// and so are modules.
+	Definitions: `(function_item name: (identifier) @name) @definition.function`,
+	Scopes: `
+(impl_item type: (_) @receiver body: (declaration_list) @scope)
+(trait_item name: (type_identifier) @receiver body: (declaration_list) @scope)
+(mod_item name: (identifier) @receiver body: (declaration_list) @scope)
 `,
 	// A match is exhaustive, so its last arm is the path the other arms
 	// branch away from and only arms followed by another arm count; an

@@ -13,7 +13,7 @@
     <div class="brand">polyscan{{if .Version}} <span class="ver">{{.Version}}</span>{{end}}</div>
     <div class="meta">
       <span>{{.GeneratedAt.Format "2006-01-02 15:04"}}</span>
-      <span>{{if .Files.Skipped}}<span class="bad">{{.Files.Analyzed}} of {{.Files.Total}} files analyzed, {{.Files.Skipped}} skipped</span>{{else}}{{.Files.Total}} files{{end}} in {{.DurationMs}}ms</span>
+      <span>{{if .Files.Skipped}}<span class="bad">{{.Files.Analyzed}} of {{.Files.Total}} files analyzed, {{.Files.Skipped}} skipped</span>{{else}}{{.Files.Total}} files{{end}}{{if .Files.Partial}}, <span class="warn">{{.Files.Partial}} with syntax errors</span>{{end}} in {{.DurationMs}}ms</span>
     </div>
   </div>
 </header>
@@ -141,6 +141,10 @@
 {{else}}
 <div class="card"><p class="ok-msg">No code clones detected</p></div>
 {{end}}
+{{end}}
+
+{{if .Warnings}}
+<div class="callout warn"><b>{{len .Warnings}} {{if eq (len .Warnings) 1}}file has{{else}}files have{{end}} syntax errors; the functions containing them were not analyzed</b><ul>{{range .Warnings}}<li class="mono">{{.}}</li>{{end}}</ul></div>
 {{end}}
 
 {{if .Errors}}

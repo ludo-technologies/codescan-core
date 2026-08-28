@@ -9,12 +9,15 @@ import (
 
 func analyze(t *testing.T, source string) map[string]engine.Function {
 	t.Helper()
-	functions, err := Language.Analyze([]byte(source))
+	result, err := Language.Analyze([]byte(source))
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
 	}
+	if result.SyntaxError != nil {
+		t.Fatalf("syntax error: %v", result.SyntaxError)
+	}
 	byName := map[string]engine.Function{}
-	for _, fn := range functions {
+	for _, fn := range result.Functions {
 		byName[fn.Name] = fn
 	}
 	return byName
@@ -34,14 +37,14 @@ fn with_closure() { let f = |x| x; f(1); }
 `)
 
 	want := map[string]string{
-		"free":         "function",
-		"S.method":     "method",
-		"G<T>.generic": "method",
-		"S.fmt":        "method",
-		"Tr.provided":  "method",
-		"inner":        "function",
-		"nested":       "function",
-		"with_closure": "function",
+		"free":          "function",
+		"S::method":     "function",
+		"G<T>::generic": "function",
+		"S::fmt":        "function",
+		"Tr::provided":  "function",
+		"m::inner":      "function",
+		"m::nested":     "function",
+		"with_closure":  "function",
 	}
 	if len(functions) != len(want) {
 		t.Fatalf("got %d functions, want %d: %v", len(functions), len(want), functions)
@@ -150,9 +153,9 @@ fn real() {}
 fn maybe() {}
 `)
 	for name, want := range map[string]bool{
-		"production": false, "unit": true, "helper": true, "in_module": true, "gated": false,
-		"test_then_cfg": true, "cfg_then_test": true, "helper2": true,
-		"test_helper": true, "S.fixture": true, "TestOnly.provided": true, "helper3": true,
+		"production": false, "unit": true, "tests::helper": true, "tests::in_module": true, "feature::gated": false,
+		"test_then_cfg": true, "cfg_then_test": true, "more_tests::helper2": true,
+		"test_helper": true, "S::fixture": true, "TestOnly::provided": true, "unix_tests::helper3": true,
 		"real": false, "maybe": false,
 	} {
 		if got := functions[name].IsTest; got != want {
@@ -172,9 +175,12 @@ func TestContentDropsComments(t *testing.T) {
 }
 
 func TestSyntaxErrorIsReported(t *testing.T) {
-	_, err := Language.Analyze([]byte("fn f() {\n\tif {\n"))
-	if err == nil || !strings.Contains(err.Error(), "syntax error") {
-		t.Fatalf("err = %v, want a syntax error", err)
+	result, err := Language.Analyze([]byte("fn f() {\n\tif {\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.SyntaxError == nil || !strings.Contains(result.SyntaxError.Error(), "syntax error") {
+		t.Fatalf("syntax error = %v, want one", result.SyntaxError)
 	}
 }
 

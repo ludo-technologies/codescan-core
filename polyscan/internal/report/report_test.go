@@ -19,7 +19,7 @@ func document(minComplexity int) *Document {
 		Version:     "test",
 		GeneratedAt: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
 		Report: &analysis.Report{
-			Files: analysis.Files{Total: 3, Analyzed: 2, Skipped: 1},
+			Files: analysis.Files{Total: 4, Analyzed: 3, Partial: 1, Skipped: 1},
 			Complexity: &analysis.Complexity{
 				Functions: []analysis.Function{
 					{Name: "Big", FilePath: "a.go", StartLine: 1, EndLine: 40, Complexity: 25, Decisions: map[string]int{"branch": 24}, RiskLevel: domain.RiskLevelHigh},
@@ -32,7 +32,8 @@ func document(minComplexity int) *Document {
 				Groups:     []clone.Group{{ID: 0, Type: domain.Type1Clone, Similarity: 1, Fragments: []clone.Fragment{a, b}}},
 				Statistics: clone.Statistics{TotalFragments: 2, TotalClones: 2, TotalClonePairs: 1, TotalCloneGroups: 1, ClonesByType: map[string]int{"Type-1": 1}, AverageSimilarity: 1},
 			},
-			Errors: []string{"d.go: syntax error at line 9"},
+			Warnings: []string{"e.go: syntax error at line 2; functions containing it were not analyzed"},
+			Errors:   []string{"d.go: open d.go: permission denied"},
 		},
 		MinComplexity: minComplexity,
 	}
@@ -45,7 +46,8 @@ func TestWriteText(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Generated: 2026-01-02T03:04:05Z",
-		"Files analyzed: 2\nFiles skipped: 1\n",
+		"Files analyzed: 3\nFiles with syntax errors: 1\nFiles skipped: 1\n",
+		"Warnings:\n  - e.go: syntax error at line 2; functions containing it were not analyzed\n",
 		"=== Complexity Analysis ===",
 		"High risk: 1",
 		"Functions:\n  Big: 25 [HIGH]\n    File: a.go:1-40\n  Small: 1\n    File: b.go:3-5\n",
@@ -54,7 +56,7 @@ func TestWriteText(t *testing.T) {
 		"Clone Types:\n  Type-1: 1\n",
 		"Group 1: Type-1, 2 fragments, 100.0% similar\n    Big (a.go:1-40)\n    Copy (c.go:10-49)\n",
 		"Top Clone Pairs:\n  Type-1: Big (a.go:1-40) <-> Copy (c.go:10-49) (100.0% similar)\n",
-		"Errors:\n  - d.go: syntax error at line 9\n",
+		"Errors:\n  - d.go: open d.go: permission denied\n",
 	} {
 		if !strings.Contains(buf.String(), want) {
 			t.Errorf("text output lacks %q:\n%s", want, buf.String())
@@ -121,13 +123,15 @@ func TestWriteHTML(t *testing.T) {
 	out := buf.String()
 	for _, want := range []string{
 		"<title>polyscan report</title>",
-		"2 of 3 files analyzed, 1 skipped",
+		"3 of 4 files analyzed, 1 skipped",
+		"1 with syntax errors",
+		"e.go: syntax error at line 2",
 		`<td class="mono">Big</td>`,
 		"complexity 10 and above",
 		"Type-1 Exact · 1 pairs",
 		"Group 1",
 		"if a &lt; b {", // the preview is escaped
-		"d.go: syntax error at line 9",
+		"d.go: open d.go: permission denied",
 		"CC 20&#43;: 1 functions", // html/template escapes the plus
 	} {
 		if !strings.Contains(out, want) {

@@ -1,6 +1,6 @@
 # polyscan
 
-Multi-language code quality analyzer. It measures cyclomatic complexity and detects code clones for Go and Rust.
+Multi-language code quality analyzer. It measures cyclomatic complexity and detects code clones for Go, Rust and C++.
 
 ## Installation
 
