@@ -157,11 +157,15 @@ jobs:
           (cd npm && npm version "$VERSION" --no-git-tag-version)
           node -e "const fs=require('fs');const p=require('./npm/package.json');for(const d of Object.keys(p.optionalDependencies))p.optionalDependencies[d]='$VERSION';fs.writeFileSync('npm/package.json',JSON.stringify(p,null,2)+'\n')"
 
+      # Every package is attempted so that one misconfigured trusted
+      # publisher reports on its own, instead of hiding the ones after it.
       - name: Publish platform packages
         run: |
+          failed=0
           for dir in npm/platforms/*/; do
-            (cd "$dir" && npm publish --access public --provenance)
+            (cd "$dir" && npm publish --access public --provenance) || failed=1
           done
+          exit $failed
 
       - name: Publish main package
         run: |
