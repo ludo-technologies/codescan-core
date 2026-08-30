@@ -10,6 +10,8 @@ permissions:
 
 # jscan depends on tree-sitter (cgo), so binaries must be built natively on
 # each platform's runner — cross-compilation with CGO_ENABLED=0 does not work.
+# The jscan CLI builds from the polyscan module, where its code now lives;
+# only the npm packaging still lives under jscan/.
 jobs:
   meta:
     runs-on: ubuntu-latest
@@ -48,13 +50,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        working-directory: jscan
+        working-directory: polyscan
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: jscan/go.mod
+          go-version-file: polyscan/go.mod
 
       - name: Build
         shell: bash
@@ -69,10 +71,10 @@ jobs:
           fi
 
           go build -ldflags="-s -w \
-            -X github.com/ludo-technologies/polyscan/jscan/internal/version.Version=${VERSION} \
-            -X github.com/ludo-technologies/polyscan/jscan/internal/version.Commit=${COMMIT} \
-            -X github.com/ludo-technologies/polyscan/jscan/internal/version.Date=${DATE} \
-            -X github.com/ludo-technologies/polyscan/jscan/internal/version.BuiltBy=release" \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/js/version.Version=${VERSION} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/js/version.Commit=${COMMIT} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/js/version.Date=${DATE} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/js/version.BuiltBy=release" \
             -o jscan${EXT} ./cmd/jscan
 
           ARCHIVE_NAME="jscan_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
@@ -86,13 +88,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jscan-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: jscan/jscan_*
+          path: polyscan/jscan_*
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: jscan/jscan${{ matrix.goos == 'windows' && '.exe' || '' }}
+          path: polyscan/jscan${{ matrix.goos == 'windows' && '.exe' || '' }}
 
   release:
     needs: [meta, build]

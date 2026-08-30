@@ -104,6 +104,102 @@ func TestVersion(t *testing.T) {
 	}
 }
 
+func TestAnalyzeJavaScriptOnly(t *testing.T) {
+	out, err := run(t, "analyze", "--format", "text", "../../testdata/javascript")
+	if err != nil {
+		t.Fatalf("analyze: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "jscan Analysis Report") || !strings.Contains(out, "Health Score") {
+		t.Errorf("expected jscan's text report, got:\n%s", out)
+	}
+	if strings.Contains(out, "=== polyscan ===") {
+		t.Errorf("a JavaScript-only tree should not print an empty polyscan report:\n%s", out)
+	}
+}
+
+func TestAnalyzeIgnoresJSConfigWithoutJSFiles(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile("../../testdata/go/sample.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "sample.go"), src, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "jscan.config.json"), []byte("{not json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := run(t, "analyze", "--format", "text", dir)
+	if err != nil {
+		t.Fatalf("a JavaScript configuration must not fail a tree without JavaScript: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "Server.Handle: 8") {
+		t.Errorf("unexpected output:\n%s", out)
+	}
+}
+
+func TestAnalyzeMixedTreeJSON(t *testing.T) {
+	out, err := run(t, "analyze", "--format", "json", "../../testdata")
+	if err != nil {
+		t.Fatalf("analyze: %v\n%s", err, out)
+	}
+	var doc report.Document
+	if err := json.Unmarshal([]byte(out), &doc); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, out)
+	}
+	if doc.Report == nil || doc.Complexity.Summary.TotalFunctions == 0 {
+		t.Errorf("the engine languages should keep their report, got %+v", doc.Report)
+	}
+	var javascript struct {
+		Complexity *struct {
+			Summary struct {
+				TotalFunctions int `json:"total_functions"`
+			} `json:"summary"`
+		} `json:"complexity"`
+		DeadCode json.RawMessage `json:"dead_code"`
+	}
+	if err := json.Unmarshal(doc.JavaScript, &javascript); err != nil {
+		t.Fatalf("invalid javascript section: %v\n%s", err, doc.JavaScript)
+	}
+	if javascript.Complexity == nil || javascript.Complexity.Summary.TotalFunctions == 0 {
+		t.Errorf("the javascript section should carry jscan's complexity output:\n%s", doc.JavaScript)
+	}
+	if len(javascript.DeadCode) == 0 {
+		t.Errorf("the javascript section should carry jscan's dead code output:\n%s", doc.JavaScript)
+	}
+}
+
+func TestAnalyzeMixedTreeHTML(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "report.html")
+	out, err := run(t, "analyze", "--no-open", "-o", path, "../../testdata")
+	if err != nil {
+		t.Fatalf("analyze: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "HTML report written to ") || !strings.Contains(out, "JavaScript HTML report written to ") {
+		t.Errorf("unexpected output:\n%s", out)
+	}
+	html, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(html), "<title>polyscan report</title>") {
+		t.Errorf("the main report should stay the polyscan one")
+	}
+	jsHTML, err := os.ReadFile(jsReportPath(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(jsHTML), "jscan Analysis Report") {
+		t.Errorf("the JavaScript report should be jscan's")
+	}
+}
+
+func TestJSReportPath(t *testing.T) {
+	if got := jsReportPath("polyscan-report.html"); got != "polyscan-report.js.html" {
+		t.Errorf("jsReportPath = %q", got)
+	}
+}
+
 func TestFileURL(t *testing.T) {
 	for path, want := range map[string]string{
 		"/tmp/report.html":        "file:///tmp/report.html",

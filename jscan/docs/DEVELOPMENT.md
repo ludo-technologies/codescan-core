@@ -9,14 +9,11 @@
 ## Getting Started
 
 ```bash
-# Clone the monorepo and enter the jscan module
+# Clone the monorepo and enter the jscan directory
 git clone https://github.com/ludo-technologies/polyscan.git
 cd polyscan/jscan
 
-# Download dependencies
-go mod download
-
-# Build the binary
+# Build the binary (the Go code lives in the polyscan module; make delegates there)
 make build
 ```
 

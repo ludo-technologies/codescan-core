@@ -13,13 +13,13 @@ Thank you for your interest in contributing to jscan! This document provides gui
 
 ### Getting Started
 
-jscan lives in the [polyscan monorepo](https://github.com/ludo-technologies/polyscan) under `jscan/`. The standalone `jscan` repository was retired.
+jscan lives in the [polyscan monorepo](https://github.com/ludo-technologies/polyscan): its Go code is part of the `polyscan` module (`polyscan/cmd/jscan` and `polyscan/internal/js`), while the npm packaging and documentation stay under `jscan/`. The standalone `jscan` repository was retired.
 
 1. Fork the repository on GitHub
-2. Clone your fork and enter the `jscan` directory:
+2. Clone your fork and enter the `polyscan` module directory:
    ```bash
    git clone https://github.com/<your-username>/polyscan.git
-   cd polyscan/jscan
+   cd polyscan/polyscan
    ```
 3. Install dependencies:
    ```bash
