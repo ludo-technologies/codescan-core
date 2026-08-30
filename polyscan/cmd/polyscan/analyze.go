@@ -186,7 +186,18 @@ type jsAnalysis struct {
 // exclusion rules, so a JavaScript project keeps exactly the analysis
 // jscan gave it. An analysis that fails is reported on warn and left out
 // of the report, as in jscan.
+//
+// A tree without JavaScript skips the pipeline before configuration
+// discovery, so a jscan configuration that would not load cannot fail the
+// other languages' analysis.
 func analyzeJavaScript(paths []string, warn io.Writer) (*jsAnalysis, error) {
+	hasJS, err := js.ContainsFiles(paths)
+	if err != nil {
+		return nil, err
+	}
+	if !hasJS {
+		return nil, nil
+	}
 	cfg, err := js.LoadConfig("", paths[0], warn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load the JavaScript configuration: %w", err)

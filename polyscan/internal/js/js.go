@@ -85,6 +85,18 @@ func LoadConfig(configPath, targetPath string, warn io.Writer) (*config.Config, 
 	return result.Config, nil
 }
 
+// ContainsFiles reports whether any JavaScript/TypeScript file exists under
+// the paths. Configuration plays no part: polyscan analyze asks before the
+// JavaScript configuration is even discovered, so a tree with no JavaScript
+// never loads — or fails on — one.
+func ContainsFiles(paths []string) (bool, error) {
+	files, err := app.NewFileHelper().CollectJSFiles(paths, true, nil, nil)
+	if err != nil {
+		return false, err
+	}
+	return len(files) > 0, nil
+}
+
 // CollectFiles collects the JavaScript/TypeScript files under each path,
 // honoring the configuration's include and exclude patterns.
 func CollectFiles(paths []string, cfg *config.Config) ([]string, error) {

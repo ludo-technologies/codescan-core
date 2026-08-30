@@ -117,6 +117,27 @@ func TestAnalyzeJavaScriptOnly(t *testing.T) {
 	}
 }
 
+func TestAnalyzeIgnoresJSConfigWithoutJSFiles(t *testing.T) {
+	dir := t.TempDir()
+	src, err := os.ReadFile("../../testdata/go/sample.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "sample.go"), src, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "jscan.config.json"), []byte("{not json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := run(t, "analyze", "--format", "text", dir)
+	if err != nil {
+		t.Fatalf("a JavaScript configuration must not fail a tree without JavaScript: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "Server.Handle: 8") {
+		t.Errorf("unexpected output:\n%s", out)
+	}
+}
+
 func TestAnalyzeMixedTreeJSON(t *testing.T) {
 	out, err := run(t, "analyze", "--format", "json", "../../testdata")
 	if err != nil {
