@@ -1860,13 +1860,13 @@
 <p>There is no prebuilt binary for Intel macOS or for 32-bit systems. On those machines the launcher exits with an error that names your platform, and you should build from source instead.</p>
 <h2 id="install-with-go">Install with Go<a class="headerlink" href="#install-with-go" title="Permanent link">&para;</a></h2>
 <p>If you already have a Go toolchain, you can install jscan directly:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>go<span class="w"> </span>install<span class="w"> </span>github.com/ludo-technologies/polyscan/jscan/cmd/jscan@latest
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>go<span class="w"> </span>install<span class="w"> </span>github.com/ludo-technologies/polyscan/polyscan/cmd/jscan@latest
 </span></code></pre></div>
 <p>This places the <code>jscan</code> binary in your <code>GOBIN</code> directory, which defaults to <code>$(go env GOPATH)/bin</code>. Make sure that directory is on your <code>PATH</code>.</p>
 <h2 id="build-from-source">Build from source<a class="headerlink" href="#build-from-source" title="Permanent link">&para;</a></h2>
 <p>Building from source requires Go 1.24.6 or later and a working C compiler. The C compiler is necessary because jscan parses with tree-sitter, which is a C library reached through cgo.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ludo-technologies/polyscan.git
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">cd</span><span class="w"> </span>polyscan/jscan
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">cd</span><span class="w"> </span>polyscan/polyscan
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>go<span class="w"> </span>build<span class="w"> </span>-o<span class="w"> </span>jscan<span class="w"> </span>./cmd/jscan
 </span></code></pre></div>
 <div class="admonition note">
