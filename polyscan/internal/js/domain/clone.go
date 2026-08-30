@@ -72,6 +72,7 @@ func (cl *CloneLocation) LineCount() int {
 type Clone struct {
 	ID         int            `json:"id" yaml:"id" csv:"id"`
 	Type       CloneType      `json:"type" yaml:"type" csv:"type"`
+	Language   string         `json:"language" yaml:"language" csv:"language"`
 	Location   *CloneLocation `json:"location" yaml:"location" csv:"location"`
 	Content    string         `json:"content,omitempty" yaml:"content,omitempty" csv:"content"`
 	Hash       string         `json:"hash" yaml:"hash" csv:"hash"`

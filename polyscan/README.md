@@ -1,6 +1,6 @@
 # polyscan
 
-A multi-language code quality analyzer. It detects the language of each file by its extension. Go, Rust and C++ get cyclomatic complexity and code clone detection from the generic engine; JavaScript/TypeScript files get [jscan](../jscan/README.md)'s full analysis (complexity, dead code, clones, coupling, dependencies) with jscan's own output, kept separate until the reports are unified.
+A multi-language code quality analyzer. It detects the language of each file by its extension. Go, Rust and C++ get cyclomatic complexity and code clone detection from the generic engine; JavaScript/TypeScript files get the full [jscan](../jscan/README.md) analysis (complexity, dead code, clones, coupling, dependencies). Every language lands in one report with one health score: each analyzed dimension is scored against what it could have charged, and a dimension a language does not have is left out of the score rather than scored as clean.
 
 ## Installation
 
@@ -34,7 +34,7 @@ polyscan analyze --select clone .
 polyscan analyze --min-complexity 10 .
 ```
 
-`--select` and `--min-complexity` apply to the languages of the generic engine; JavaScript/TypeScript always runs jscan's default analyses, honors a `jscan.config.json` when the project has one, and writes its report next to the main one (`polyscan-report.js.html`) or as the `javascript` key of the JSON output.
+`--select` takes any of `complexity`, `deadcode`, `clone`, `cbo` and `deps` (default: all); `deadcode`, `cbo` and `deps` exist for JavaScript/TypeScript only, and a deselected or missing dimension is left out of the health score. JavaScript/TypeScript honors a `jscan.config.json` when the project has one. The JSON output is one document for every language, with `language` on every function and clone fragment.
 
 A file that cannot be read is skipped and listed under `Errors`. A file with a syntax error is analyzed without the functions that contain the error, counted as partial, and listed under `Warnings`; C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.
 

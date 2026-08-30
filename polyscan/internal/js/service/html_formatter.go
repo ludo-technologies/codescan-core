@@ -907,16 +907,18 @@ func buildReportHistogram(complexity *domain.ComplexityResponse, risk complexity
 	// the whole population.
 	if len(complexity.Functions) == total {
 		deepest, longest := extremeFunctions(complexity.Functions)
-		hist.Facts = append(hist.Facts,
-			reportKV{
+		// A zero maximum says nothing — either nothing nests or, for the
+		// languages the generic engine covers, nesting is not measured.
+		if deepest.Metrics.NestingDepth > 0 {
+			hist.Facts = append(hist.Facts, reportKV{
 				Key:   "Deepest nesting",
 				Value: fmt.Sprintf("%d levels (%s)", deepest.Metrics.NestingDepth, deepest.Name),
-			},
-			reportKV{
-				Key:   "Longest function",
-				Value: fmt.Sprintf("%d lines (%s)", functionLineSpan(*longest), longest.Name),
-			},
-		)
+			})
+		}
+		hist.Facts = append(hist.Facts, reportKV{
+			Key:   "Longest function",
+			Value: fmt.Sprintf("%d lines (%s)", functionLineSpan(*longest), longest.Name),
+		})
 	}
 	return hist
 }

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- One report, one health score across languages. `polyscan analyze` renders every language into the jscan-style report (health score, verdict, per-dimension cards, hotspot files) as HTML, JSON and text; the separate JavaScript report (`polyscan-report.js.html`, the `javascript` JSON key) is gone
+- The health score is computed over the dimensions that ran: each enabled dimension is charged against its own maximum, and a dimension a language does not have (dead code, coupling and dependencies outside JavaScript/TypeScript) is left out of the score rather than scored as clean
+- `--select` now covers every analysis (`complexity`, `deadcode`, `clone`, `cbo`, `deps`, default all) and applies across languages
+- One JSON shape for every language, with `language` on every function and clone fragment
+
 ## [0.1.0] - 2026-08-28
 
 The first release of the multi-language analyzer. One `polyscan` binary detects the language of each file by its extension and runs the same analyses on Go, Rust and C++.

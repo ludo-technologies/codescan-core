@@ -375,19 +375,64 @@ func (s *AnalyzeSummary) CalculateHealthScore() error {
 	// excludes them.
 	parseErrorPenalty := s.calculateParseErrorPenalty()
 
-	score := coredomain.HealthScoreFromPenalties(
-		complexityPenalty,
-		deadCodePenalty,
-		duplicationPenalty,
-		couplingPenalty,
-		dependencyPenalty,
-		architecturePenalty,
-		parseErrorPenalty,
-	)
+	// The score is computed over the dimensions that ran: each enabled
+	// dimension contributes its penalty against its maximum, and a dimension
+	// that did not run is left out entirely rather than scored as clean, so a
+	// language with only complexity and clone analysis is judged on those.
+	totalPenalty, maxPenalty := 0, 0
+	charge := func(enabled bool, penalty, budget int) {
+		if !enabled {
+			return
+		}
+		totalPenalty += penalty
+		maxPenalty += budget
+	}
+	charge(s.ComplexityEnabled, complexityPenalty, MaxScoreBase)
+	charge(s.DeadCodeEnabled, deadCodePenalty, MaxScoreBase)
+	charge(s.CloneEnabled, duplicationPenalty, MaxScoreBase)
+	charge(s.CBOEnabled, couplingPenalty, MaxScoreBase)
+	charge(s.DepsEnabled, dependencyPenalty, MaxDependencyPenalty)
+	charge(s.ArchEnabled, architecturePenalty, MaxArchitecturePenalty)
+
+	score := healthScoreFromPenaltyBudget(totalPenalty, maxPenalty, parseErrorPenalty)
 	s.HealthScore = score
 	s.Grade = coredomain.GradeFromScore(score)
 
 	return nil
+}
+
+// healthScoreFromPenaltyBudget scores a run against the dimensions that
+// actually ran: totalPenalty is the sum of the enabled dimensions' penalties
+// and maxPenalty the most those dimensions could have charged. The ratio is
+// projected onto the 100-point scale, so a dimension that did not run is left
+// out of the score instead of counting as clean. parseErrorPenalty is charged
+// unscaled afterwards: its bounds are anchored to the grade thresholds, not
+// to any dimension. The result is floored at MinimumScore and capped at 100.
+//
+// This is polyscan's cross-language scoring rule; adopting it in core (and
+// from there in pyscn) is tracked separately, since core is consumed through
+// published tags.
+func healthScoreFromPenaltyBudget(totalPenalty, maxPenalty, parseErrorPenalty int) int {
+	score := 100
+	if maxPenalty > 0 {
+		if totalPenalty < 0 {
+			totalPenalty = 0
+		}
+		if totalPenalty > maxPenalty {
+			totalPenalty = maxPenalty
+		}
+		score -= int(math.Round(float64(totalPenalty) * 100 / float64(maxPenalty)))
+	}
+	if parseErrorPenalty > 0 {
+		score -= parseErrorPenalty
+	}
+	if score < MinimumScore {
+		score = MinimumScore
+	}
+	if score > 100 {
+		score = 100
+	}
+	return score
 }
 
 // CalculateFallbackScore provides a simple fallback health score calculation

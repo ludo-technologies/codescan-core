@@ -972,7 +972,8 @@ func (cd *CloneDetector) fragmentToClone(fragment *CodeFragment) *domain.Clone {
 
 func (cd *CloneDetector) newCloneFromFragment(fragment *CodeFragment, id int) *domain.Clone {
 	return &domain.Clone{
-		ID: id,
+		ID:       id,
+		Language: domain.LanguageForPath(fragment.Location.FilePath),
 		Location: &domain.CloneLocation{
 			FilePath:  fragment.Location.FilePath,
 			StartLine: fragment.Location.StartLine,

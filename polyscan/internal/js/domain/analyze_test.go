@@ -152,26 +152,29 @@ func TestCalculateHealthScore_DuplicationPenalty(t *testing.T) {
 		wantDuplication int // expected DuplicationScore
 		wantHealth      int
 	}{
+		// Clone detection is the only enabled dimension, so the health score
+		// is the duplication score: the missing dimensions are left out of
+		// the score rather than scored as clean.
 		{
 			// 0-30% scale: 1/30*20 = 0.67 -> 1 penalty
 			name:            "low duplication penalised from zero",
 			duplication:     1.0,
 			wantDuplication: 95,
-			wantHealth:      99,
+			wantHealth:      95,
 		},
 		{
 			// 5/30*20 = 3.33 -> 3 penalty
 			name:            "medium duplication",
 			duplication:     5.0,
 			wantDuplication: 85,
-			wantHealth:      97,
+			wantHealth:      85,
 		},
 		{
 			// 30% reaches the max penalty (20)
 			name:            "max penalty at threshold high",
 			duplication:     30.0,
 			wantDuplication: 0,
-			wantHealth:      80,
+			wantHealth:      0,
 		},
 		{
 			name:            "no duplication no penalty",
@@ -183,7 +186,7 @@ func TestCalculateHealthScore_DuplicationPenalty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &AnalyzeSummary{CodeDuplication: tt.duplication}
+			s := &AnalyzeSummary{CloneEnabled: true, CodeDuplication: tt.duplication}
 			if err := s.CalculateHealthScore(); err != nil {
 				t.Fatalf("CalculateHealthScore() error: %v", err)
 			}
@@ -201,6 +204,7 @@ func TestCalculateHealthScore_CouplingCalibration(t *testing.T) {
 	// Softened CBO curve: a repo with a healthy average CBO and ~10% high-coupling
 	// classes should not floor the coupling score.
 	s := &AnalyzeSummary{
+		CBOEnabled:            true,
 		CBOClasses:            100,
 		HighCouplingClasses:   10, // 10%
 		MediumCouplingClasses: 20,
@@ -212,8 +216,36 @@ func TestCalculateHealthScore_CouplingCalibration(t *testing.T) {
 	if s.CouplingScore != 60 { // 100 - (8/20)*100
 		t.Errorf("CouplingScore = %d, want 60", s.CouplingScore)
 	}
-	if s.HealthScore != 92 || s.Grade != "A" {
-		t.Errorf("HealthScore = %d (%s), want 92 (A)", s.HealthScore, s.Grade)
+	// Coupling is the only enabled dimension, so it is the health score.
+	if s.HealthScore != 60 || s.Grade != "C" {
+		t.Errorf("HealthScore = %d (%s), want 60 (C)", s.HealthScore, s.Grade)
+	}
+}
+
+// TestCalculateHealthScore_MissingDimensionsLeftOut pins the cross-language
+// scoring rule: a language with only complexity and clone analysis is judged
+// on those two dimensions, and the missing ones are left out of the score
+// rather than scored as clean.
+func TestCalculateHealthScore_MissingDimensionsLeftOut(t *testing.T) {
+	s := &AnalyzeSummary{
+		ComplexityEnabled: true,
+		CloneEnabled:      true,
+		TotalFunctions:    100,
+		TotalFiles:        10,
+		AnalyzedFiles:     10,
+		// 3 high + 2*0.5 medium = 4% weighted ratio -> penalty 16 of 20
+		HighComplexityCount:   3,
+		MediumComplexityCount: 2,
+		// 15% duplication -> penalty 10 of 20
+		CodeDuplication: 15.0,
+	}
+	if err := s.CalculateHealthScore(); err != nil {
+		t.Fatalf("CalculateHealthScore() error: %v", err)
+	}
+	// 26 of a 40-point budget: 100 - round(26*100/40) = 35. Scored as clean
+	// missing dimensions would have given 100 - 26 = 74 instead.
+	if s.HealthScore != 35 || s.Grade != "F" {
+		t.Errorf("HealthScore = %d (%s), want 35 (F)", s.HealthScore, s.Grade)
 	}
 }
 
@@ -229,9 +261,11 @@ func TestCalculateHealthScore_ArchitectureScoreUsesCompliance(t *testing.T) {
 	if s.ArchitectureScore != 13 {
 		t.Errorf("ArchitectureScore = %d, want 13", s.ArchitectureScore)
 	}
-	// The health penalty is still (1-compliance)*MaxArchPenalty = 10.5 → 11
-	if s.HealthScore != 89 {
-		t.Errorf("HealthScore = %d, want 89", s.HealthScore)
+	// Architecture is the only enabled dimension: the penalty is
+	// (1-compliance)*MaxArchPenalty = 10.5 → 11 of a budget of 12, so the
+	// score is 100 - round(11*100/12) = 8.
+	if s.HealthScore != 8 {
+		t.Errorf("HealthScore = %d, want 8", s.HealthScore)
 	}
 }
 
