@@ -68,11 +68,17 @@ jobs:
             EXT=".exe"
           fi
 
+          # internal/js/version is stamped too: the JavaScript section of the
+          # report carries jscan's version fields until the report is unified.
           go build -ldflags="-s -w \
             -X github.com/ludo-technologies/polyscan/polyscan/internal/version.Version=${VERSION} \
             -X github.com/ludo-technologies/polyscan/polyscan/internal/version.Commit=${COMMIT} \
             -X github.com/ludo-technologies/polyscan/polyscan/internal/version.Date=${DATE} \
-            -X github.com/ludo-technologies/polyscan/polyscan/internal/version.BuiltBy=release" \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/version.BuiltBy=release \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/js/version.Version=${VERSION} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/js/version.Commit=${COMMIT} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/js/version.Date=${DATE} \
+            -X github.com/ludo-technologies/polyscan/polyscan/internal/js/version.BuiltBy=release" \
             -o polyscan${EXT} ./cmd/polyscan
 
           ARCHIVE_NAME="polyscan_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"

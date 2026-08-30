@@ -84,14 +84,14 @@ npm install -g jscan
 
 ```bash
 git clone https://github.com/ludo-technologies/polyscan.git
-cd polyscan/jscan
+cd polyscan/polyscan
 go build -o jscan ./cmd/jscan
 ```
 
 ### Go install
 
 ```bash
-go install github.com/ludo-technologies/polyscan/jscan/cmd/jscan@latest
+go install github.com/ludo-technologies/polyscan/polyscan/cmd/jscan@latest
 ```
 
 </details>

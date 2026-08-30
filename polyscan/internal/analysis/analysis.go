@@ -3,6 +3,7 @@
 package analysis
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -80,11 +81,16 @@ type Report struct {
 	Errors []string `json:"errors,omitempty"`
 }
 
+// ErrNoFiles reports that the paths hold no file of any language the
+// generic engine supports. The caller decides whether that is fatal: with
+// JavaScript/TypeScript files dispatched elsewhere it is not.
+var ErrNoFiles = errors.New("no supported source files found")
+
 // Analyze collects every supported source file under paths and runs the
 // selected analyses on it. A file that cannot be read is skipped and
 // reported in Errors, a file with a syntax error is analyzed without the
 // functions that contain it and reported in Warnings, and finding no
-// supported file at all is an error.
+// supported file at all is ErrNoFiles.
 func Analyze(paths []string, options Options) (*Report, error) {
 	files, err := source.CollectFiles(paths, source.FileFilter{
 		IncludePatterns: lang.IncludePatterns(),
@@ -94,7 +100,7 @@ func Analyze(paths []string, options Options) (*Report, error) {
 		return nil, err
 	}
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no supported source files found")
+		return nil, ErrNoFiles
 	}
 
 	report := &Report{Files: Files{Total: len(files)}}

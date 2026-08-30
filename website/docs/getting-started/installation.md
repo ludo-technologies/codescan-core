@@ -44,7 +44,7 @@ There is no prebuilt binary for Intel macOS or for 32-bit systems. On those mach
 If you already have a Go toolchain, you can install jscan directly:
 
 ```bash
-go install github.com/ludo-technologies/polyscan/jscan/cmd/jscan@latest
+go install github.com/ludo-technologies/polyscan/polyscan/cmd/jscan@latest
 ```
 
 This places the `jscan` binary in your `GOBIN` directory, which defaults to `$(go env GOPATH)/bin`. Make sure that directory is on your `PATH`.
@@ -55,7 +55,7 @@ Building from source requires Go 1.24.6 or later and a working C compiler. The C
 
 ```bash
 git clone https://github.com/ludo-technologies/polyscan.git
-cd polyscan/jscan
+cd polyscan/polyscan
 go build -o jscan ./cmd/jscan
 ```
 

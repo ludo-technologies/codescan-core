@@ -13,12 +13,16 @@ import (
 )
 
 // Document is the report together with the metadata of the run that
-// produced it.
+// produced it. Report is nil when the paths held only JavaScript/TypeScript
+// files, which the jscan analysis covers instead.
 type Document struct {
 	Version     string    `json:"version"`
 	GeneratedAt time.Time `json:"generated_at"`
 	DurationMs  int64     `json:"duration_ms"`
 	*analysis.Report
+	// JavaScript is the jscan analysis of the JavaScript/TypeScript files,
+	// in jscan's own JSON shape, kept as is until the report is unified.
+	JavaScript json.RawMessage `json:"javascript,omitempty"`
 	// MinComplexity is the filter applied to the listed functions. The
 	// summary always covers every analyzed function.
 	MinComplexity int `json:"-"`
@@ -45,7 +49,7 @@ func Write(w io.Writer, doc *Document, format domain.OutputFormat) error {
 
 func writeJSON(w io.Writer, doc *Document) error {
 	out := *doc
-	if doc.Complexity != nil {
+	if doc.Report != nil && doc.Complexity != nil {
 		filtered := *doc.Complexity
 		filtered.Functions = listed(doc)
 		report := *doc.Report

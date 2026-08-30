@@ -5,11 +5,17 @@ GO_MODULE := github.com/ludo-technologies/polyscan/polyscan
 VERSION := $(shell git describe --tags --match 'polyscan/v*' --always --dirty 2>/dev/null | sed 's|^polyscan/v||' || echo "dev")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE := $(shell date +%Y-%m-%d)
+# internal/js/version is stamped too: the JavaScript section of the report
+# carries jscan's version fields until the report is unified.
 LDFLAGS := -ldflags "-s -w \
                      -X '$(GO_MODULE)/internal/version.Version=$(VERSION)' \
                      -X '$(GO_MODULE)/internal/version.Commit=$(COMMIT)' \
                      -X '$(GO_MODULE)/internal/version.Date=$(DATE)' \
-                     -X '$(GO_MODULE)/internal/version.BuiltBy=make'"
+                     -X '$(GO_MODULE)/internal/version.BuiltBy=make' \
+                     -X '$(GO_MODULE)/internal/js/version.Version=$(VERSION)' \
+                     -X '$(GO_MODULE)/internal/js/version.Commit=$(COMMIT)' \
+                     -X '$(GO_MODULE)/internal/js/version.Date=$(DATE)' \
+                     -X '$(GO_MODULE)/internal/js/version.BuiltBy=make'"
 
 .PHONY: help all build test lint fmt clean install run
 

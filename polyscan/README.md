@@ -1,6 +1,6 @@
 # polyscan
 
-A multi-language code quality analyzer. It detects the language of each file by its extension and measures cyclomatic complexity and detects code clones for Go, Rust and C++.
+A multi-language code quality analyzer. It detects the language of each file by its extension. Go, Rust and C++ get cyclomatic complexity and code clone detection from the generic engine; JavaScript/TypeScript files get [jscan](../jscan/README.md)'s full analysis (complexity, dead code, clones, coupling, dependencies) with jscan's own output, kept separate until the reports are unified.
 
 ## Installation
 
@@ -33,6 +33,8 @@ polyscan analyze --select clone .
 # List only functions with complexity 10 or higher; the summary still covers every function
 polyscan analyze --min-complexity 10 .
 ```
+
+`--select` and `--min-complexity` apply to the languages of the generic engine; JavaScript/TypeScript always runs jscan's default analyses, honors a `jscan.config.json` when the project has one, and writes its report next to the main one (`polyscan-report.js.html`) or as the `javascript` key of the JSON output.
 
 A file that cannot be read is skipped and listed under `Errors`. A file with a syntax error is analyzed without the functions that contain the error, counted as partial, and listed under `Warnings`; C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.
 

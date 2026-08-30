@@ -9,7 +9,6 @@ You need Go 1.24.6 or later, a C compiler, and `golangci-lint`. The C compiler i
 ```bash
 git clone https://github.com/ludo-technologies/polyscan.git
 cd polyscan/jscan
-go mod download
 make build
 ```
 
