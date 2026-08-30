@@ -625,7 +625,7 @@ func (f *OutputFormatterImpl) writeAnalyzeText(
 	writer io.Writer,
 	duration time.Duration,
 ) error {
-	fmt.Fprintf(writer, "\n=== jscan Analysis Report ===\n")
+	fmt.Fprintf(writer, "\n=== polyscan Analysis Report ===\n")
 	fmt.Fprintf(writer, "Generated: %s\n", time.Now().Format(time.RFC3339))
 	fmt.Fprintf(writer, "Duration: %dms\n", duration.Milliseconds())
 	fmt.Fprintf(writer, "Version: %s\n\n", version.Version)
@@ -678,12 +678,24 @@ func (f *OutputFormatterImpl) writeAnalyzeText(
 			summary.SkippedFiles, summary.TotalFiles)
 	}
 	fmt.Fprintf(writer, "\n")
+	// Only the dimensions that ran are listed: the others are left out of
+	// the health score, so a line for them would misread as a clean result.
 	fmt.Fprintf(writer, "Category Scores:\n")
-	fmt.Fprintf(writer, "  Complexity:       %3d/100\n", summary.ComplexityScore)
-	fmt.Fprintf(writer, "  Dead Code:        %3d/100\n", summary.DeadCodeScore)
-	fmt.Fprintf(writer, "  Code Duplication: %3d/100\n", summary.DuplicationScore)
-	fmt.Fprintf(writer, "  Coupling:         %3d/100\n", summary.CouplingScore)
-	fmt.Fprintf(writer, "  Dependencies:     %3d/100\n", summary.DependencyScore)
+	if summary.ComplexityEnabled {
+		fmt.Fprintf(writer, "  Complexity:       %3d/100\n", summary.ComplexityScore)
+	}
+	if summary.DeadCodeEnabled {
+		fmt.Fprintf(writer, "  Dead Code:        %3d/100\n", summary.DeadCodeScore)
+	}
+	if summary.CloneEnabled {
+		fmt.Fprintf(writer, "  Code Duplication: %3d/100\n", summary.DuplicationScore)
+	}
+	if summary.CBOEnabled {
+		fmt.Fprintf(writer, "  Coupling:         %3d/100\n", summary.CouplingScore)
+	}
+	if summary.DepsEnabled {
+		fmt.Fprintf(writer, "  Dependencies:     %3d/100\n", summary.DependencyScore)
+	}
 
 	return nil
 }

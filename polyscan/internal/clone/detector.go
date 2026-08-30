@@ -134,6 +134,11 @@ type Statistics struct {
 	TotalCloneGroups  int            `json:"total_clone_groups"`
 	ClonesByType      map[string]int `json:"clones_by_type"`
 	AverageSimilarity float64        `json:"average_similarity"`
+	// LinesAnalyzed and FilesAnalyzed describe the files the detection
+	// covered, fragments or not. The detector cannot know them — it only
+	// sees the fragments it was handed — so the caller fills them in.
+	LinesAnalyzed int `json:"lines_analyzed"`
+	FilesAnalyzed int `json:"files_analyzed"`
 }
 
 // Report is the result of a detection run.

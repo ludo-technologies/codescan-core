@@ -75,6 +75,10 @@ type Report struct {
 	Files      Files         `json:"files"`
 	Complexity *Complexity   `json:"complexity,omitempty"`
 	Clones     *clone.Report `json:"clone,omitempty"`
+	// FileLines is the source line count of every analyzed file, keyed by
+	// its reported path. The unified report shows lines per hotspot file,
+	// and this run is the only place the contents are in hand.
+	FileLines map[string]int `json:"-"`
 	// Warnings lists, per partial file, its syntax error.
 	Warnings []string `json:"warnings,omitempty"`
 	// Errors lists, per skipped file, why it was skipped.
@@ -103,11 +107,12 @@ func Analyze(paths []string, options Options) (*Report, error) {
 		return nil, ErrNoFiles
 	}
 
-	report := &Report{Files: Files{Total: len(files)}}
+	report := &Report{Files: Files{Total: len(files)}, FileLines: map[string]int{}}
 	if options.Complexity {
 		report.Complexity = &Complexity{Functions: []Function{}}
 	}
 	detectors := map[*engine.Language]*clone.Detector{}
+	cloneLines, cloneFiles := 0, 0
 
 	for _, file := range files {
 		language, ok := lang.ByPath(file)
@@ -116,13 +121,14 @@ func Analyze(paths []string, options Options) (*Report, error) {
 			panic(fmt.Sprintf("no language for %s", file))
 		}
 		display := displayPath(file)
-		result, err := analyzeFile(language, file)
+		result, lines, err := analyzeFile(language, file)
 		if err != nil {
 			report.Files.Skipped++
 			report.Errors = append(report.Errors, fmt.Sprintf("%s: %v", display, err))
 			continue
 		}
 		report.Files.Analyzed++
+		report.FileLines[display] = lines
 		if result.SyntaxError != nil {
 			report.Files.Partial++
 			report.Warnings = append(report.Warnings, fmt.Sprintf("%s: %v; functions containing it were not analyzed", display, result.SyntaxError))
@@ -135,6 +141,8 @@ func Analyze(paths []string, options Options) (*Report, error) {
 			}
 		}
 		if options.Clones && !language.IsTestFile(display) {
+			cloneLines += lines
+			cloneFiles++
 			detector, ok := detectors[language]
 			if !ok {
 				detector = clone.NewDetector(language.Clone, clone.DefaultConfig())
@@ -154,16 +162,34 @@ func Analyze(paths []string, options Options) (*Report, error) {
 	}
 	if options.Clones {
 		report.Clones = detectClones(detectors)
+		report.Clones.Statistics.LinesAnalyzed = cloneLines
+		report.Clones.Statistics.FilesAnalyzed = cloneFiles
 	}
 	return report, nil
 }
 
-func analyzeFile(language *engine.Language, path string) (*engine.Result, error) {
+func analyzeFile(language *engine.Language, path string) (result *engine.Result, lines int, err error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return language.Analyze(content)
+	result, err = language.Analyze(content)
+	if err != nil {
+		return nil, 0, err
+	}
+	return result, countLines(content), nil
+}
+
+// countLines counts source lines the way the JavaScript analysis does, so
+// per-file line counts mean the same thing in every language's rollup.
+func countLines(content []byte) int {
+	lines := 1
+	for _, b := range content {
+		if b == '\n' {
+			lines++
+		}
+	}
+	return lines
 }
 
 func newFunction(fn engine.Function, language *engine.Language, display string) Function {

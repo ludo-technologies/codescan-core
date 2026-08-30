@@ -1,184 +1,444 @@
-// Package report writes an analysis report as text or JSON.
+// Package report merges the generic-engine analysis (Go, Rust, C++) with the
+// JavaScript/TypeScript analysis into the response set the unified formatter
+// renders, so every language shares one report, one JSON shape and one health
+// score.
 package report
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
+	"path/filepath"
+	"sort"
 	"time"
 
-	"github.com/ludo-technologies/polyscan/core/domain"
+	coredomain "github.com/ludo-technologies/polyscan/core/domain"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/analysis"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/clone"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/js"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/js/domain"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/js/version"
 )
 
-// Document is the report together with the metadata of the run that
-// produced it. Report is nil when the paths held only JavaScript/TypeScript
-// files, which the jscan analysis covers instead.
-type Document struct {
-	Version     string    `json:"version"`
-	GeneratedAt time.Time `json:"generated_at"`
-	DurationMs  int64     `json:"duration_ms"`
-	*analysis.Report
-	// JavaScript is the jscan analysis of the JavaScript/TypeScript files,
-	// in jscan's own JSON shape, kept as is until the report is unified.
-	JavaScript json.RawMessage `json:"javascript,omitempty"`
-	// MinComplexity is the filter applied to the listed functions. The
-	// summary always covers every analyzed function.
-	MinComplexity int `json:"-"`
+// Responses is the unified analysis in the shape the output formatter
+// renders. An analysis that did not run, or found nothing to analyze,
+// leaves its response nil, and the health score leaves those dimensions
+// out instead of scoring them as clean.
+type Responses struct {
+	Complexity *domain.ComplexityResponse
+	DeadCode   *domain.DeadCodeResponse
+	Clone      *domain.CloneResponse
+	CBO        *domain.CBOResponse
+	Deps       *domain.DependencyGraphResponse
 }
 
-// textPairLimit bounds the clone pairs the text report lists; the JSON
-// report carries them all.
-const textPairLimit = 10
+// Combine merges the generic-engine report with the JavaScript/TypeScript
+// result. Complexity and clone results merge across languages; dead code,
+// coupling and dependencies exist only for JavaScript/TypeScript and pass
+// through. Either input may be nil when its side found no files.
+func Combine(generic *analysis.Report, javascript *js.Result) (Responses, error) {
+	responses := Responses{}
+	if javascript != nil {
+		responses.Complexity = javascript.Complexity
+		responses.DeadCode = javascript.DeadCode
+		responses.Clone = javascript.Clones
+		responses.CBO = javascript.CBO
+		responses.Deps = javascript.Deps
+	}
+	if generic != nil {
+		complexity, err := genericComplexity(generic)
+		if err != nil {
+			return Responses{}, err
+		}
+		responses.Complexity = mergeComplexity(complexity, responses.Complexity)
+		responses.Clone = mergeClones(genericClones(generic), responses.Clone)
+	}
+	return responses, nil
+}
 
-// Write renders the document in the given format.
-func Write(w io.Writer, doc *Document, format domain.OutputFormat) error {
-	switch format {
-	case domain.OutputFormatJSON:
-		return writeJSON(w, doc)
-	case domain.OutputFormatText:
-		writeText(w, doc)
+// genericComplexity converts the generic engine's complexity analysis into
+// the formatter's complexity response, including the per-module and
+// per-directory rollups the report's hotspot table reads.
+func genericComplexity(report *analysis.Report) (*domain.ComplexityResponse, error) {
+	if report.Complexity == nil {
+		return nil, nil
+	}
+
+	src := report.Complexity
+	functions := make([]domain.FunctionComplexity, 0, len(src.Functions))
+	distribution := make(map[int]int, len(src.Functions))
+	for _, fn := range src.Functions {
+		functions = append(functions, domain.FunctionComplexity{
+			Name:        fn.Name,
+			FilePath:    fn.FilePath,
+			Language:    fn.Language,
+			StartLine:   fn.StartLine,
+			StartColumn: fn.StartColumn,
+			EndLine:     fn.EndLine,
+			Metrics:     domain.ComplexityMetrics{Complexity: fn.Complexity},
+			RiskLevel:   domain.RiskLevel(fn.RiskLevel),
+		})
+		distribution[fn.Complexity]++
+	}
+
+	rollups := domain.AggregateComplexityByModule(functions)
+	analyzed := make([]string, 0, len(report.FileLines))
+	for path, lines := range report.FileLines {
+		key := filepath.Clean(path)
+		metrics := rollups[key]
+		metrics.LinesOfCode = lines
+		rollups[key] = metrics
+		analyzed = append(analyzed, path)
+	}
+
+	var byDirectory domain.DirectoryComplexityMetricsList
+	if len(functions) > 0 {
+		root, err := domain.ComplexityDirectoryRoot(analyzed)
+		if err != nil {
+			return nil, err
+		}
+		byDirectory, err = domain.AggregateComplexityByDirectory(functions, root)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &domain.ComplexityResponse{
+		Functions:     functions,
+		ByDirectory:   byDirectory,
+		ModuleRollups: rollups,
+		Summary: domain.ComplexitySummary{
+			TotalFunctions:         src.Summary.TotalFunctions,
+			FunctionsParsed:        src.Summary.TotalFunctions,
+			AverageComplexity:      src.Summary.AverageComplexity,
+			MaxComplexity:          src.Summary.MaxComplexity,
+			MinComplexity:          src.Summary.MinComplexity,
+			FilesAnalyzed:          report.Files.Analyzed,
+			TotalFiles:             report.Files.Total,
+			SkippedFiles:           report.Files.Skipped,
+			LowRiskFunctions:       src.Summary.LowRiskFunctions,
+			MediumRiskFunctions:    src.Summary.MediumRiskFunctions,
+			HighRiskFunctions:      src.Summary.HighRiskFunctions,
+			ComplexityDistribution: distribution,
+		},
+		Warnings:    append([]string{}, report.Warnings...),
+		Errors:      append([]string{}, report.Errors...),
+		GeneratedAt: time.Now().Format(time.RFC3339),
+		Version:     version.Version,
+		// The generic engine classifies risk with the shared defaults; the
+		// report reads the thresholds back from here to band its histogram.
+		Config: map[string]interface{}{
+			"low_threshold":    coredomain.DefaultComplexityLowThreshold,
+			"medium_threshold": coredomain.DefaultComplexityMediumThreshold,
+		},
+	}, nil
+}
+
+// genericClones converts the generic engine's clone report into the
+// formatter's clone response. Fragments keep one identity across the pairs
+// and groups they appear in, as the formatter expects.
+func genericClones(report *analysis.Report) *domain.CloneResponse {
+	if report.Clones == nil {
 		return nil
-	case domain.OutputFormatHTML:
-		return writeHTML(w, doc)
+	}
+
+	src := report.Clones
+	fragments := map[int]*domain.Clone{}
+	convert := func(fragment clone.Fragment, cloneType coredomain.CloneType) *domain.Clone {
+		if existing, ok := fragments[fragment.ID]; ok {
+			return existing
+		}
+		converted := &domain.Clone{
+			ID:       fragment.ID,
+			Type:     domain.CloneType(cloneType),
+			Language: fragment.Language,
+			Location: &domain.CloneLocation{
+				FilePath:  fragment.FilePath,
+				StartLine: fragment.StartLine,
+				EndLine:   fragment.EndLine,
+			},
+			Content:   fragment.Content,
+			Size:      fragment.NodeCount,
+			LineCount: fragment.LineCount,
+		}
+		fragments[fragment.ID] = converted
+		return converted
+	}
+
+	pairs := make([]*domain.ClonePair, 0, len(src.Pairs))
+	for _, pair := range src.Pairs {
+		pairs = append(pairs, &domain.ClonePair{
+			ID:         pair.ID,
+			Clone1:     convert(pair.Fragment1, pair.Type),
+			Clone2:     convert(pair.Fragment2, pair.Type),
+			Similarity: pair.Similarity,
+			Distance:   pair.Distance,
+			Type:       domain.CloneType(pair.Type),
+			Confidence: pair.Confidence,
+		})
+	}
+	groups := make([]*domain.CloneGroup, 0, len(src.Groups))
+	for _, group := range src.Groups {
+		converted := &domain.CloneGroup{
+			ID:         group.ID,
+			Type:       domain.CloneType(group.Type),
+			Similarity: group.Similarity,
+		}
+		for _, fragment := range group.Fragments {
+			converted.AddClone(convert(fragment, group.Type))
+		}
+		groups = append(groups, converted)
+	}
+
+	clonesByType := make(map[string]int, len(src.Statistics.ClonesByType))
+	for cloneType, count := range src.Statistics.ClonesByType {
+		clonesByType[cloneType] = count
+	}
+
+	return &domain.CloneResponse{
+		Clones:      sortedFragments(fragments),
+		ClonePairs:  pairs,
+		CloneGroups: groups,
+		Statistics: &domain.CloneStatistics{
+			TotalFragments:    src.Statistics.TotalFragments,
+			TotalClones:       src.Statistics.TotalClones,
+			TotalClonePairs:   src.Statistics.TotalClonePairs,
+			TotalCloneGroups:  src.Statistics.TotalCloneGroups,
+			ClonesByType:      clonesByType,
+			AverageSimilarity: src.Statistics.AverageSimilarity,
+			LinesAnalyzed:     src.Statistics.LinesAnalyzed,
+			FilesAnalyzed:     src.Statistics.FilesAnalyzed,
+		},
+		Success: true,
+	}
+}
+
+func sortedFragments(fragments map[int]*domain.Clone) []*domain.Clone {
+	sorted := make([]*domain.Clone, 0, len(fragments))
+	for _, fragment := range fragments {
+		sorted = append(sorted, fragment)
+	}
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].ID < sorted[j].ID })
+	return sorted
+}
+
+// mergeComplexity merges the generic and JavaScript complexity responses into
+// one population. The JavaScript configuration wins where the responses
+// cannot both be represented (thresholds, sort criteria): it is the only one
+// a user can change, and the generic side runs on the same defaults.
+func mergeComplexity(generic, javascript *domain.ComplexityResponse) *domain.ComplexityResponse {
+	if generic == nil {
+		return javascript
+	}
+	if javascript == nil {
+		return generic
+	}
+
+	functions := make([]domain.FunctionComplexity, 0, len(generic.Functions)+len(javascript.Functions))
+	functions = append(functions, generic.Functions...)
+	functions = append(functions, javascript.Functions...)
+	sort.SliceStable(functions, func(i, j int) bool {
+		a, b := functions[i], functions[j]
+		if a.Metrics.Complexity != b.Metrics.Complexity {
+			return a.Metrics.Complexity > b.Metrics.Complexity
+		}
+		if a.FilePath != b.FilePath {
+			return a.FilePath < b.FilePath
+		}
+		return a.StartLine < b.StartLine
+	})
+
+	rollups := make(map[string]domain.ModuleComplexityMetrics, len(generic.ModuleRollups)+len(javascript.ModuleRollups))
+	for path, metrics := range generic.ModuleRollups {
+		rollups[path] = metrics
+	}
+	for path, metrics := range javascript.ModuleRollups {
+		rollups[path] = metrics
+	}
+
+	return &domain.ComplexityResponse{
+		Functions:     functions,
+		ByDirectory:   mergeDirectories(generic.ByDirectory, javascript.ByDirectory),
+		ModuleRollups: rollups,
+		Summary:       mergeComplexitySummaries(generic.Summary, javascript.Summary),
+		Warnings:      mergeStrings(generic.Warnings, javascript.Warnings),
+		Errors:        mergeStrings(generic.Errors, javascript.Errors),
+		GeneratedAt:   javascript.GeneratedAt,
+		Version:       javascript.Version,
+		Config:        javascript.Config,
+	}
+}
+
+func mergeComplexitySummaries(a, b domain.ComplexitySummary) domain.ComplexitySummary {
+	merged := domain.ComplexitySummary{
+		TotalFunctions:      a.TotalFunctions + b.TotalFunctions,
+		FunctionsParsed:     a.FunctionsParsed + b.FunctionsParsed,
+		MaxComplexity:       max(a.MaxComplexity, b.MaxComplexity),
+		FilesAnalyzed:       a.FilesAnalyzed + b.FilesAnalyzed,
+		TotalFiles:          a.TotalFiles + b.TotalFiles,
+		SkippedFiles:        a.SkippedFiles + b.SkippedFiles,
+		LowRiskFunctions:    a.LowRiskFunctions + b.LowRiskFunctions,
+		MediumRiskFunctions: a.MediumRiskFunctions + b.MediumRiskFunctions,
+		HighRiskFunctions:   a.HighRiskFunctions + b.HighRiskFunctions,
+	}
+	switch {
+	case a.TotalFunctions == 0:
+		merged.MinComplexity = b.MinComplexity
+	case b.TotalFunctions == 0:
+		merged.MinComplexity = a.MinComplexity
 	default:
-		return fmt.Errorf("unsupported output format %q", format)
+		merged.MinComplexity = min(a.MinComplexity, b.MinComplexity)
 	}
+	if merged.TotalFunctions > 0 {
+		merged.AverageComplexity = (a.AverageComplexity*float64(a.TotalFunctions) +
+			b.AverageComplexity*float64(b.TotalFunctions)) / float64(merged.TotalFunctions)
+	}
+	if a.ComplexityDistribution != nil || b.ComplexityDistribution != nil {
+		merged.ComplexityDistribution = map[int]int{}
+		for complexity, count := range a.ComplexityDistribution {
+			merged.ComplexityDistribution[complexity] += count
+		}
+		for complexity, count := range b.ComplexityDistribution {
+			merged.ComplexityDistribution[complexity] += count
+		}
+	}
+	return merged
 }
 
-func writeJSON(w io.Writer, doc *Document) error {
-	out := *doc
-	if doc.Report != nil && doc.Complexity != nil {
-		filtered := *doc.Complexity
-		filtered.Functions = listed(doc)
-		report := *doc.Report
-		report.Complexity = &filtered
-		out.Report = &report
+// mergeDirectories joins the per-directory rollups, folding together rows
+// whose relative paths coincide: each side reports directories relative to
+// its own analyzed root, so the same label can appear in both.
+func mergeDirectories(a, b domain.DirectoryComplexityMetricsList) domain.DirectoryComplexityMetricsList {
+	byPath := map[string]domain.DirectoryComplexityMetrics{}
+	for _, row := range a {
+		byPath[row.DirectoryPath] = row
 	}
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(out)
+	for _, row := range b {
+		existing, ok := byPath[row.DirectoryPath]
+		if !ok {
+			byPath[row.DirectoryPath] = row
+			continue
+		}
+		total := existing.FunctionCount + row.FunctionCount
+		merged := domain.DirectoryComplexityMetrics{
+			DirectoryPath:         row.DirectoryPath,
+			FunctionCount:         total,
+			MaxComplexity:         max(existing.MaxComplexity, row.MaxComplexity),
+			HighRiskFunctionCount: existing.HighRiskFunctionCount + row.HighRiskFunctionCount,
+			MaxNestingDepth:       max(existing.MaxNestingDepth, row.MaxNestingDepth),
+		}
+		if total > 0 {
+			merged.AverageComplexity = (existing.AverageComplexity*float64(existing.FunctionCount) +
+				row.AverageComplexity*float64(row.FunctionCount)) / float64(total)
+			merged.AverageNestingDepth = (existing.AverageNestingDepth*float64(existing.FunctionCount) +
+				row.AverageNestingDepth*float64(row.FunctionCount)) / float64(total)
+		}
+		byPath[row.DirectoryPath] = merged
+	}
+
+	merged := make(domain.DirectoryComplexityMetricsList, 0, len(byPath))
+	for _, row := range byPath {
+		merged = append(merged, row)
+	}
+	sort.Slice(merged, func(i, j int) bool {
+		if merged[i].AverageComplexity != merged[j].AverageComplexity {
+			return merged[i].AverageComplexity > merged[j].AverageComplexity
+		}
+		return merged[i].DirectoryPath < merged[j].DirectoryPath
+	})
+	return merged
 }
 
-func writeText(w io.Writer, doc *Document) {
-	fmt.Fprintf(w, "\n=== polyscan ===\n\n")
-	fmt.Fprintf(w, "Generated: %s\n", doc.GeneratedAt.Format(time.RFC3339))
-	fmt.Fprintf(w, "Version: %s\n", doc.Version)
-	fmt.Fprintf(w, "Files analyzed: %d\n", doc.Files.Analyzed)
-	if doc.Files.Partial > 0 {
-		fmt.Fprintf(w, "Files with syntax errors: %d\n", doc.Files.Partial)
+func mergeStrings(a, b []string) []string {
+	if len(a)+len(b) == 0 {
+		return nil
 	}
-	if doc.Files.Skipped > 0 {
-		fmt.Fprintf(w, "Files skipped: %d\n", doc.Files.Skipped)
-	}
-
-	if doc.Complexity != nil {
-		writeComplexityText(w, doc)
-	}
-	if doc.Clones != nil {
-		writeCloneText(w, doc.Clones)
-	}
-
-	if len(doc.Warnings) > 0 {
-		fmt.Fprintf(w, "\nWarnings:\n")
-		for _, warning := range doc.Warnings {
-			fmt.Fprintf(w, "  - %s\n", warning)
-		}
-	}
-	if len(doc.Errors) > 0 {
-		fmt.Fprintf(w, "\nErrors:\n")
-		for _, e := range doc.Errors {
-			fmt.Fprintf(w, "  - %s\n", e)
-		}
-	}
+	merged := make([]string, 0, len(a)+len(b))
+	merged = append(merged, a...)
+	return append(merged, b...)
 }
 
-func writeComplexityText(w io.Writer, doc *Document) {
-	summary := doc.Complexity.Summary
-	fmt.Fprintf(w, "\n=== Complexity Analysis ===\n\n")
-	fmt.Fprintf(w, "Summary:\n")
-	fmt.Fprintf(w, "  Total functions: %d\n", summary.TotalFunctions)
-	fmt.Fprintf(w, "  Average complexity: %.2f\n", summary.AverageComplexity)
-	fmt.Fprintf(w, "  Max complexity: %d\n", summary.MaxComplexity)
-	fmt.Fprintf(w, "  Min complexity: %d\n\n", summary.MinComplexity)
-
-	fmt.Fprintf(w, "Risk Distribution:\n")
-	fmt.Fprintf(w, "  High risk: %d\n", summary.HighRiskFunctions)
-	fmt.Fprintf(w, "  Medium risk: %d\n", summary.MediumRiskFunctions)
-	fmt.Fprintf(w, "  Low risk: %d\n", summary.LowRiskFunctions)
-
-	functions := listed(doc)
-	if len(functions) == 0 {
-		return
+// mergeClones merges the generic and JavaScript clone responses. Fragment IDs
+// of the second response are rebased to stay unique, and pairs and groups are
+// re-ranked and renumbered across languages the way each side ranks its own.
+func mergeClones(generic, javascript *domain.CloneResponse) *domain.CloneResponse {
+	if generic == nil {
+		return javascript
 	}
-	if doc.MinComplexity > 1 {
-		fmt.Fprintf(w, "\nFunctions (complexity >= %d):\n", doc.MinComplexity)
-	} else {
-		fmt.Fprintf(w, "\nFunctions:\n")
+	if javascript == nil {
+		return generic
 	}
-	for _, fn := range functions {
-		indicator := ""
-		switch fn.RiskLevel {
-		case domain.RiskLevelHigh:
-			indicator = " [HIGH]"
-		case domain.RiskLevelMedium:
-			indicator = " [MEDIUM]"
+
+	offset := 0
+	for _, fragment := range generic.Clones {
+		offset = max(offset, fragment.ID+1)
+	}
+	for _, fragment := range javascript.Clones {
+		fragment.ID += offset
+	}
+
+	merged := &domain.CloneResponse{
+		Clones:     append(append([]*domain.Clone{}, generic.Clones...), javascript.Clones...),
+		ClonePairs: append(append([]*domain.ClonePair{}, generic.ClonePairs...), javascript.ClonePairs...),
+		CloneGroups: append(append([]*domain.CloneGroup{}, generic.CloneGroups...),
+			javascript.CloneGroups...),
+		Statistics: mergeCloneStatistics(generic.Statistics, javascript.Statistics),
+		Duration:   generic.Duration + javascript.Duration,
+		Success:    generic.Success && javascript.Success,
+		Error:      firstNonEmpty(generic.Error, javascript.Error),
+	}
+
+	sort.SliceStable(merged.ClonePairs, func(i, j int) bool {
+		return domain.ClonePairPrecedes(merged.ClonePairs[i], merged.ClonePairs[j])
+	})
+	sort.SliceStable(merged.CloneGroups, func(i, j int) bool {
+		a, b := merged.CloneGroups[i], merged.CloneGroups[j]
+		if a.Similarity != b.Similarity {
+			return a.Similarity > b.Similarity
 		}
-		fmt.Fprintf(w, "  %s: %d%s\n", fn.Name, fn.Complexity, indicator)
-		fmt.Fprintf(w, "    File: %s:%d-%d\n", fn.FilePath, fn.StartLine, fn.EndLine)
+		return len(a.Clones) > len(b.Clones)
+	})
+	for i, pair := range merged.ClonePairs {
+		pair.ID = i
 	}
+	for i, group := range merged.CloneGroups {
+		group.ID = i
+	}
+	return merged
 }
 
-func writeCloneText(w io.Writer, clones *clone.Report) {
-	stats := clones.Statistics
-	fmt.Fprintf(w, "\n=== Clone Detection ===\n\n")
-	fmt.Fprintf(w, "Statistics:\n")
-	fmt.Fprintf(w, "  Fragments compared: %d\n", stats.TotalFragments)
-	fmt.Fprintf(w, "  Total clone pairs: %d\n", stats.TotalClonePairs)
-	fmt.Fprintf(w, "  Total clone groups: %d\n", stats.TotalCloneGroups)
-	fmt.Fprintf(w, "  Average similarity: %.2f\n", stats.AverageSimilarity)
-	if len(stats.ClonesByType) > 0 {
-		fmt.Fprintf(w, "\nClone Types:\n")
-		for _, cloneType := range []domain.CloneType{domain.Type1Clone, domain.Type2Clone, domain.Type3Clone, domain.Type4Clone} {
-			if count := stats.ClonesByType[cloneType.String()]; count > 0 {
-				fmt.Fprintf(w, "  %s: %d\n", cloneType, count)
-			}
-		}
+func mergeCloneStatistics(a, b *domain.CloneStatistics) *domain.CloneStatistics {
+	if a == nil {
+		return b
 	}
-
-	if len(clones.Groups) > 0 {
-		fmt.Fprintf(w, "\nClone Groups:\n")
-		for _, group := range clones.Groups {
-			fmt.Fprintf(w, "  Group %d: %s, %d fragments, %.1f%% similar\n", group.ID+1, group.Type, len(group.Fragments), group.Similarity*100)
-			for _, fragment := range group.Fragments {
-				fmt.Fprintf(w, "    %s (%s:%d-%d)\n", fragment.Name, fragment.FilePath, fragment.StartLine, fragment.EndLine)
-			}
-		}
+	if b == nil {
+		return a
 	}
-
-	if len(clones.Pairs) == 0 {
-		fmt.Fprintf(w, "\nNo code clones detected.\n")
-		return
+	merged := &domain.CloneStatistics{
+		TotalFragments:   a.TotalFragments + b.TotalFragments,
+		TotalClones:      a.TotalClones + b.TotalClones,
+		TotalClonePairs:  a.TotalClonePairs + b.TotalClonePairs,
+		TotalCloneGroups: a.TotalCloneGroups + b.TotalCloneGroups,
+		ClonesByType:     map[string]int{},
+		LinesAnalyzed:    a.LinesAnalyzed + b.LinesAnalyzed,
+		FilesAnalyzed:    a.FilesAnalyzed + b.FilesAnalyzed,
+		NodesAnalyzed:    a.NodesAnalyzed + b.NodesAnalyzed,
 	}
-	fmt.Fprintf(w, "\nTop Clone Pairs:\n")
-	for _, pair := range clones.Pairs[:min(textPairLimit, len(clones.Pairs))] {
-		fmt.Fprintf(w, "  %s: %s (%s:%d-%d) <-> %s (%s:%d-%d) (%.1f%% similar)\n",
-			pair.Type,
-			pair.Fragment1.Name, pair.Fragment1.FilePath, pair.Fragment1.StartLine, pair.Fragment1.EndLine,
-			pair.Fragment2.Name, pair.Fragment2.FilePath, pair.Fragment2.StartLine, pair.Fragment2.EndLine,
-			pair.Similarity*100)
+	for cloneType, count := range a.ClonesByType {
+		merged.ClonesByType[cloneType] += count
 	}
+	for cloneType, count := range b.ClonesByType {
+		merged.ClonesByType[cloneType] += count
+	}
+	if merged.TotalClonePairs > 0 {
+		merged.AverageSimilarity = (a.AverageSimilarity*float64(a.TotalClonePairs) +
+			b.AverageSimilarity*float64(b.TotalClonePairs)) / float64(merged.TotalClonePairs)
+	}
+	return merged
 }
 
-// listed returns the functions that pass the report filter, in the order
-// the analysis sorted them.
-func listed(doc *Document) []analysis.Function {
-	functions := []analysis.Function{}
-	for _, fn := range doc.Complexity.Functions {
-		if fn.Complexity >= doc.MinComplexity {
-			functions = append(functions, fn)
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
 		}
 	}
-	return functions
+	return ""
 }

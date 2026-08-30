@@ -99,6 +99,7 @@ type FunctionComplexity struct {
 	// Function identification
 	Name        string `json:"name" yaml:"name"`
 	FilePath    string `json:"file_path" yaml:"file_path"`
+	Language    string `json:"language" yaml:"language"`
 	StartLine   int    `json:"start_line" yaml:"start_line"`
 	StartColumn int    `json:"start_column" yaml:"start_column"`
 	EndLine     int    `json:"end_line" yaml:"end_line"`

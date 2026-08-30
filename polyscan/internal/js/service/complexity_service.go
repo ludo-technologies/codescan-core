@@ -220,6 +220,7 @@ func (s *ComplexityServiceImpl) analyzeProjectFile(projectFile *ProjectFile) fil
 		funcComplexity := domain.FunctionComplexity{
 			Name:        funcName,
 			FilePath:    filePath,
+			Language:    domain.LanguageForPath(filePath),
 			StartLine:   result.StartLine,
 			StartColumn: result.StartCol,
 			EndLine:     result.EndLine,

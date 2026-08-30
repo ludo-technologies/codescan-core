@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -12,23 +11,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ludo-technologies/polyscan/core/domain"
 	"github.com/ludo-technologies/polyscan/core/util"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/analysis"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/js"
 	jsdomain "github.com/ludo-technologies/polyscan/polyscan/internal/js/domain"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/js/service"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/report"
-	"github.com/ludo-technologies/polyscan/polyscan/internal/version"
 	"github.com/spf13/cobra"
 )
 
 const (
 	selectComplexity = "complexity"
+	selectDeadCode   = "deadcode"
 	selectClone      = "clone"
+	selectCBO        = "cbo"
+	selectDeps       = "deps"
 
 	defaultReportPath = "polyscan-report.html"
 )
+
+// allAnalyses is the default selection: every analysis a language supports.
+var allAnalyses = []string{selectComplexity, selectDeadCode, selectClone, selectCBO, selectDeps}
 
 func analyzeCmd() *cobra.Command {
 	var (
@@ -42,15 +45,15 @@ func analyzeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "analyze [path...]",
 		Short: "Analyze source files",
-		Long: `Analyze source files for cyclomatic complexity and code clones.
+		Long: `Analyze source files and report one health score across languages.
 
 The language of each file is detected from its extension. Supported: Go, Rust,
 C++ and JavaScript/TypeScript.
 
-JavaScript/TypeScript files get jscan's full analysis (complexity, dead code,
-clones, coupling, dependencies) with jscan's own file collection, configuration
-discovery and output; --select and --min-complexity apply to the other
-languages. The reports stay separate until they are unified.
+Complexity and clone analysis cover every language; dead code, coupling (CBO)
+and dependency analysis exist for JavaScript/TypeScript only. The health score
+is computed over the dimensions that ran: a dimension a language does not have
+is left out, not scored as clean.
 
 By default, generates an HTML report and opens it in your browser.
 
@@ -63,109 +66,92 @@ Examples:
   polyscan analyze --min-complexity 10 .    # List only functions at or above 10`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			outputFormat := domain.OutputFormat(format)
+			outputFormat := jsdomain.OutputFormat(format)
 			switch outputFormat {
-			case domain.OutputFormatHTML, domain.OutputFormatJSON, domain.OutputFormatText:
+			case jsdomain.OutputFormatHTML, jsdomain.OutputFormatJSON, jsdomain.OutputFormatText:
 			default:
 				return fmt.Errorf("invalid format %q, must be one of: html, json, text", format)
 			}
 			if minComplexity < 1 {
 				return fmt.Errorf("--min-complexity must be at least 1")
 			}
-			options, err := parseSelection(selected)
+			options, selection, err := parseSelection(selected)
 			if err != nil {
 				return err
 			}
 
 			start := time.Now()
-			result, err := analysis.Analyze(args, options)
-			if err != nil && !errors.Is(err, analysis.ErrNoFiles) {
+			var generic *analysis.Report
+			if options.Complexity || options.Clones {
+				generic, err = analysis.Analyze(args, options)
+				if err != nil && !errors.Is(err, analysis.ErrNoFiles) {
+					return err
+				}
+			}
+			javascript, err := analyzeJavaScript(args, selection, cmd.ErrOrStderr())
+			if err != nil {
 				return err
 			}
-			javascript, jsErr := analyzeJavaScript(args, cmd.ErrOrStderr())
-			if jsErr != nil {
-				return jsErr
-			}
-			if result == nil && javascript == nil {
+			if generic == nil && javascript == nil {
 				return analysis.ErrNoFiles
 			}
-			doc := &report.Document{
-				Version:       version.Version,
-				GeneratedAt:   start,
-				DurationMs:    time.Since(start).Milliseconds(),
-				Report:        result,
-				MinComplexity: minComplexity,
+			responses, err := report.Combine(generic, javascript)
+			if err != nil {
+				return err
+			}
+			filterFunctions(responses.Complexity, minComplexity)
+			duration := time.Since(start)
+
+			formatter := service.NewOutputFormatter()
+			write := func(w io.Writer, format jsdomain.OutputFormat) error {
+				return formatter.WriteAnalyze(responses.Complexity, responses.DeadCode,
+					responses.Clone, responses.CBO, responses.Deps, format, w, duration)
+			}
+			summarize := func(w io.Writer) {
+				summary := service.BuildAnalyzeSummary(responses.Complexity, responses.DeadCode,
+					responses.Clone, responses.CBO, responses.Deps)
+				fmt.Fprint(w, service.FormatCLISummary(summary, duration, unanalyzedFiles(responses.Complexity)))
 			}
 
 			switch outputFormat {
-			case domain.OutputFormatJSON:
-				if javascript != nil {
-					var buf bytes.Buffer
-					if err := javascript.write(jsdomain.OutputFormatJSON, &buf); err != nil {
-						return err
-					}
-					doc.JavaScript = buf.Bytes()
+			case jsdomain.OutputFormatJSON:
+				if err := write(cmd.OutOrStdout(), outputFormat); err != nil {
+					return err
 				}
-				return report.Write(cmd.OutOrStdout(), doc, outputFormat)
-			case domain.OutputFormatText:
-				if result != nil {
-					if err := report.Write(cmd.OutOrStdout(), doc, outputFormat); err != nil {
-						return err
-					}
-				}
-				if javascript != nil {
-					return javascript.write(jsdomain.OutputFormatText, cmd.OutOrStdout())
-				}
+				// The summary goes to stderr so it cannot pollute the
+				// machine-readable output.
+				summarize(cmd.ErrOrStderr())
 				return nil
+			case jsdomain.OutputFormatText:
+				// The text report carries its own health score section.
+				return write(cmd.OutOrStdout(), outputFormat)
 			}
 
 			if outputPath == "" {
 				outputPath = defaultReportPath
 			}
-			var openPath string
-			if result != nil {
-				if err := writeReportFile(outputPath, doc); err != nil {
-					return err
-				}
-				absPath, err := filepath.Abs(outputPath)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "HTML report written to %s\n", absPath)
-				openPath = absPath
+			if err := writeReportFile(outputPath, write); err != nil {
+				return err
 			}
-			if javascript != nil {
-				// The JavaScript report is a separate page until the
-				// reports are unified; it takes the main path when it is
-				// the only one.
-				jsPath := outputPath
-				if result != nil {
-					jsPath = jsReportPath(outputPath)
-				}
-				if err := writeJSReportFile(jsPath, javascript); err != nil {
-					return err
-				}
-				absPath, err := filepath.Abs(jsPath)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "JavaScript HTML report written to %s\n", absPath)
-				if openPath == "" {
-					openPath = absPath
-				}
+			absPath, err := filepath.Abs(outputPath)
+			if err != nil {
+				return err
 			}
+			fmt.Fprintf(cmd.OutOrStdout(), "HTML report written to %s\n", absPath)
+			summarize(cmd.OutOrStdout())
 			if noOpen || util.IsSSH() {
 				return nil
 			}
-			if err := util.OpenBrowser(fileURL(openPath)); err != nil {
+			if err := util.OpenBrowser(fileURL(absPath)); err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Could not open the browser: %v\n", err)
 			}
 			return nil
 		},
 	}
 
-	cmd.Flags().StringSliceVarP(&selected, "select", "s", []string{selectComplexity, selectClone},
-		"Analyses to run (comma-separated): complexity,clone")
+	cmd.Flags().StringSliceVarP(&selected, "select", "s", allAnalyses,
+		"Analyses to run (comma-separated): complexity,deadcode,clone,cbo,deps\n"+
+			"deadcode, cbo and deps apply to JavaScript/TypeScript only")
 	cmd.Flags().StringVarP(&format, "format", "f", "html", "Output format: html, json, text")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "HTML report path (default: "+defaultReportPath+")")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Don't open the HTML report in the browser")
@@ -173,14 +159,7 @@ Examples:
 	return cmd
 }
 
-// jsAnalysis is the jscan analysis of the JavaScript/TypeScript files,
-// with the duration jscan stamps into its report.
-type jsAnalysis struct {
-	result   *js.Result
-	duration time.Duration
-}
-
-// analyzeJavaScript runs the full jscan analysis over the JavaScript/
+// analyzeJavaScript runs the selected jscan analyses over the JavaScript/
 // TypeScript files under paths, or returns nil when there are none. The
 // files are collected with jscan's own configuration discovery and
 // exclusion rules, so a JavaScript project keeps exactly the analysis
@@ -190,7 +169,7 @@ type jsAnalysis struct {
 // A tree without JavaScript skips the pipeline before configuration
 // discovery, so a jscan configuration that would not load cannot fail the
 // other languages' analysis.
-func analyzeJavaScript(paths []string, warn io.Writer) (*jsAnalysis, error) {
+func analyzeJavaScript(paths []string, selection js.Selection, warn io.Writer) (*js.Result, error) {
 	hasJS, err := js.ContainsFiles(paths)
 	if err != nil {
 		return nil, err
@@ -210,8 +189,7 @@ func analyzeJavaScript(paths []string, warn io.Writer) (*jsAnalysis, error) {
 		return nil, nil
 	}
 
-	start := time.Now()
-	result := js.Run(context.Background(), files, cfg, js.AllAnalyses())
+	result := js.Run(context.Background(), files, cfg, selection)
 	for _, failure := range []struct {
 		name string
 		err  error
@@ -226,32 +204,34 @@ func analyzeJavaScript(paths []string, warn io.Writer) (*jsAnalysis, error) {
 			fmt.Fprintf(warn, "JavaScript %s analysis error: %v\n", failure.name, failure.err)
 		}
 	}
-	return &jsAnalysis{result: result, duration: time.Since(start)}, nil
+	return result, nil
 }
 
-// write renders the analysis in jscan's own format.
-func (a *jsAnalysis) write(format jsdomain.OutputFormat, w io.Writer) error {
-	formatter := service.NewOutputFormatter()
-	return formatter.WriteAnalyze(a.result.Complexity, a.result.DeadCode, a.result.Clones, a.result.CBO, a.result.Deps, format, w, a.duration)
-}
-
-// jsReportPath places the JavaScript report next to the main one:
-// polyscan-report.html becomes polyscan-report.js.html.
-func jsReportPath(path string) string {
-	ext := filepath.Ext(path)
-	return strings.TrimSuffix(path, ext) + ".js" + ext
-}
-
-func writeJSReportFile(path string, javascript *jsAnalysis) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("create JavaScript HTML report: %w", err)
+// filterFunctions drops the listed functions below minComplexity. The summary
+// and every score still cover the complete analyzed population; the filter
+// only limits which functions the report lists.
+func filterFunctions(complexity *jsdomain.ComplexityResponse, minComplexity int) {
+	if complexity == nil || minComplexity <= 1 {
+		return
 	}
-	if err := javascript.write(jsdomain.OutputFormatHTML, file); err != nil {
-		file.Close()
-		return err
+	listed := complexity.Functions[:0]
+	for _, fn := range complexity.Functions {
+		if fn.Metrics.Complexity >= minComplexity {
+			listed = append(listed, fn)
+		}
 	}
-	return file.Close()
+	complexity.Functions = listed
+}
+
+// unanalyzedFiles returns the per-file failures the complexity analysis
+// collected: it is the only analysis that reports the files it dropped, and
+// it runs over the same file set as the others, so its list identifies what
+// every score is missing.
+func unanalyzedFiles(complexity *jsdomain.ComplexityResponse) []string {
+	if complexity == nil {
+		return nil
+	}
+	return complexity.Errors
 }
 
 // fileURL turns an absolute path into a file URL, escaping characters such
@@ -265,32 +245,45 @@ func fileURL(absPath string) string {
 	return (&url.URL{Scheme: "file", Path: path}).String()
 }
 
-func writeReportFile(path string, doc *report.Document) error {
+func writeReportFile(path string, write func(io.Writer, jsdomain.OutputFormat) error) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create HTML report: %w", err)
 	}
-	if err := report.Write(file, doc, domain.OutputFormatHTML); err != nil {
+	if err := write(file, jsdomain.OutputFormatHTML); err != nil {
 		file.Close()
 		return err
 	}
 	return file.Close()
 }
 
-func parseSelection(selected []string) (analysis.Options, error) {
+// parseSelection maps the selected analysis names onto the generic engine's
+// options and the JavaScript/TypeScript selection. deadcode, cbo and deps
+// exist only for JavaScript/TypeScript.
+func parseSelection(selected []string) (analysis.Options, js.Selection, error) {
 	var options analysis.Options
+	var selection js.Selection
 	for _, name := range selected {
 		switch name {
 		case selectComplexity:
 			options.Complexity = true
+			selection.Complexity = true
 		case selectClone:
 			options.Clones = true
+			selection.Clones = true
+		case selectDeadCode:
+			selection.DeadCode = true
+		case selectCBO:
+			selection.CBO = true
+		case selectDeps:
+			selection.Deps = true
 		default:
-			return options, fmt.Errorf("invalid analysis %q, must be one of: complexity, clone", name)
+			return options, selection, fmt.Errorf(
+				"invalid analysis %q, must be one of: %s", name, strings.Join(allAnalyses, ", "))
 		}
 	}
-	if !options.Complexity && !options.Clones {
-		return options, fmt.Errorf("no analysis selected")
+	if selection == (js.Selection{}) {
+		return options, selection, fmt.Errorf("no analysis selected")
 	}
-	return options, nil
+	return options, selection, nil
 }

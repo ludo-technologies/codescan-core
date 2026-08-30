@@ -384,8 +384,8 @@ func TestOutputFormatterWriteHTML(t *testing.T) {
 	if !strings.Contains(output, "<!DOCTYPE html>") {
 		t.Error("Expected output to contain HTML doctype")
 	}
-	if !strings.Contains(output, "jscan Analysis Report") {
-		t.Error("Expected output to contain 'jscan Analysis Report'")
+	if !strings.Contains(output, "polyscan Analysis Report") {
+		t.Error("Expected output to contain 'polyscan Analysis Report'")
 	}
 	if !strings.Contains(output, "HEALTH SCORE") {
 		t.Error("Expected output to contain the health score ring")
