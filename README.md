@@ -49,9 +49,9 @@ Every analyzer scores your codebase (0-100 with an A-F grade) and generates an H
 
 Complexity and duplicate code cover every language; dead code, dependencies and class design run for JavaScript/TypeScript (and Python via pyscn) today. Dimensions a language does not have are left out of its score, not counted as clean.
 
-The HTML report opens on an overview of the score, the biggest sources of debt and the files to fix first:
+The HTML report opens on an overview of the score, the biggest sources of debt and the files to fix first. This is `polyscan analyze src` on [Day.js](https://github.com/iamkun/dayjs):
 
-![polyscan HTML report](docs/images/report.png)
+![polyscan HTML report for Day.js](docs/images/report.png)
 
 **Built with Go + tree-sitter** — fast enough to run on every commit.
 
