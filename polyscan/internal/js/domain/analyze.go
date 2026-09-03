@@ -175,6 +175,11 @@ type AnalyzeSummary struct {
 	HighComplexityCount   int     `json:"high_complexity_count" yaml:"high_complexity_count"`
 	MediumComplexityCount int     `json:"medium_complexity_count" yaml:"medium_complexity_count"`
 
+	// DeadCodeFiles is the number of files the dead code analysis covered. It
+	// is the divisor of the dead code penalty rather than TotalFiles, which
+	// counts every language in the run while dead code detection covers
+	// JavaScript/TypeScript only.
+	DeadCodeFiles    int `json:"dead_code_files" yaml:"dead_code_files"`
 	DeadCodeCount    int `json:"dead_code_count" yaml:"dead_code_count"`
 	CriticalDeadCode int `json:"critical_dead_code" yaml:"critical_dead_code"`
 	WarningDeadCode  int `json:"warning_dead_code" yaml:"warning_dead_code"`
@@ -293,7 +298,7 @@ func (s *AnalyzeSummary) calculateComplexityPenalty() int {
 // calculateDeadCodePenalty calculates the penalty for dead code (max 20)
 // Uses per-file rate of weighted findings so that large repos are not unfairly penalized.
 // Weights: Critical=1.0, Warning=0.5, Info=0.2
-// The rate (weightedFindings / totalFiles) is mapped linearly to 0–20,
+// The rate (weightedFindings / DeadCodeFiles) is mapped linearly to 0–20,
 // reaching the maximum penalty at a rate of 3.0 findings per file.
 func (s *AnalyzeSummary) calculateDeadCodePenalty() int {
 	weightedDeadCode := float64(s.CriticalDeadCode)*1.0 +
@@ -304,7 +309,7 @@ func (s *AnalyzeSummary) calculateDeadCodePenalty() int {
 		return 0
 	}
 
-	files := s.TotalFiles
+	files := s.DeadCodeFiles
 	if files < 1 {
 		files = 1
 	}

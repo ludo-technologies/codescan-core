@@ -592,3 +592,26 @@ func TestBuildAnalyzeSummary_ChargesSkippedFilesWithoutComplexity(t *testing.T) 
 		}
 	}
 }
+
+// TestBuildAnalyzeSummary_DeadCodeRateUsesDeadCodeFiles pins the divisor of
+// the dead code penalty: the files that analysis covered, not the whole run,
+// so files of other languages do not dilute a JavaScript finding rate.
+func TestBuildAnalyzeSummary_DeadCodeRateUsesDeadCodeFiles(t *testing.T) {
+	deadCode := &domain.DeadCodeResponse{Summary: domain.DeadCodeSummary{
+		TotalFiles: 1, TotalFindings: 1, CriticalFindings: 1,
+	}}
+	alone := BuildAnalyzeSummary(domain.AnalysisResults{Files: domain.FileAccounting{Total: 1}, DeadCode: deadCode})
+	mixed := BuildAnalyzeSummary(domain.AnalysisResults{
+		Files:    domain.FileAccounting{Total: 100},
+		DeadCode: deadCode,
+		Clone:    &domain.CloneResponse{Statistics: &domain.CloneStatistics{}},
+	})
+
+	if alone.DeadCodeFiles != 1 || mixed.DeadCodeFiles != 1 {
+		t.Fatalf("DeadCodeFiles = %d and %d, want 1 for both", alone.DeadCodeFiles, mixed.DeadCodeFiles)
+	}
+	if mixed.DeadCodeScore != alone.DeadCodeScore || mixed.DeadCodeScore == 100 {
+		t.Errorf("DeadCodeScore = %d alone, %d in a mixed tree; want equal and penalized",
+			alone.DeadCodeScore, mixed.DeadCodeScore)
+	}
+}

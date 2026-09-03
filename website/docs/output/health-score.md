@@ -89,11 +89,11 @@ Which functions count as high or medium risk depends on the thresholds, so for J
 
 ```text
 weighted = 1.0 × critical + 0.5 × warning + 0.2 × info
-rate     = weighted ÷ total files
+rate     = weighted ÷ dead_code_files
 penalty  = 20 × rate ÷ 3.0, capped at 20
 ```
 
-This is a per-file rate rather than a raw count, so a large codebase is not penalized simply for being large. The penalty maxes out at three weighted findings per file. The divisor is the file count the dead code analysis covered, which is the JavaScript/TypeScript files.
+This is a per-file rate rather than a raw count, so a large codebase is not penalized simply for being large. The penalty maxes out at three weighted findings per file. The divisor is the file count the dead code analysis covered, which is the JavaScript/TypeScript files, reported as `dead_code_files` in the summary. The whole run's `total_files` is not used here, so Go, Rust and C++ files in a mixed tree do not dilute the rate.
 
 ### Duplication
 

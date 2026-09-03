@@ -280,6 +280,7 @@ func BuildAnalyzeSummary(results domain.AnalysisResults) *domain.AnalyzeSummary 
 
 	if results.DeadCode != nil {
 		summary.DeadCodeEnabled = true
+		summary.DeadCodeFiles = results.DeadCode.Summary.TotalFiles
 		summary.DeadCodeCount = results.DeadCode.Summary.TotalFindings
 		summary.CriticalDeadCode = results.DeadCode.Summary.CriticalFindings
 		summary.WarningDeadCode = results.DeadCode.Summary.WarningFindings
