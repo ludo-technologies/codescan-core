@@ -2,6 +2,8 @@ package service
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -463,5 +465,26 @@ func TestWriteHTMLAnnouncesDeadCodeTruncation(t *testing.T) {
 	}
 	if strings.Count(report, `<span class="pill sev-warning">`) != 20 {
 		t.Errorf("expected exactly 20 findings rendered, got %d", strings.Count(report, `<span class="pill sev-warning">`))
+	}
+}
+
+func TestReportProject_RelativePathsResolveToTheRealDirectory(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	modules := []domain.ModuleQualityMetrics{
+		{FilePath: filepath.Join("sample", "a.go")},
+		{FilePath: filepath.Join("sample", "nested", "b.go")},
+	}
+
+	name, root := reportProject(modules, nil)
+
+	if name != "sample" {
+		t.Fatalf("name = %q, want %q", name, "sample")
+	}
+	want := abbreviateHome(filepath.Join(cwd, "sample"))
+	if root != want {
+		t.Fatalf("root = %q, want %q", root, want)
 	}
 }
