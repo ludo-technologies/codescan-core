@@ -7,7 +7,6 @@
 Building with Cursor, Claude, or ChatGPT? polyscan performs structural analysis to keep your codebase maintainable: one command scores your whole codebase and shows what to fix first.
 
 [![CI](https://github.com/ludo-technologies/polyscan/actions/workflows/ci.yml/badge.svg)](https://github.com/ludo-technologies/polyscan/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/jscan?style=flat-square&logo=npm&label=jscan)](https://www.npmjs.com/package/jscan)
 [![npm](https://img.shields.io/npm/v/polyscan?style=flat-square&logo=npm&label=polyscan)](https://www.npmjs.com/package/polyscan)
 [![PyPI](https://img.shields.io/pypi/v/pyscn?style=flat-square&logo=pypi&label=pyscn)](https://pypi.org/project/pyscn/)
 [![License](https://img.shields.io/github/license/ludo-technologies/polyscan?style=flat-square)](LICENSE)
@@ -15,31 +14,28 @@ Building with Cursor, Claude, or ChatGPT? polyscan performs structural analysis 
 </div>
 
 ## Quick Start
-No installation needed — the quick-start commands below run the full analysis directly.
 
-### JavaScript / TypeScript
-```
-npx jscan analyze src/
-```
+No installation needed — one command runs the full analysis for JavaScript, TypeScript, Go, Rust and C++:
 
-See: [**jscan**](jscan/)
-
-### Python
-```
-uvx pyscn@latest analyze .
-```
-
-See: [**pyscn**](https://github.com/ludo-technologies/pyscn)
-
-### Go / Rust / C++
 ```
 npx polyscan analyze .
 ```
 
-See: [**polyscan**](polyscan/)
+The language of each file is detected from its extension, and everything lands in one report with one health score.
+
+### Python
+
+Python has its own analyzer, [pyscn](https://github.com/ludo-technologies/pyscn), built on the same core:
+
+```
+uvx pyscn@latest analyze .
+```
 
 ### Others
+
 We are also planning to support more languages.
+
+> Migrating from jscan? The [`jscan`](https://www.npmjs.com/package/jscan) npm package is deprecated and now runs polyscan for you — switch your scripts to `npx polyscan analyze .`.
 
 ## What You Get
 
@@ -50,6 +46,8 @@ Every analyzer scores your codebase (0-100 with an A-F grade) and generates an H
 - 🌀 **Complexity** - functions that are hard to read and test
 - 🏗️ **Dependencies** - circular imports and unstable module dependencies
 - 🧩 **Class design** - classes that do too much or depend on too much (CBO coupling, LCOM cohesion)
+
+Complexity and duplicate code cover every language; dead code, dependencies and class design run for JavaScript/TypeScript (and Python via pyscn) today. Dimensions a language does not have are left out of its score, not counted as clean.
 
 **Built with Go + tree-sitter** — fast enough to run on every commit.
 
@@ -69,7 +67,7 @@ Unlike diff-only review bots, reports are grounded in the quantitative metrics a
 The analyzers ship Agent Skills that teach AI coding agents when and how to run each analysis: health checks, refactoring, architecture review, and CI-friendly reports.
 
 ```bash
-# jscan Skills
+# polyscan Skills
 npx skills add ludo-technologies/polyscan
 
 # pyscn Skills
@@ -90,7 +88,7 @@ Then just ask your agent:
 
 ```bash
 claude plugin marketplace add ludo-technologies/polyscan
-claude plugin install jscan@polyscan-marketplace
+claude plugin install polyscan@polyscan-marketplace
 ```
 
 ---
@@ -106,20 +104,21 @@ go get github.com/ludo-technologies/polyscan/core
 | Directory | Description |
 |-----------|-------------|
 | [`core/`](core/) | Language-agnostic analysis algorithms as a standalone Go module |
-| [`jscan/`](jscan/) | JavaScript/TypeScript code quality analyzer and standalone Go module |
-| [`website/`](website/) | Source of the jscan documentation site at [jscan.codescan.dev](https://jscan.codescan.dev/) |
+| [`polyscan/`](polyscan/) | The polyscan CLI: multi-language analysis with the JavaScript/TypeScript backend that began as jscan |
+| [`jscan/`](jscan/) | The deprecated `jscan` npm wrapper and jscan's historical docs |
+| [`website/`](website/) | Source of the polyscan documentation site |
 
-jscan moved here from its former standalone repository, [ludo-technologies/jscan](https://github.com/ludo-technologies/jscan); releases up to v0.9.0 live there, and newer releases ship from this monorepo under the same npm package name [`jscan`](https://www.npmjs.com/package/jscan). [pyscn](https://github.com/ludo-technologies/pyscn) remains an independent repository and consumes `core/` as a Go module dependency.
+jscan moved here from its former standalone repository, [ludo-technologies/jscan](https://github.com/ludo-technologies/jscan), and has since merged into the polyscan CLI; the [`jscan`](https://www.npmjs.com/package/jscan) npm package remains published as a deprecated wrapper that runs polyscan. [pyscn](https://github.com/ludo-technologies/pyscn) remains an independent repository and consumes `core/` as a Go module dependency.
 
-Each module is tagged with a directory prefix, e.g. `core/v0.2.1`, `jscan/v0.9.1`.
+Each module is tagged with a directory prefix, e.g. `core/v0.2.1`, `polyscan/v0.1.0`.
 
 ## Documentation
 
-📖 **[jscan documentation site](https://jscan.codescan.dev/)** • **[pyscn documentation site](https://docs.codescan.dev/)**
+📖 **[polyscan documentation site](https://polyscan.codescan.dev/)** • **[pyscn documentation site](https://docs.codescan.dev/)**
 
-**[jscan README](jscan/README.md)** • **[core README](core/README.md)** • **[Performance](docs/performance.md)**
+**[polyscan README](polyscan/README.md)** • **[core README](core/README.md)** • **[Performance](docs/performance.md)**
 
-The jscan site is built with MkDocs Material from [`website/`](website/) and deploys to GitHub Pages on every push to `main`.
+The polyscan site is built with MkDocs Material from [`website/`](website/) and deploys to GitHub Pages on every push to `main`.
 
 For contributors: **[Contributing](CONTRIBUTING.md)** • **[Code of Conduct](CODE_OF_CONDUCT.md)** • **[Security](SECURITY.md)**
 

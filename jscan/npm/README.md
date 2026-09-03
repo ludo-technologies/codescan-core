@@ -1,38 +1,30 @@
-# jscan
+# jscan (deprecated)
 
-Code quality analyzer for JavaScript/TypeScript projects.
+**jscan has merged into [polyscan](https://www.npmjs.com/package/polyscan).**
 
-## Installation
-
-```bash
-npm install -g jscan
-```
-
-Or use with npx:
+polyscan runs the same JavaScript/TypeScript analysis jscan did — complexity,
+dead code, clone detection, coupling, dependencies, and the health score — and
+also analyzes Go, Rust and C++, in one report.
 
 ```bash
-npx jscan analyze src/
+npx polyscan analyze .
 ```
 
-## Usage
+This package is now a thin wrapper that runs the polyscan CLI, so existing
+`npx jscan` invocations keep working while you migrate. It prints a
+deprecation notice and forwards every command to polyscan, translating the
+retired `--json`, `--text` and `--html` shorthands to `--format`. `--config`
+exits with a hint instead, because polyscan discovers the file itself.
 
-```bash
-# Analyze a directory
-jscan analyze ./src
+## Migrating
 
-# Output as JSON
-jscan analyze ./src --format json
-
-# Output as HTML report
-jscan analyze ./src --format html --output report.html
-```
-
-## Features
-
-- Dead code detection
-- Cyclomatic complexity analysis
-- Duplicate code detection
-- And more...
+| Before | After |
+| --- | --- |
+| `npx jscan analyze src/` | `npx polyscan analyze src/` |
+| `jscan analyze --json src/` | `polyscan analyze --format json src/` |
+| `jscan check src/` | Retired — gate on `polyscan analyze --format json` output |
+| `jscan deps src/` | `polyscan analyze --select deps src/` |
+| `jscan init` | Retired — polyscan still reads `jscan.config.json` when present |
 
 ## Documentation
 

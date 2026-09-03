@@ -1,16 +1,14 @@
 {
   "name": "jscan",
   "version": "0.0.0",
-  "description": "Code quality analyzer for JavaScript/TypeScript projects",
+  "description": "Deprecated: jscan has merged into polyscan. This package runs the polyscan CLI.",
   "keywords": [
     "javascript",
     "typescript",
     "code-quality",
     "static-analysis",
-    "linter",
     "analyzer",
-    "complexity",
-    "dead-code"
+    "polyscan"
   ],
   "homepage": "https://github.com/ludo-technologies/polyscan",
   "bugs": {
@@ -33,10 +31,7 @@
   "engines": {
     "node": ">=14"
   },
-  "optionalDependencies": {
-    "jscan-darwin-arm64": "0.0.0",
-    "jscan-linux-arm64": "0.0.0",
-    "jscan-linux-x64": "0.0.0",
-    "jscan-windows-x64": "0.0.0"
+  "dependencies": {
+    "polyscan": "*"
   }
 }

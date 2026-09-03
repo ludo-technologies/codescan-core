@@ -1,6 +1,6 @@
 # Configuration Examples
 
-Complete configuration files for common project shapes. Each one is valid as written, and each notes which parts actually change jscan's behavior today.
+Complete configuration files for common project shapes. The configuration file tunes the JavaScript/TypeScript analysis; Go, Rust and C++ run with built-in defaults. Each file is valid as written, and each notes which parts actually change polyscan's behavior today.
 
 Remember two rules while reading these:
 
@@ -33,7 +33,7 @@ The smallest file worth writing. It sets complexity thresholds a little more for
 Run it against your source directory rather than the repository root, so that build output stays out of the analysis without needing a pattern for it:
 
 ```bash
-jscan analyze src/
+polyscan analyze src/
 ```
 
 ## React or Next.js application
@@ -67,11 +67,11 @@ Next.js projects keep generated output in `.next` and often have a `src/app` or 
 
 The thresholds are raised because component code accumulates conditional rendering, which counts toward cyclomatic complexity without being genuinely hard to read. `min_complexity` of 3 hides the trivial components so that the report is about the parts worth looking at.
 
-Next.js reserves several export names that nothing in your code imports. jscan recognizes them and does not report them as unused, but only inside App Router convention files, meaning a file under a path containing `/app/` and named `page`, `layout`, `template`, `loading`, `error`, `not-found`, `default`, or `route`. In those files the default export is exempt, along with `metadata`, `generateMetadata`, `viewport`, `generateViewport`, `generateStaticParams`, `dynamic`, `dynamicParams`, `revalidate`, `fetchCache`, `runtime`, `preferredRegion`, and `maxDuration`. In `route` files the HTTP verb exports such as `GET` and `POST` are exempt as well.
+Next.js reserves several export names that nothing in your code imports. polyscan recognizes them and does not report them as unused, but only inside App Router convention files, meaning a file under a path containing `/app/` and named `page`, `layout`, `template`, `loading`, `error`, `not-found`, `default`, or `route`. In those files the default export is exempt, along with `metadata`, `generateMetadata`, `viewport`, `generateViewport`, `generateStaticParams`, `dynamic`, `dynamicParams`, `revalidate`, `fetchCache`, `runtime`, `preferredRegion`, and `maxDuration`. In `route` files the HTTP verb exports such as `GET` and `POST` are exempt as well.
 
 !!! note "This exemption needs the file to reach the analyzer"
 
-    Up to version 0.9.0 a file named `layout.tsx` was dropped by the default `exclude_patterns`, because the pattern `out` matched any part of a path. The exemption was never consulted for those files. Later versions match whole names only, so `layout.tsx` is analyzed.
+    Up to jscan 0.9.0 a file named `layout.tsx` was dropped by the default `exclude_patterns`, because the pattern `out` matched any part of a path. The exemption was never consulted for those files. Later versions match whole names only, so `layout.tsx` is analyzed.
 
 ## Node.js backend service
 
@@ -81,8 +81,7 @@ Backend code is a better fit for stricter thresholds, and the express-style `rou
 {
   "complexity": {
     "low_threshold": 8,
-    "medium_threshold": 15,
-    "max_complexity": 20
+    "medium_threshold": 15
   },
   "analysis": {
     "exclude_patterns": [
@@ -96,22 +95,22 @@ Backend code is a better fit for stricter thresholds, and the express-style `rou
 }
 ```
 
-`max_complexity` is read only by `jscan check`, where it supplies the default for `--max-complexity`. With this file in place, the gate becomes:
+To enforce a hard complexity limit in CI, gate on the JSON output:
 
 ```bash
-jscan check src/          # Fails above complexity 20
+polyscan analyze --format json --select complexity src/ 2>/dev/null \
+  | jq -e '[.complexity.functions[] | select(.metrics.complexity > 20)] | length == 0'
 ```
 
 ## Library or published package
 
-A library's public exports are consumed by other repositories, so jscan will always report them as unused. The gate has to allow dead code, which makes the configuration file itself fairly plain.
+A library's public exports are consumed by other repositories, so polyscan will always report them as unused. A gate has to ignore the warning-level findings, which makes the configuration file itself fairly plain.
 
 ```json title="jscan.config.json"
 {
   "complexity": {
     "low_threshold": 8,
-    "medium_threshold": 16,
-    "max_complexity": 20
+    "medium_threshold": 16
   },
   "analysis": {
     "exclude_patterns": [
@@ -125,15 +124,16 @@ A library's public exports are consumed by other repositories, so jscan will alw
 ```
 
 ```bash
-# The unused-export warnings are expected here
-jscan check --allow-dead-code src/
+# Gate on critical findings only; the unused-export warnings are expected here
+polyscan analyze --format json src/ 2>/dev/null \
+  | jq -e '.summary.critical_dead_code == 0'
 ```
 
-You still get value from the dead code analysis in `jscan analyze`, where the critical findings, which are genuinely unreachable statements, are worth acting on even though the warnings are not.
+You still get value from the full dead code analysis in the report, where the critical findings, which are genuinely unreachable statements, are worth acting on even though the warnings are not.
 
 ## Monorepo
 
-There is no workspace-aware mode. Run jscan once per package, and give each package its own file so that thresholds can differ between a strict core library and a looser internal tool.
+There is no workspace-aware mode. Run polyscan once per package, and give each package its own file so that thresholds can differ between a strict core library and a looser internal tool.
 
 ```text
 repo/
@@ -147,17 +147,18 @@ repo/
         └── src/
 ```
 
-Because discovery walks upward from the analyzed path, `jscan analyze packages/core/src` finds `packages/core/jscan.config.json` first and falls back to the repository root file only when the package has none.
+Because discovery walks upward from the analyzed path, `polyscan analyze packages/core/src` finds `packages/core/jscan.config.json` first and falls back to the repository root file only when the package has none.
 
 ```bash
 # Analyze each package separately
 for pkg in packages/*/; do
   echo "== $pkg"
-  jscan check "$pkg/src" || exit 1
+  polyscan analyze --format json "$pkg/src" 2>/dev/null \
+    | jq -e '.summary.health_score >= 75' || exit 1
 done
 ```
 
-Analyzing packages separately has one consequence worth understanding. The unused-export check can only see the files in the current run, so anything `packages/web` imports from `packages/core` is reported as an unused export while `core` is analyzed alone. Run `jscan analyze packages/` to see the whole picture, and the per-package runs to gate each package.
+Analyzing packages separately has one consequence worth understanding. The unused-export check can only see the files in the current run, so anything `packages/web` imports from `packages/core` is reported as an unused export while `core` is analyzed alone. Run `polyscan analyze packages/` to see the whole picture, and the per-package runs to gate each package.
 
 ## Legacy codebase you are improving gradually
 
@@ -167,8 +168,7 @@ When the current state is far from where you want it, set thresholds you can act
 {
   "complexity": {
     "low_threshold": 20,
-    "medium_threshold": 40,
-    "max_complexity": 60
+    "medium_threshold": 40
   },
   "output": {
     "min_complexity": 15
@@ -186,7 +186,7 @@ When the current state is far from where you want it, set thresholds you can act
 }
 ```
 
-The high `min_complexity` keeps the report focused on the worst functions rather than producing thousands of lines nobody reads. Lower `max_complexity` by five every time the build passes comfortably, and the gate will ratchet the codebase in the right direction without ever blocking work.
+The high `min_complexity` keeps the report focused on the worst functions rather than producing thousands of lines nobody reads. Ratchet the thresholds down every time the numbers improve comfortably, and the report will pull the codebase in the right direction without ever blocking work.
 
 Note that `legacy/generated` contains a slash, so it is matched against the path rather than against a single name. It skips that directory and everything under it, and it matches nothing else.
 
@@ -212,9 +212,9 @@ A repository part-way through a TypeScript migration, or one where a whole direc
 }
 ```
 
-A file has to match an include pattern and no exclude pattern, so this analyzes the TypeScript sources and leaves both the remaining JavaScript and the generated declaration files out.
+A file has to match an include pattern and no exclude pattern, so this analyzes the TypeScript sources and leaves both the remaining JavaScript and the generated declaration files out. Go, Rust and C++ files in the same tree are still analyzed; these patterns only select among the JavaScript/TypeScript files.
 
-Write the patterns with a leading `**/`, as above. Patterns are matched relative to the path you pass on the command line, so `src/**/*.ts` matches everything under `jscan analyze .` and nothing at all under `jscan analyze src/`.
+Write the patterns with a leading `**/`, as above. Patterns are matched relative to the path you pass on the command line, so `src/**/*.ts` matches everything under `polyscan analyze .` and nothing at all under `polyscan analyze src/`.
 
 ## YAML instead of JSON
 
@@ -224,7 +224,6 @@ The loader accepts YAML when the filename ends in `.yaml` or `.yml`. The keys ar
 complexity:
   low_threshold: 10
   medium_threshold: 20
-  max_complexity: 25
 
 output:
   min_complexity: 2

@@ -1,40 +1,43 @@
-# jscan analyze
+# polyscan analyze
 
-Runs the full analysis and produces a report. This is the command you reach for when you want to understand a codebase rather than gate a pull request.
+Runs the full analysis and produces a report. This is the command you reach for when you want to understand a codebase.
 
 ```bash
-jscan analyze [path...]
+polyscan analyze [path...]
 ```
 
-`analyze` always exits with code 0 when the analysis itself succeeds, no matter how poor the results are. Use [`jscan check`](check.md) when you need a command that fails.
+`analyze` always exits with code 0 when the analysis itself succeeds, no matter how poor the results are. To fail a pipeline on the results, gate on the JSON output as shown on the [CI/CD page](../integrations/ci-cd.md).
 
 ## Synopsis
 
 ```bash
-jscan analyze src/                                    # All analyses, HTML report
-jscan analyze --select complexity,deadcode src/       # Two analyses only
-jscan analyze --json src/                             # JSON to standard output
-jscan analyze --text src/                             # Text to standard output
-jscan analyze --no-open src/                          # HTML report, no browser
-jscan analyze -o reports/quality.html src/            # Custom output path
-jscan analyze -c config/strict.json src/              # Explicit config file
-jscan analyze src/ test/ scripts/build.ts             # Several paths at once
+polyscan analyze .                                       # All analyses, HTML report
+polyscan analyze --select complexity,deadcode src/       # Two analyses only
+polyscan analyze --format json src/                      # JSON to standard output
+polyscan analyze --format text src/                      # Text to standard output
+polyscan analyze --no-open src/                          # HTML report, no browser
+polyscan analyze -o reports/quality.html src/            # Custom output path
+polyscan analyze --min-complexity 10 .                   # List only functions at or above 10
+polyscan analyze src/ test/ scripts/build.ts             # Several paths at once
 ```
 
 ## Flags
 
 | Flag | Short | Default | Description |
 | --- | --- | --- | --- |
-| `--select` | `-s` | `complexity,deadcode,clone,cbo,deps` | Comma-separated list of analyses to run |
-| `--format` | `-f` | `html` | Output format. Accepts `html`, `json`, `text`, `yaml`, or `csv` |
-| `--json` | | `false` | Shorthand for `--format json` |
-| `--text` | | `false` | Shorthand for `--format text` |
-| `--html` | | `false` | Shorthand for `--format html`, which is already the default |
+| `--select` | `-s` | `complexity,deadcode,clone,cbo,deps` | Comma-separated list of analyses to run. `deadcode`, `cbo` and `deps` apply to JavaScript/TypeScript only |
+| `--format` | `-f` | `html` | Output format. Accepts `html`, `json`, or `text` |
 | `--no-open` | | `false` | Write the HTML report without opening a browser |
-| `--output` | `-o` | `jscan-report.html` | Path for the HTML report file |
-| `--config` | `-c` | discovered | Path to a configuration file |
+| `--output` | `-o` | `polyscan-report.html` | Path for the HTML report file |
+| `--min-complexity` | | `1` | List only functions with at least this complexity. Scores and summaries still cover every function |
 
-If both `--json` and `--text` are given, JSON wins.
+The configuration file for the JavaScript/TypeScript analysis is discovered automatically; there is no `--config` flag. See [how polyscan finds your config file](../configuration/index.md#how-polyscan-finds-your-config-file).
+
+## Language coverage
+
+The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dead code, coupling (CBO) and dependency analysis exist for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.
+
+A file that cannot be read is skipped and listed under errors. A file with a syntax error is analyzed without the functions that contain it, counted as partial, and listed under warnings. C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.
 
 ## Output behavior
 
@@ -42,19 +45,11 @@ The format determines where results go and what else is printed.
 
 === "HTML (default)"
 
-    jscan writes the report to `jscan-report.html` in the current directory, prints the absolute path, and opens the file in your default browser. The browser step is skipped when `--no-open` is set and also when jscan detects that it is running inside an SSH session. A short score summary follows on standard output.
+    polyscan writes the report to `polyscan-report.html` in the current directory, prints the absolute path, and opens the file in your default browser. The browser step is skipped when `--no-open` is set and also when polyscan detects that it is running inside an SSH session. A short score summary follows on standard output.
 
 === "JSON"
 
     The full result document goes to standard output. The score summary goes to standard error, so that redirecting standard output to a file keeps the JSON valid. Progress bars are suppressed. The [JSON schema page](../output/json-schema.md) documents every field.
-
-=== "YAML"
-
-    The full result document goes to standard output formatted as YAML, matching the JSON response structure. The score summary goes to standard error. Progress bars are suppressed.
-
-=== "CSV"
-
-    Tabular results for complexity, dead code findings, clone pairs, and dependency edges go to standard output in comma-separated format. The score summary goes to standard error. Progress bars are suppressed.
 
 === "Text"
 
@@ -64,13 +59,21 @@ The format determines where results go and what else is printed.
 
 ### Complexity {#complexity}
 
-Measures the cyclomatic complexity of every function, which counts the number of linearly independent paths through it. jscan builds a control flow graph for each function and derives the count from the graph, so the number reflects real branching rather than a text heuristic.
+Measures the cyclomatic complexity of every function, which counts the number of linearly independent paths through it: one plus the number of decision points.
 
-Starting from a baseline of 1, each of the following adds 1: an `if` or `else if`, a loop, a `catch`, a `case` label, a ternary, and each `&&`, `||`, or `??` operator. A `default` clause adds nothing, the same as `else`, and neither does optional chaining with `?.`.
+For JavaScript and TypeScript, polyscan builds a control flow graph for each function and derives the count from the graph. Starting from a baseline of 1, each of the following adds 1: an `if` or `else if`, a loop, a `catch`, a `case` label, a ternary, and each `&&`, `||`, or `??` operator. A `default` clause adds nothing, the same as `else`, and neither does optional chaining with `?.`. Counting each `case` label means a `switch` scores the same as the equivalent chain of `if` statements.
 
-Counting each `case` label means a `switch` scores the same as the equivalent chain of `if` statements: a four-case switch and four `if` statements both score 5. The number of case labels seen in a function is reported as `switch_cases` in the JSON output.
+The other languages count decision points the same way on their own constructs:
 
-Functions are assigned a risk level from two thresholds, both configurable:
+| Language | Counted as decision points |
+| --- | --- |
+| Go | `if`/`else if`; every `for`; each `case` of a `switch`, type switch or `select` (`default` excluded); `&&` and `\|\|` |
+| Rust | `if`/`else if`/`if let`; `for`, `while`, `while let`, `loop`; each `match` arm except the last, plus each arm guard; `let ... else`; `&&` and `\|\|`; `?` |
+| C++ | `if`/`else if`; `?:`; `for`, range `for`, `while`, `do`; each `case` (`default` excluded); `catch`; `&&` and `\|\|` |
+
+In Go, Rust and C++, function literals, closures and lambdas are not reported on their own: their decision points count toward the enclosing function, so the Go numbers match gocyclo.
+
+Functions are assigned a risk level from two thresholds, configurable for JavaScript/TypeScript and fixed at the defaults for the other languages:
 
 | Risk | Condition | Default range |
 | --- | --- | --- |
@@ -78,11 +81,11 @@ Functions are assigned a risk level from two thresholds, both configurable:
 | Medium | `low_threshold` < complexity ≤ `medium_threshold` | 10 to 19 |
 | High | complexity > `medium_threshold` | 20 and above |
 
-Functions below `output.min_complexity` are dropped from the report entirely. The default is 1, which keeps everything.
+Functions below `--min-complexity` (or `output.min_complexity` in the config file, for JavaScript/TypeScript) are dropped from the listing; the summary and every score still cover the complete analyzed population.
 
 ### Dead code {#dead-code}
 
-Finds code that cannot run and code that nothing uses. jscan detects two distinct kinds of problem.
+*JavaScript/TypeScript only.* Finds code that cannot run and code that nothing uses. polyscan detects two distinct kinds of problem.
 
 Unreachable statements come from the control flow graph. Any basic block that cannot be reached from the function entry is dead. This covers statements after `return`, `break`, `continue`, and `throw`, and branches whose condition can never hold.
 
@@ -111,28 +114,28 @@ The six critical reasons come from the control flow graph. The four remaining on
 
 ### Duplicate code {#clone}
 
-Finds fragments that repeat. jscan compares abstract syntax trees rather than raw text, using the APTED tree edit distance algorithm, so it still matches code whose variables have been renamed or whose statements have moved. To keep the comparison affordable on large codebases, jscan first narrows the candidate set with MinHash fingerprints and locality-sensitive hashing, then runs the expensive tree comparison only on surviving pairs.
+Finds fragments that repeat, in every supported language. polyscan compares abstract syntax trees rather than raw text, using the APTED tree edit distance algorithm, so it still matches code whose variables have been renamed or whose statements have moved. To keep the comparison affordable on large codebases, polyscan first narrows the candidate set with MinHash fingerprints and locality-sensitive hashing, then runs the expensive tree comparison only on surviving pairs. Fragments of different languages are never compared with each other.
 
-Clones are graded into four types:
+Clones are graded by how much the copies differ:
 
-| Type | Description | Default threshold | Enabled by default |
+| Type | Description | Default threshold | Enabled by default (JS/TS) |
 | --- | --- | --- | --- |
 | Type 1 | Identical apart from whitespace and comments | 0.85 | Yes |
 | Type 2 | Identical after renaming identifiers and literals | 0.75 | Yes |
-| Type 3 | Copies with statements added, removed, or changed | 0.70 | No |
-| Type 4 | Different code that computes the same thing | 0.65 | Yes |
-
-Type 3 is off by default because near-miss matches produce a high false positive rate in day-to-day use.
+| Type 3 | Copies with statements added, removed, or changed | 0.70 | No (JS/TS); reported for Go, Rust and C++ |
+| Type 4 | Different code that computes the same thing | 0.65 | Yes (JS/TS only) |
 
 A fragment must be at least 10 lines and 20 syntax tree nodes to be considered, which keeps short boilerplate such as getters out of the results.
 
+In Go, Rust and C++, test code is analyzed for complexity but excluded from clone detection, because test functions share a skeleton by convention: for Go that is `*_test.go` files; for C++ it is `*_test.*`, `*_tests.*`, `test_*.*` and `*Test.*` source files and any `test` or `tests` directory; for Rust it is `#[test]` functions, items under `#[cfg(test)]`, `tests.rs` and `*_tests.rs` files and any `tests` directory.
+
 ### Coupling between objects {#cbo}
 
-Counts how many other types each unit depends on, across four kinds of dependency: imports, `new` expressions, TypeScript type annotations, and method calls on other objects.
+*JavaScript/TypeScript only.* Counts how many other types each unit depends on, across four kinds of dependency: imports, `new` expressions, TypeScript type annotations, and method calls on other objects.
 
-!!! info "In jscan this metric is per file, not per class"
+!!! info "This metric is per file, not per class"
 
-    Despite the name, jscan produces one coupling entry per source file, named after the module. The terminal output and the JSON field names still say "classes", which they inherit from the shared metric definition. Read every count as a per-module count.
+    Despite the name, polyscan produces one coupling entry per source file, named after the module. The terminal output and the JSON field names still say "classes", which they inherit from the shared metric definition. Read every count as a per-module count.
 
 | Risk | Condition |
 | --- | --- |
@@ -142,27 +145,27 @@ Counts how many other types each unit depends on, across four kinds of dependenc
 
 ### Dependencies {#deps}
 
-Builds the module import graph, resolving both ECMAScript modules and CommonJS `require` calls. From the graph jscan derives the circular imports, the maximum dependency depth, and the Martin coupling metrics for each module.
+*JavaScript/TypeScript only.* Builds the module import graph, resolving both ECMAScript modules and CommonJS `require` calls. From the graph polyscan derives the circular imports, the maximum dependency depth, and the Martin coupling metrics for each module.
 
 Circular imports are found with Tarjan's strongly connected components algorithm. Dynamic imports are excluded from the cycle check, because a dynamic import does not create a load-time cycle.
 
-For a graph you can look at rather than a summary, use [`jscan deps`](deps.md).
+The full graph — nodes, edges, per-module metrics, cycles — is in the `deps` section of the [JSON output](../output/json-schema.md#deps).
 
 ## Performance notes
 
-The five analyses run concurrently in separate goroutines, so the wall clock time is set by the slowest one rather than by the sum. Clone detection is normally the slowest, followed by dead code detection.
+The analyses run concurrently, so the wall clock time is set by the slowest one rather than by the sum. Clone detection is normally the slowest, followed by dead code detection.
 
 Dropping the analyses you do not need is the most effective way to speed up a run:
 
 ```bash
 # Roughly half the work of a full run on most projects
-jscan analyze --select complexity,deadcode src/
+polyscan analyze --select complexity,deadcode src/
 ```
 
 The progress bar shown during an interactive run is driven by an elapsed-time estimate rather than by real progress, so it may sit near the end for a while on an unusually large repository. It is not stuck.
 
 ## See also
 
-- [`jscan check`](check.md) for a command that fails on threshold violations
 - [Output formats](../output/index.md) for the shape of each report
-- [Configuration reference](../configuration/reference.md) for the keys that change these thresholds
+- [Configuration reference](../configuration/reference.md) for the keys that change the JavaScript/TypeScript thresholds
+- [CI/CD integration](../integrations/ci-cd.md) for gating a pipeline on the results

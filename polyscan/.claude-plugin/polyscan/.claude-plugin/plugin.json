@@ -1,0 +1,7 @@
+{
+  "name": "polyscan",
+  "description": "Multi-language code quality analysis skills (JavaScript/TypeScript, Go, Rust, C++)",
+  "author": {
+    "name": "Ludo Technologies"
+  }
+}

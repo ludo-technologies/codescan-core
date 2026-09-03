@@ -10,7 +10,7 @@
 // those through CheckExitError, which main unwraps so that the process exits
 // with the right code without cobra printing usage over the report.
 //
-// Full documentation is at https://jscan.codescan.dev/.
+// Full documentation is at https://polyscan.codescan.dev/.
 package main
 
 import (

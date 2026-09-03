@@ -1,6 +1,6 @@
-site_name: jscan
-site_description: A code quality analyzer for JavaScript and TypeScript
-site_url: https://jscan.codescan.dev/
+site_name: polyscan
+site_description: A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++
+site_url: https://polyscan.codescan.dev/
 site_author: ludo-technologies
 repo_url: https://github.com/ludo-technologies/polyscan
 repo_name: ludo-technologies/polyscan
@@ -102,13 +102,14 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/ludo-technologies/polyscan
     - icon: fontawesome/brands/npm
-      link: https://www.npmjs.com/package/jscan
+      link: https://www.npmjs.com/package/polyscan
 
 nav:
   - Home: index.md
   - Getting Started:
       - Installation: getting-started/installation.md
       - Quick Start: getting-started/quick-start.md
+      - Migrating from jscan: getting-started/migrating-from-jscan.md
   - Guides:
       - Analyze a TypeScript Project: guides/typescript-projects.md
       - Reduce Duplicate Code: guides/reduce-duplicate-code.md
@@ -116,9 +117,6 @@ nav:
   - CLI Reference:
       - cli/index.md
       - analyze: cli/analyze.md
-      - check: cli/check.md
-      - deps: cli/deps.md
-      - init: cli/init.md
       - version: cli/version.md
   - Configuration:
       - configuration/index.md
