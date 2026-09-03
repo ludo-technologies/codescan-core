@@ -84,21 +84,16 @@ func (r moduleDeadCodeRollup) add(filePath string, findings, blocks int) {
 }
 
 // AnalyzeDeadCode runs dead code analysis using the shared aggregation path.
+// Each file is read, parsed, and scanned inside the fan-out and released as
+// soon as its scan is extracted — use AnalyzeDeadCodeSnapshot when several
+// analyses should share the parse trees.
 func AnalyzeDeadCode(ctx context.Context, req domain.DeadCodeRequest) (*domain.DeadCodeResponse, error) {
-	return AnalyzeDeadCodeWithTask(ctx, req, nil)
-}
-
-// AnalyzeDeadCodeWithTask runs dead code analysis with optional progress
-// reporting. Each file is read, parsed, and scanned inside the fan-out and
-// released as soon as its scan is extracted — use AnalyzeDeadCodeSnapshot when
-// several analyses should share the parse trees.
-func AnalyzeDeadCodeWithTask(ctx context.Context, req domain.DeadCodeRequest, task domain.TaskProgress) (*domain.DeadCodeResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
 	moduleAnalyzer := analyzer.NewModuleAnalyzer(nil)
-	scanned := analyzeProjectFilesFromPaths(ctx, req.Paths, task,
+	scanned := analyzeProjectFilesFromPaths(ctx, req.Paths,
 		func(file *ProjectFile) fileAnalysis[*scannedFile] {
 			return scanFileForDeadCode(moduleAnalyzer, file)
 		})
@@ -117,7 +112,7 @@ func AnalyzeDeadCodeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req
 	}
 
 	moduleAnalyzer := analyzer.NewModuleAnalyzer(nil)
-	scanned := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+	scanned := analyzeFilesConcurrently(ctx, snapshot.Files,
 		func(_ context.Context, file *ProjectFile) fileAnalysis[*scannedFile] {
 			return scanFileForDeadCode(moduleAnalyzer, file)
 		})

@@ -1,7 +1,5 @@
 package version
 
-import "fmt"
-
 // Version information (set via ldflags during build)
 var (
 	// Version is the current version of jscan
@@ -28,12 +26,6 @@ func GetVersion() string {
 // Short returns a shortened version string (same as GetVersion for now)
 func Short() string {
 	return GetVersion()
-}
-
-// GetFullVersion returns the full version information
-func GetFullVersion() string {
-	return fmt.Sprintf("%s (commit: %s, built: %s, by: %s)",
-		Version, Commit, Date, BuiltBy)
 }
 
 // GetCommit returns the git commit hash

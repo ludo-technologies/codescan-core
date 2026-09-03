@@ -31,11 +31,6 @@ func TestDefaultVersion(t *testing.T) {
 	if got := GetBuiltBy(); got != "source" {
 		t.Errorf("GetBuiltBy() = %q, want %q", got, "source")
 	}
-
-	expectedFull := "dev (commit: unknown, built: unknown, by: source)"
-	if got := GetFullVersion(); got != expectedFull {
-		t.Errorf("GetFullVersion() = %q, want %q", got, expectedFull)
-	}
 }
 
 func TestEmptyVersionDefaultsToDev(t *testing.T) {
@@ -78,10 +73,5 @@ func TestCustomVersionMetadata(t *testing.T) {
 	}
 	if got := GetBuiltBy(); got != "release" {
 		t.Errorf("GetBuiltBy() = %q, want %q", got, "release")
-	}
-
-	expectedFull := "1.2.3 (commit: abc1234, built: 2026-08-14T07:40:09Z, by: release)"
-	if got := GetFullVersion(); got != expectedFull {
-		t.Errorf("GetFullVersion() = %q, want %q", got, expectedFull)
 	}
 }

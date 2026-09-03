@@ -8,12 +8,11 @@ Thank you for your interest in contributing to jscan! This document provides gui
 
 - **Go 1.24.6+** - [Download Go](https://go.dev/dl/)
 - **A C compiler** - required because jscan parses with tree-sitter through cgo
-- **golangci-lint** - [Install instructions](https://golangci-lint.run/welcome/install/)
 - **Make** - Available by default on macOS and Linux
 
 ### Getting Started
 
-jscan lives in the [polyscan monorepo](https://github.com/ludo-technologies/polyscan): its Go code is part of the `polyscan` module (`polyscan/cmd/jscan` and `polyscan/internal/js`), while the npm packaging and documentation stay under `jscan/`. The standalone `jscan` repository was retired.
+jscan lives in the [polyscan monorepo](https://github.com/ludo-technologies/polyscan). Its Go code is the `internal/js` package of the `polyscan` module, which the `polyscan` CLI runs for JavaScript and TypeScript files. Only the npm wrapper package and the documentation stay under `jscan/`. The standalone `jscan` repository and the Go `jscan` CLI were retired.
 
 1. Fork the repository on GitHub
 2. Clone your fork and enter the `polyscan` module directory:
@@ -28,15 +27,14 @@ jscan lives in the [polyscan monorepo](https://github.com/ludo-technologies/poly
 
 ## Build and Test
 
-The project uses a Makefile for common development tasks:
+The `polyscan` module has a Makefile for common development tasks. Run it from `polyscan/polyscan`:
 
 | Command | Description |
 |---|---|
-| `make build` | Build the jscan binary |
-| `make test` | Run the test suite |
-| `make lint` | Run golangci-lint |
+| `make build` | Build the `polyscan` binary |
+| `make test` | Run the test suite with the race detector |
+| `make lint` | Run `go vet` and check `gofmt` |
 | `make fmt` | Format code with go fmt |
-| `make coverage` | Run tests with coverage report |
 
 Before submitting a pull request, ensure all checks pass:
 
@@ -94,5 +92,5 @@ chore: upgrade tree-sitter dependency to v0.25
 ## Code Style
 
 - Run `go fmt` (or `make fmt`) to format your code before committing.
-- Run `golangci-lint` (or `make lint`) to catch common issues.
+- Run `make lint` to catch common issues.
 - Follow standard Go conventions and idioms.

@@ -4,8 +4,6 @@ import (
 	"context"
 	"runtime"
 	"sync"
-
-	"github.com/ludo-technologies/polyscan/polyscan/internal/js/domain"
 )
 
 // fileAnalysis is one file's contribution to a multi-file analysis.
@@ -33,7 +31,6 @@ type fileAnalysis[T any] struct {
 func analyzeFilesConcurrently[F, T any](
 	ctx context.Context,
 	files []F,
-	progress domain.TaskProgress,
 	analyze func(context.Context, F) fileAnalysis[T],
 ) []fileAnalysis[T] {
 	results := make([]fileAnalysis[T], len(files))
@@ -59,9 +56,6 @@ func analyzeFilesConcurrently[F, T any](
 				}
 
 				results[index] = analyze(ctx, files[index])
-				if progress != nil {
-					progress.Increment(1)
-				}
 			}
 		}(worker)
 	}

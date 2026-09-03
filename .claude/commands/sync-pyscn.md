@@ -22,7 +22,7 @@ Run a pyscn → jscan sync. The single source of truth for policy, file mapping,
 
 5. **Present the triage before porting**: list each candidate commit with verdict (port / skip / core-issue / report-only) and a one-line reason. Get user confirmation before writing code unless the user already said to proceed.
 
-6. **Port the approved changes** to jscan, adapting to JS/TS semantics and jscan's architecture (jscan builds `domain.Clone` directly, has its own config-loader layer, etc.). After porting: `cd jscan && go build ./... && go test ./...` must pass. If a port changes shared-algorithm behavior, add/extend a parity test against core where one exists.
+6. **Port the approved changes** to jscan, adapting to JS/TS semantics and jscan's architecture (jscan builds `domain.Clone` directly, has its own config-loader layer, etc.). After porting: `cd polyscan && go build ./... && go test ./...` must pass (the jscan Go code is the `internal/js` package of the `polyscan` module). If a port changes shared-algorithm behavior, add/extend a parity test against core where one exists.
 
 7. **Update `jscan/SYNC.md`**:
    - Record skipped-this-run changes under "Pending changes" with commit SHAs and reasons.

@@ -28,7 +28,7 @@ func TestBuildProjectSnapshot_ParsesFilesInPathOrder(t *testing.T) {
 	second := writeSnapshotFixture(t, "b.ts", `function b(): number { return 2; }`)
 	paths := []string{first, second}
 
-	snapshot := BuildProjectSnapshot(context.Background(), paths, nil)
+	snapshot := BuildProjectSnapshot(context.Background(), paths)
 
 	if len(snapshot.Files) != len(paths) {
 		t.Fatalf("expected %d files, got %d", len(paths), len(snapshot.Files))
@@ -47,7 +47,7 @@ func TestBuildProjectSnapshot_RecordsReadErrorPerFile(t *testing.T) {
 	valid := writeSnapshotFixture(t, "a.js", `function a() { return 1; }`)
 	missing := filepath.Join(t.TempDir(), "missing.js")
 
-	snapshot := BuildProjectSnapshot(context.Background(), []string{missing, valid}, nil)
+	snapshot := BuildProjectSnapshot(context.Background(), []string{missing, valid})
 
 	if snapshot.Files[0].ReadErr == nil {
 		t.Error("missing file should carry a read error")
@@ -66,7 +66,7 @@ func TestBuildProjectSnapshot_CancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	snapshot := BuildProjectSnapshot(ctx, []string{path}, nil)
+	snapshot := BuildProjectSnapshot(ctx, []string{path})
 
 	if len(snapshot.Files) != 1 {
 		t.Fatalf("expected 1 file, got %d", len(snapshot.Files))
@@ -79,7 +79,7 @@ func TestBuildProjectSnapshot_CancelledContext(t *testing.T) {
 func TestProjectFile_CFGsBuiltOnceAndShared(t *testing.T) {
 	path := writeSnapshotFixture(t, "a.js", `function a() { if (a) { return 1; } return 0; }`)
 
-	snapshot := BuildProjectSnapshot(context.Background(), []string{path}, nil)
+	snapshot := BuildProjectSnapshot(context.Background(), []string{path})
 	file := snapshot.Files[0]
 
 	const callers = 8
@@ -114,7 +114,7 @@ func TestProjectFile_CFGsBuiltOnceAndShared(t *testing.T) {
 func TestProjectFile_CFGsReportsParseError(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "missing.js")
 
-	snapshot := BuildProjectSnapshot(context.Background(), []string{missing}, nil)
+	snapshot := BuildProjectSnapshot(context.Background(), []string{missing})
 
 	if _, err := snapshot.Files[0].CFGs(); err == nil {
 		t.Error("CFGs() should surface the file's read error")
@@ -150,7 +150,7 @@ function branching(a) {
 		t.Fatalf("standalone analysis failed: %v", err)
 	}
 
-	snapshot := BuildProjectSnapshot(context.Background(), paths, nil)
+	snapshot := BuildProjectSnapshot(context.Background(), paths)
 	shared, err := svc.AnalyzeSnapshot(context.Background(), snapshot, req)
 	if err != nil {
 		t.Fatalf("snapshot analysis failed: %v", err)
@@ -176,7 +176,7 @@ function branching(a) {
 // different files must fail instead of silently analyzing the snapshot.
 func TestAnalyzeSnapshot_RejectsMismatchedPaths(t *testing.T) {
 	path := writeSnapshotFixture(t, "a.js", `function a() { return 1; }`)
-	snapshot := BuildProjectSnapshot(context.Background(), []string{path}, nil)
+	snapshot := BuildProjectSnapshot(context.Background(), []string{path})
 
 	svc := NewComplexityService(complexityTestConfig())
 	req := domain.ComplexityRequest{Paths: []string{"other.js"}}

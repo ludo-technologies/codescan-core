@@ -2,14 +2,14 @@
 
 ## Overview
 
-jscan uses a layered architecture inspired by **Clean Architecture**. Core analysis logic stays isolated from CLI/output concerns, while command handlers can call application use cases or services directly for pragmatic orchestration.
+jscan is the `internal/js` package of the `polyscan` module, and the `polyscan` CLI runs it for JavaScript and TypeScript files. The package uses a layered architecture inspired by **Clean Architecture**. Core analysis logic stays isolated from CLI/output concerns, while the entry point can call application use cases or services directly for pragmatic orchestration. Paths below are relative to `polyscan/internal/js` unless stated otherwise.
 
 ## Layer Diagram
 
 ```text
 ┌──────────────────────────────────────────────┐
-│                  CLI (cmd/)                  │
-│       cobra commands, arg parsing, I/O       │
+│         CLI (cmd/polyscan) and js.go         │
+│    cobra commands, file collection, I/O      │
 ├──────────────────────────────────────────────┤
 │              Application (app/)              │
 │      reusable use cases / file orchestration │
@@ -34,16 +34,9 @@ All layers depend on `domain` for shared types; `domain` depends on nothing.
 
 ## Layer Descriptions
 
-### cmd/jscan -- CLI Interface
+### cmd/polyscan and js.go -- Entry Point
 
-Entry point using [cobra](https://github.com/spf13/cobra). Handles command-line argument parsing, flag configuration, and output rendering. Commands include:
-
-- `analyze` - Run full project analysis
-- `check` - Run health checks against thresholds
-- `deps` - Analyze module dependencies
-- `init` - Initialize a jscan configuration file
-
-For performance-sensitive commands, CLI handlers may orchestrate services directly.
+`polyscan analyze` is a [cobra](https://github.com/spf13/cobra) command in `polyscan/cmd/polyscan`. When the analyzed paths contain JavaScript or TypeScript files it calls `js.go`, which loads the configuration, collects the files, and runs the five analyses in parallel over one shared parse of the project. The `check`, `deps`, and `init` commands of the retired `jscan` CLI have no equivalent.
 
 ### app -- Application Use Cases
 
@@ -64,10 +57,7 @@ Business logic services that operate between the CLI and core analyzers:
 - **cbo_service** - Orchestrates coupling metrics
 - **dependency_graph_service** - Orchestrates dependency graph construction
 - **output_formatter** - Formats results as text, JSON, HTML, or CSV
-- **dot_formatter** - Generates DOT graph output for dependency visualization
 - **parallel_executor** - Manages concurrent file analysis
-- **progress_manager** - Terminal progress bar rendering
-- **browser** - Opens HTML reports in the system browser
 
 ### internal/parser -- Tree-sitter Integration
 

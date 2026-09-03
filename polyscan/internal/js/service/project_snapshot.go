@@ -39,8 +39,8 @@ type ProjectFile struct {
 // out in path order regardless of scheduling, so downstream reports stay
 // deterministic. Read and parse failures are recorded per file rather than
 // aborting the build: each analysis reports them in its own format.
-func BuildProjectSnapshot(ctx context.Context, paths []string, progress domain.TaskProgress) *ProjectSnapshot {
-	results := analyzeFilesConcurrently(ctx, paths, progress,
+func BuildProjectSnapshot(ctx context.Context, paths []string) *ProjectSnapshot {
+	results := analyzeFilesConcurrently(ctx, paths,
 		func(_ context.Context, path string) fileAnalysis[*ProjectFile] {
 			return fileAnalysis[*ProjectFile]{value: buildProjectFile(path)}
 		})
@@ -69,10 +69,9 @@ func BuildProjectSnapshot(ctx context.Context, paths []string, progress domain.T
 func analyzeProjectFilesFromPaths[T any](
 	ctx context.Context,
 	paths []string,
-	progress domain.TaskProgress,
 	analyze func(*ProjectFile) fileAnalysis[T],
 ) []fileAnalysis[T] {
-	return analyzeFilesConcurrently(ctx, paths, progress,
+	return analyzeFilesConcurrently(ctx, paths,
 		func(_ context.Context, path string) fileAnalysis[T] {
 			return analyze(buildProjectFile(path))
 		})

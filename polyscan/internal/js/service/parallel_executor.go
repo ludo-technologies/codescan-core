@@ -72,7 +72,6 @@ func (e *AggregatedError) Unwrap() error {
 type ParallelExecutorImpl struct {
 	maxConcurrency int
 	timeout        time.Duration
-	progress       domain.ProgressManager
 	mu             sync.RWMutex
 }
 
@@ -103,13 +102,6 @@ func NewParallelExecutorFromConfig(cfg *config.PerformanceConfig) *ParallelExecu
 	}
 }
 
-// NewParallelExecutorWithProgress creates a parallel executor with progress tracking
-func NewParallelExecutorWithProgress(cfg *config.PerformanceConfig, pm domain.ProgressManager) *ParallelExecutorImpl {
-	executor := NewParallelExecutorFromConfig(cfg)
-	executor.progress = pm
-	return executor
-}
-
 // Execute runs tasks in parallel with the configured concurrency and timeout
 func (e *ParallelExecutorImpl) Execute(ctx context.Context, tasks []domain.ExecutableTask) error {
 	// Filter enabled tasks
@@ -127,13 +119,6 @@ func (e *ParallelExecutorImpl) Execute(ctx context.Context, tasks []domain.Execu
 	// Create timeout context
 	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-
-	// Set up progress tracking
-	var task domain.TaskProgress = &NoOpTaskProgress{}
-	if e.progress != nil {
-		task = e.progress.StartTask("Executing tasks", len(enabledTasks))
-	}
-	defer task.Complete()
 
 	// Create errgroup with context for cancellation propagation
 	g, gCtx := errgroup.WithContext(timeoutCtx)
@@ -154,9 +139,6 @@ func (e *ParallelExecutorImpl) Execute(ctx context.Context, tasks []domain.Execu
 
 			// Execute the task
 			_, err := t.Execute(gCtx)
-
-			// Update progress
-			task.Increment(1)
 
 			// Collect error if any
 			if err != nil {

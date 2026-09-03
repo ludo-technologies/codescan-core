@@ -1,4 +1,5 @@
-// Package version carries the build metadata reported by jscan version.
+// Package version carries the build metadata the JavaScript section of the
+// report carries.
 //
 // All four variables are set through linker flags at build time and hold
 // placeholders otherwise: Version defaults to "dev", Commit and Date to

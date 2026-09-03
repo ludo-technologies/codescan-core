@@ -1,7 +1,7 @@
-// Package js runs the jscan JavaScript/TypeScript analyses as one pipeline,
-// shared by the jscan CLI and polyscan analyze. The packages below it are the
-// jscan implementation; this file is the entry point both commands use to
-// load configuration, collect files and run the analyses.
+// Package js runs the jscan JavaScript/TypeScript analyses as one pipeline
+// for polyscan analyze. The packages below it are the jscan implementation;
+// this file is the entry point that loads configuration, collects files and
+// runs the analyses.
 package js
 
 import (
@@ -29,7 +29,7 @@ type Selection struct {
 	Deps       bool
 }
 
-// AllAnalyses selects every analysis, the jscan default.
+// AllAnalyses selects every analysis.
 func AllAnalyses() Selection {
 	return Selection{Complexity: true, DeadCode: true, Clones: true, CBO: true, Deps: true}
 }
@@ -126,7 +126,7 @@ func CollectFiles(paths []string, cfg *config.Config) ([]string, error) {
 func Run(ctx context.Context, files []string, cfg *config.Config, selected Selection) *Result {
 	var snapshot *service.ProjectSnapshot
 	if selected.count() > 1 {
-		snapshot = service.BuildProjectSnapshot(ctx, files, nil)
+		snapshot = service.BuildProjectSnapshot(ctx, files)
 	}
 
 	result := &Result{}
@@ -220,7 +220,7 @@ func runDeadCode(ctx context.Context, snapshot *service.ProjectSnapshot, files [
 	return service.AnalyzeDeadCode(ctx, DeadCodeRequest(files, cfg))
 }
 
-// DeadCodeRequest builds the dead code request every entry point shares.
+// DeadCodeRequest builds the dead code request.
 func DeadCodeRequest(files []string, cfg *config.Config) domain.DeadCodeRequest {
 	return domain.DeadCodeRequest{
 		Paths:       files,

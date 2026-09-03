@@ -35,15 +35,8 @@
 // LoadResult.IgnoredKeys reports the keys a file sets that fall in that second
 // group, so the commands can say so rather than leaving the user to find out.
 // A key being wired up therefore means adding it to appliedKeys in the same
-// change, and the templates below are tested against that same set.
+// change.
 //
-// # Templates
-//
-// GetFullConfigTemplate and GetMinimalConfigTemplate produce the files written
-// by jscan init, combining a ProjectType preset that selects file patterns with
-// a Strictness preset that selects complexity thresholds. Both emit plain JSON
-// with no comments.
-//
-// Note that the generated exclude list is shorter than DefaultConfig's, so
-// writing a configuration file narrows what jscan skips rather than widening it.
+// Note that a configuration file's exclude list replaces DefaultConfig's, so
+// writing one can narrow what jscan skips rather than widening it.
 package config
