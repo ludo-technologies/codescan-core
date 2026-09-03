@@ -60,30 +60,24 @@ func analyzeTemplateFuncs() template.FuncMap {
 
 // WriteHTML writes the analysis result as a self-contained HTML report.
 func (f *OutputFormatterImpl) WriteHTML(
-	complexityResponse *domain.ComplexityResponse,
-	deadCodeResponse *domain.DeadCodeResponse,
-	cloneResponse *domain.CloneResponse,
-	cboResponse *domain.CBOResponse,
-	depsResponse *domain.DependencyGraphResponse,
+	results domain.AnalysisResults,
 	writer io.Writer,
 	duration time.Duration,
 ) error {
-	if cloneResponse != nil {
-		if cloneResponse.Statistics == nil {
-			cloneResponse.Statistics = &domain.CloneStatistics{}
+	if results.Clone != nil {
+		if results.Clone.Statistics == nil {
+			results.Clone.Statistics = &domain.CloneStatistics{}
 		}
-		clonePairs := make([]*domain.ClonePair, 0, len(cloneResponse.ClonePairs))
-		for _, pair := range cloneResponse.ClonePairs {
+		clonePairs := make([]*domain.ClonePair, 0, len(results.Clone.ClonePairs))
+		for _, pair := range results.Clone.ClonePairs {
 			if pair != nil {
 				clonePairs = append(clonePairs, pair)
 			}
 		}
-		cloneResponse.ClonePairs = clonePairs
+		results.Clone.ClonePairs = clonePairs
 	}
 
-	view := buildAnalyzeReportView(
-		complexityResponse, deadCodeResponse, cloneResponse, cboResponse, depsResponse, duration,
-	)
+	view := buildAnalyzeReportView(results, duration)
 	if err := analyzeReportTemplate.Execute(writer, view); err != nil {
 		return fmt.Errorf("failed to render HTML report: %w", err)
 	}
@@ -252,17 +246,13 @@ func scoreBand(score int) string {
 }
 
 func buildAnalyzeReportView(
-	complexity *domain.ComplexityResponse,
-	deadCode *domain.DeadCodeResponse,
-	clone *domain.CloneResponse,
-	cbo *domain.CBOResponse,
-	deps *domain.DependencyGraphResponse,
+	results domain.AnalysisResults,
 	duration time.Duration,
 ) *analyzeReportView {
 	// Reuse the shared summary and rollup builders so the report can never
 	// disagree with the text, JSON, or CSV output about a score.
-	summary := BuildAnalyzeSummary(complexity, deadCode, clone, cbo, deps)
-	moduleQuality := BuildModuleQuality(complexity, deadCode, deps)
+	summary := BuildAnalyzeSummary(results)
+	moduleQuality := BuildModuleQuality(results.Complexity, results.DeadCode, results.Deps)
 
 	view := &analyzeReportView{
 		CSS:             analyzeReportCSS,
@@ -270,32 +260,32 @@ func buildAnalyzeReportView(
 		GeneratedAt:     time.Now(),
 		Duration:        duration.Milliseconds(),
 		Version:         version.Version,
-		Complexity:      complexity,
-		DeadCode:        deadCode,
-		Clone:           clone,
-		CBO:             cbo,
-		Deps:            deps,
+		Complexity:      results.Complexity,
+		DeadCode:        results.DeadCode,
+		Clone:           results.Clone,
+		CBO:             results.CBO,
+		Deps:            results.Deps,
 		ModuleQuality:   moduleQuality,
 		Summary:         summary,
 		ScoreBand:       scoreBand(summary.HealthScore),
 		RingOffset:      reportScoreRingCircumf * (1 - float64(clampScore(summary.HealthScore))/100),
 		ProjectScale:    FormatProjectScale(summary),
 		SkippedFiles:    summary.SkippedFiles,
-		ShowFunctions:   reportHasFunctions(summary, complexity, moduleQuality),
+		ShowFunctions:   reportHasFunctions(summary, results.Complexity, moduleQuality),
 		ShowDeadColumn:  summary.DeadCodeEnabled,
 		ShowCloneColumn: summary.CloneEnabled,
 	}
-	risk := readComplexityRisk(complexity)
-	view.ProjectName, view.ProjectPath = reportProject(moduleQuality, complexity)
-	view.Tabs = buildReportTabs(summary, complexity, moduleQuality, deps)
+	risk := readComplexityRisk(results.Complexity)
+	view.ProjectName, view.ProjectPath = reportProject(moduleQuality, results.Complexity)
+	view.Tabs = buildReportTabs(summary, results.Complexity, moduleQuality, results.Deps)
 	view.Dimensions = buildReportDimensions(summary, view.Tabs)
 	view.Verdict = buildReportVerdict(summary, view.Dimensions)
 	view.Facts = buildReportFacts(summary, moduleQuality)
-	view.Hotspots = buildReportHotspots(moduleQuality, clone, risk)
-	view.Histogram = buildReportHistogram(complexity, risk)
-	view.Duplication = buildReportDuplication(summary, clone)
-	view.Classes = buildReportClasses(summary, cbo)
-	view.Structure = buildReportStructure(deps)
+	view.Hotspots = buildReportHotspots(moduleQuality, results.Clone, risk)
+	view.Histogram = buildReportHistogram(results.Complexity, risk)
+	view.Duplication = buildReportDuplication(summary, results.Clone)
+	view.Classes = buildReportClasses(summary, results.CBO)
+	view.Structure = buildReportStructure(results.Deps)
 	return view
 }
 

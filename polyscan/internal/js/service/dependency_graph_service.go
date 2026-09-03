@@ -45,8 +45,11 @@ func (s *DependencyGraphServiceImpl) Analyze(ctx context.Context, req domain.Dep
 // files. The snapshot defines the analyzed file set; req.Paths, when set, must
 // name the same files.
 func (s *DependencyGraphServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.DependencyGraphRequest) (*domain.DependencyGraphResponse, error) {
-	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+	if err := snapshot.validateRequest(req.Paths); err != nil {
 		return nil, err
+	}
+	if !snapshot.retain {
+		return nil, domain.NewInvalidInputError("dependency analysis needs a snapshot that keeps every parse tree", nil)
 	}
 
 	var warnings []string

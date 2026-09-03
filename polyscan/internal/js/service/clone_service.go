@@ -76,15 +76,7 @@ func extractFileFragments(detector *analyzer.CloneDetector, file *ProjectFile) f
 // proceeds — use DetectClonesInSnapshot when several analyses should share
 // the parse trees.
 func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRequest) (*domain.CloneResponse, error) {
-	startTime := time.Now()
-	config := s.effectiveConfig(req)
-	detector := analyzer.NewCloneDetector(&config)
-
-	results := analyzeProjectFilesFromPaths(ctx, req.Paths,
-		func(file *ProjectFile) fileAnalysis[*extractedFragments] {
-			return extractFileFragments(detector, file)
-		})
-	return s.detectFromExtraction(ctx, results, detector, &config, req, startTime)
+	return s.DetectClonesInSnapshot(ctx, NewProjectSnapshot(req.Paths), req)
 }
 
 // DetectClonesInSnapshot performs clone detection on already parsed project
@@ -94,7 +86,7 @@ func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRe
 // the trees' sole owner, so they stay collectable once every analysis sharing
 // the snapshot has finished.
 func (s *CloneServiceImpl) DetectClonesInSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req *domain.CloneRequest) (*domain.CloneResponse, error) {
-	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+	if err := snapshot.validateRequest(req.Paths); err != nil {
 		return nil, err
 	}
 
@@ -102,8 +94,8 @@ func (s *CloneServiceImpl) DetectClonesInSnapshot(ctx context.Context, snapshot 
 	config := s.effectiveConfig(req)
 	detector := analyzer.NewCloneDetector(&config)
 
-	results := analyzeFilesConcurrently(ctx, snapshot.Files,
-		func(_ context.Context, file *ProjectFile) fileAnalysis[*extractedFragments] {
+	results := analyzeSnapshotFiles(ctx, snapshot,
+		func(file *ProjectFile) fileAnalysis[*extractedFragments] {
 			return extractFileFragments(detector, file)
 		})
 	return s.detectFromExtraction(ctx, results, detector, &config, req, startTime)

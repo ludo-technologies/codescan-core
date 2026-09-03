@@ -45,7 +45,7 @@ func TestCalculateDuplicationPercentageReportsUncappedRatio(t *testing.T) {
 		t.Fatalf("expected actual 50%% fragment ratio, got %.1f%%", got)
 	}
 
-	summary := BuildAnalyzeSummary(nil, nil, response, nil, nil)
+	summary := BuildAnalyzeSummary(domain.AnalysisResults{Clone: response})
 	if summary.CodeDuplication != 50 {
 		t.Fatalf("expected summary to retain actual ratio, got %.1f%%", summary.CodeDuplication)
 	}
@@ -56,16 +56,17 @@ func TestCalculateDuplicationPercentageReportsUncappedRatio(t *testing.T) {
 
 func TestBuildAnalyzeSummary_WiresProjectScale(t *testing.T) {
 	complexityResponse := &domain.ComplexityResponse{
-		Summary: domain.ComplexitySummary{
-			TotalFunctions: 240,
-			FilesAnalyzed:  123,
-		},
+		Summary: domain.ComplexitySummary{TotalFunctions: 240},
 	}
 	cloneResponse := &domain.CloneResponse{Statistics: &domain.CloneStatistics{
 		LinesAnalyzed: 7890,
 	}}
 
-	summary := BuildAnalyzeSummary(complexityResponse, nil, cloneResponse, nil, nil)
+	summary := BuildAnalyzeSummary(domain.AnalysisResults{
+		Files:      domain.FileAccounting{Total: 123},
+		Complexity: complexityResponse,
+		Clone:      cloneResponse,
+	})
 
 	if summary.ProjectScale != domain.ScaleMedium {
 		t.Errorf("ProjectScale = %q, want %q", summary.ProjectScale, domain.ScaleMedium)
@@ -86,12 +87,10 @@ func TestBuildAnalyzeSummary_WiresProjectScale(t *testing.T) {
 func TestFormatProjectScale_OmitsLOCWhenUnavailable(t *testing.T) {
 	// Clone analysis is what supplies the line count, so a run without it
 	// reports files and functions only.
-	summary := BuildAnalyzeSummary(&domain.ComplexityResponse{
-		Summary: domain.ComplexitySummary{
-			TotalFunctions: 6,
-			FilesAnalyzed:  4,
-		},
-	}, nil, nil, nil, nil)
+	summary := BuildAnalyzeSummary(domain.AnalysisResults{
+		Files:      domain.FileAccounting{Total: 4},
+		Complexity: &domain.ComplexityResponse{Summary: domain.ComplexitySummary{TotalFunctions: 6}},
+	})
 
 	want := "Micro (4 files, 6 functions)"
 	if got := FormatProjectScale(summary); got != want {
@@ -282,7 +281,7 @@ func TestOutputFormatterWriteAnalyzeJSON(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := formatter.WriteAnalyze(complexityResponse, nil, nil, nil, nil, domain.OutputFormatJSON, &buf, 100*time.Millisecond)
+	err := formatter.WriteAnalyze(domain.AnalysisResults{Complexity: complexityResponse}, domain.OutputFormatJSON, &buf, 100*time.Millisecond)
 	if err != nil {
 		t.Fatalf("WriteAnalyze failed: %v", err)
 	}
@@ -317,7 +316,7 @@ func TestOutputFormatterWriteAnalyzeJSON_CloneErrorIncluded(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := formatter.WriteAnalyze(nil, nil, cloneResponse, nil, nil, domain.OutputFormatJSON, &buf, 100*time.Millisecond)
+	err := formatter.WriteAnalyze(domain.AnalysisResults{Clone: cloneResponse}, domain.OutputFormatJSON, &buf, 100*time.Millisecond)
 	if err != nil {
 		t.Fatalf("WriteAnalyze failed: %v", err)
 	}
@@ -373,7 +372,7 @@ func TestOutputFormatterWriteHTML(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := formatter.WriteAnalyze(complexityResponse, deadCodeResponse, nil, nil, nil, domain.OutputFormatHTML, &buf, 100*time.Millisecond)
+	err := formatter.WriteAnalyze(domain.AnalysisResults{Complexity: complexityResponse, DeadCode: deadCodeResponse}, domain.OutputFormatHTML, &buf, 100*time.Millisecond)
 	if err != nil {
 		t.Fatalf("WriteAnalyze with HTML failed: %v", err)
 	}
@@ -405,7 +404,7 @@ func TestOutputFormatterWriteHTML_CloneNilSafe(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := formatter.WriteAnalyze(nil, nil, cloneResponse, nil, nil, domain.OutputFormatHTML, &buf, 100*time.Millisecond)
+	err := formatter.WriteAnalyze(domain.AnalysisResults{Clone: cloneResponse}, domain.OutputFormatHTML, &buf, 100*time.Millisecond)
 	if err != nil {
 		t.Fatalf("WriteAnalyze with HTML failed: %v", err)
 	}
@@ -441,7 +440,7 @@ func TestOutputFormatterWriteAnalyzeCSV_WithDeps(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	err := formatter.WriteAnalyze(nil, nil, nil, nil, depsResponse, domain.OutputFormatCSV, &buf, 100*time.Millisecond)
+	err := formatter.WriteAnalyze(domain.AnalysisResults{Deps: depsResponse}, domain.OutputFormatCSV, &buf, 100*time.Millisecond)
 	if err != nil {
 		t.Fatalf("WriteAnalyze with CSV failed: %v", err)
 	}
@@ -483,7 +482,7 @@ func TestBuildAnalyzeSummary_WiresMSD(t *testing.T) {
 		},
 	}
 
-	summary := BuildAnalyzeSummary(nil, nil, nil, nil, depsResponse)
+	summary := BuildAnalyzeSummary(domain.AnalysisResults{Deps: depsResponse})
 
 	if summary.DepsMainSequenceDeviation != 0.42 {
 		t.Errorf("DepsMainSequenceDeviation = %f, want 0.42", summary.DepsMainSequenceDeviation)
@@ -509,7 +508,7 @@ func TestBuildAnalyzeSummary_WiresCycles(t *testing.T) {
 		},
 	}
 
-	summary := BuildAnalyzeSummary(nil, nil, nil, nil, depsResponse)
+	summary := BuildAnalyzeSummary(domain.AnalysisResults{Deps: depsResponse})
 
 	if summary.DepsModulesInCycles != 10 {
 		t.Errorf("DepsModulesInCycles = %d, want 10", summary.DepsModulesInCycles)
@@ -561,5 +560,35 @@ func TestComplexityFunctionsHeading(t *testing.T) {
 				t.Errorf("heading = %q, expected %q", heading, tc.expected)
 			}
 		})
+	}
+}
+
+// TestBuildAnalyzeSummary_ChargesSkippedFilesWithoutComplexity pins the fix
+// for #92: the parse-error penalty and the file counts come from the run's
+// accounting, so a run that left complexity out still reports and charges the
+// files it could not parse.
+func TestBuildAnalyzeSummary_ChargesSkippedFilesWithoutComplexity(t *testing.T) {
+	files := domain.FileAccounting{Total: 2, Skipped: 1, Errors: []string{"broken.js: syntax error at line 1"}}
+	deadCode := &domain.DeadCodeResponse{Summary: domain.DeadCodeSummary{TotalFiles: 2}}
+
+	summary := BuildAnalyzeSummary(domain.AnalysisResults{Files: files, DeadCode: deadCode})
+
+	if summary.TotalFiles != 2 || summary.AnalyzedFiles != 1 || summary.SkippedFiles != 1 {
+		t.Fatalf("file counts = %d/%d/%d, want total 2, analyzed 1, skipped 1",
+			summary.TotalFiles, summary.AnalyzedFiles, summary.SkippedFiles)
+	}
+	if summary.HealthScore >= 100 {
+		t.Errorf("HealthScore = %d, want the parse-error penalty applied", summary.HealthScore)
+	}
+	clean := BuildAnalyzeSummary(domain.AnalysisResults{Files: domain.FileAccounting{Total: 2}, DeadCode: deadCode})
+	if clean.HealthScore != 100 {
+		t.Errorf("clean HealthScore = %d, want 100", clean.HealthScore)
+	}
+
+	cli := FormatCLISummary(summary, time.Second, files.Errors)
+	for _, want := range []string{"1 of 2 files skipped (parse errors)", "broken.js: syntax error at line 1"} {
+		if !strings.Contains(cli, want) {
+			t.Errorf("CLI summary lacks %q:\n%s", want, cli)
+		}
 	}
 }

@@ -30,22 +30,18 @@ func NewComplexityService(cfg *config.ComplexityConfig) *ComplexityServiceImpl {
 // are extracted, so peak memory holds only as many parse trees as there are
 // workers — use AnalyzeSnapshot when several analyses should share the trees.
 func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.ComplexityRequest) (*domain.ComplexityResponse, error) {
-	results := analyzeProjectFilesFromPaths(ctx, req.Paths, s.analyzeProjectFile)
-	return s.buildResponse(ctx, results, req.Paths, req)
+	return s.AnalyzeSnapshot(ctx, NewProjectSnapshot(req.Paths), req)
 }
 
 // AnalyzeSnapshot performs complexity analysis on already parsed project files.
 // The snapshot defines the analyzed file set; req.Paths, when set, must name
 // the same files.
 func (s *ComplexityServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.ComplexityRequest) (*domain.ComplexityResponse, error) {
-	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+	if err := snapshot.validateRequest(req.Paths); err != nil {
 		return nil, err
 	}
 
-	results := analyzeFilesConcurrently(ctx, snapshot.Files,
-		func(_ context.Context, file *ProjectFile) fileAnalysis[fileComplexity] {
-			return s.analyzeProjectFile(file)
-		})
+	results := analyzeSnapshotFiles(ctx, snapshot, s.analyzeProjectFile)
 	return s.buildResponse(ctx, results, snapshot.Paths(), req)
 }
 

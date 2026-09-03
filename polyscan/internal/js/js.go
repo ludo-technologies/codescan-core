@@ -46,8 +46,11 @@ func (s Selection) count() int {
 
 // Result holds each analysis response next to its error. An analysis that
 // was not selected leaves both nil; one that failed leaves the response nil
-// and the error set, and the others still stand.
+// and the error set, and the others still stand. Files is the run's own
+// accounting of the files it covered and could not use, kept apart from the
+// analyses so it is complete whichever of them ran.
 type Result struct {
+	Files         domain.FileAccounting
 	Complexity    *domain.ComplexityResponse
 	ComplexityErr error
 	DeadCode      *domain.DeadCodeResponse
@@ -120,13 +123,16 @@ func CollectFiles(paths []string, cfg *config.Config) ([]string, error) {
 // goroutines below finish, so the shared trees become collectable as soon as
 // the analyses are done with them — clone detection drops its per-fragment
 // AST references itself once fragments are converted for APTED. A single
-// selected analysis has nobody to share with and skips the snapshot: the
-// services' own entry points then release each file as they go, which holds
-// far fewer parse trees at once.
+// selected analysis has nobody to share with and gets a snapshot that loads
+// each file inside its fan-out and releases it right after, which holds far
+// fewer parse trees at once. Dependency analysis is the exception: graph
+// construction needs every module's tree at once.
 func Run(ctx context.Context, files []string, cfg *config.Config, selected Selection) *Result {
 	var snapshot *service.ProjectSnapshot
-	if selected.count() > 1 {
+	if selected.count() > 1 || selected.Deps {
 		snapshot = service.BuildProjectSnapshot(ctx, files)
+	} else {
+		snapshot = service.NewProjectSnapshot(files)
 	}
 
 	result := &Result{}
@@ -189,11 +195,11 @@ func Run(ctx context.Context, files []string, cfg *config.Config, selected Selec
 	}
 
 	wg.Wait()
+	result.Files = snapshot.Accounting()
 	return result
 }
 
-// runComplexity runs complexity analysis without progress tracking, over the
-// shared snapshot when one exists.
+// runComplexity runs complexity analysis over the snapshot.
 func runComplexity(ctx context.Context, snapshot *service.ProjectSnapshot, files []string, cfg *config.Config) (*domain.ComplexityResponse, error) {
 	svc := service.NewComplexityService(&cfg.Complexity)
 
@@ -205,19 +211,12 @@ func runComplexity(ctx context.Context, snapshot *service.ProjectSnapshot, files
 		SortBy:          domain.SortCriteria(cfg.Output.SortBy),
 	}
 
-	if snapshot != nil {
-		return svc.AnalyzeSnapshot(ctx, snapshot, req)
-	}
-	return svc.Analyze(ctx, req)
+	return svc.AnalyzeSnapshot(ctx, snapshot, req)
 }
 
-// runDeadCode runs dead code analysis without progress tracking, over the
-// shared snapshot when one exists.
+// runDeadCode runs dead code analysis over the snapshot.
 func runDeadCode(ctx context.Context, snapshot *service.ProjectSnapshot, files []string, cfg *config.Config) (*domain.DeadCodeResponse, error) {
-	if snapshot != nil {
-		return service.AnalyzeDeadCodeSnapshot(ctx, snapshot, DeadCodeRequest(files, cfg))
-	}
-	return service.AnalyzeDeadCode(ctx, DeadCodeRequest(files, cfg))
+	return service.AnalyzeDeadCodeSnapshot(ctx, snapshot, DeadCodeRequest(files, cfg))
 }
 
 // DeadCodeRequest builds the dead code request.
@@ -229,22 +228,17 @@ func DeadCodeRequest(files []string, cfg *config.Config) domain.DeadCodeRequest 
 	}
 }
 
-// runClones runs clone detection without progress tracking, over the shared
-// snapshot when one exists.
+// runClones runs clone detection over the snapshot.
 func runClones(ctx context.Context, snapshot *service.ProjectSnapshot, files []string) (*domain.CloneResponse, error) {
 	svc := service.NewCloneServiceWithDefaults()
 
 	req := domain.DefaultCloneRequest()
 	req.Paths = files
 
-	if snapshot != nil {
-		return svc.DetectClonesInSnapshot(ctx, snapshot, req)
-	}
-	return svc.DetectClones(ctx, req)
+	return svc.DetectClonesInSnapshot(ctx, snapshot, req)
 }
 
-// runCBO runs CBO analysis without progress tracking, over the shared
-// snapshot when one exists.
+// runCBO runs CBO analysis over the snapshot.
 func runCBO(ctx context.Context, snapshot *service.ProjectSnapshot, files []string) (*domain.CBOResponse, error) {
 	svc := service.NewCBOServiceWithDefaults()
 
@@ -252,14 +246,10 @@ func runCBO(ctx context.Context, snapshot *service.ProjectSnapshot, files []stri
 		Paths: files,
 	}
 
-	if snapshot != nil {
-		return svc.AnalyzeSnapshot(ctx, snapshot, req)
-	}
-	return svc.Analyze(ctx, req)
+	return svc.AnalyzeSnapshot(ctx, snapshot, req)
 }
 
-// runDeps runs dependency analysis without progress tracking, over the
-// shared snapshot when one exists.
+// runDeps runs dependency analysis over the snapshot.
 func runDeps(ctx context.Context, snapshot *service.ProjectSnapshot, files []string) (*domain.DependencyGraphResponse, error) {
 	svc := service.NewDependencyGraphServiceWithDefaults()
 
@@ -268,8 +258,5 @@ func runDeps(ctx context.Context, snapshot *service.ProjectSnapshot, files []str
 		DetectCycles: domain.BoolPtr(true),
 	}
 
-	if snapshot != nil {
-		return svc.AnalyzeSnapshot(ctx, snapshot, req)
-	}
-	return svc.Analyze(ctx, req)
+	return svc.AnalyzeSnapshot(ctx, snapshot, req)
 }

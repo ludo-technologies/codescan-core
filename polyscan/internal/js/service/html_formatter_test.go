@@ -399,16 +399,14 @@ func TestCountClonesByFileCountsEachFragmentOnce(t *testing.T) {
 
 func TestWriteHTMLRendersTheOverviewFromAnalysisData(t *testing.T) {
 	complexity := reportComplexityResponse(9, 19, 1, 4, 12, 30)
-	complexity.Summary.TotalFiles = 4
-	complexity.Summary.FilesAnalyzed = 3
-	complexity.Summary.SkippedFiles = 1
 	complexity.ModuleRollups = map[string]domain.ModuleComplexityMetrics{
 		"src/a.ts": {LinesOfCode: 240, AnalyzedFunctionCount: 4, AverageComplexity: 11.75, MaxComplexity: 30, HighRiskFunctionCount: 1},
 	}
 
 	var buf bytes.Buffer
 	formatter := NewOutputFormatter()
-	if err := formatter.WriteHTML(complexity, nil, nil, nil, nil, &buf, 1200*time.Millisecond); err != nil {
+	results := domain.AnalysisResults{Files: domain.FileAccounting{Total: 4, Skipped: 1}, Complexity: complexity}
+	if err := formatter.WriteHTML(results, &buf, 1200*time.Millisecond); err != nil {
 		t.Fatalf("WriteHTML failed: %v", err)
 	}
 
@@ -455,7 +453,7 @@ func TestWriteHTMLAnnouncesDeadCodeTruncation(t *testing.T) {
 
 	var buf bytes.Buffer
 	formatter := NewOutputFormatter()
-	if err := formatter.WriteHTML(nil, deadCode, nil, nil, nil, &buf, time.Second); err != nil {
+	if err := formatter.WriteHTML(domain.AnalysisResults{DeadCode: deadCode}, &buf, time.Second); err != nil {
 		t.Fatalf("WriteHTML failed: %v", err)
 	}
 

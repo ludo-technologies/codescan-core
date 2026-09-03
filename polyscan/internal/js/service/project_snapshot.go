@@ -11,14 +11,29 @@ import (
 	"github.com/ludo-technologies/polyscan/polyscan/internal/js/parser"
 )
 
-// ProjectSnapshot holds every analyzed file read and parsed exactly once, so
-// the analyses that used to parse the project independently can share one set
-// of parse trees. The snapshot is the parse trees' owner: analyses must not
-// mutate the shared AST, and clone detection keeps dropping its per-fragment
-// AST references after APTED conversion, so the trees become collectable as
-// soon as the last snapshot reference is gone.
+// ProjectSnapshot is the file set of one run. It is the parse trees' owner:
+// analyses must not mutate the shared AST, and clone detection keeps dropping
+// its per-fragment AST references after APTED conversion, so the trees become
+// collectable as soon as the last snapshot reference is gone.
+//
+// A snapshot built with BuildProjectSnapshot reads and parses every file up
+// front and keeps the trees, so several analyses can share one set of parse
+// trees. One created with NewProjectSnapshot is for a single analysis: each
+// file is loaded inside that analysis's fan-out and released as soon as the
+// analysis has extracted its results, so peak memory holds only as many parse
+// trees as there are workers.
+//
+// Either way the snapshot records, per file, whether it could be read and
+// parsed. That is the run's file accounting, and it is kept here rather than
+// in any one analysis so the health score can charge unparsable files
+// whichever analyses ran.
 type ProjectSnapshot struct {
 	Files []*ProjectFile
+
+	// retain keeps each file's parse tree after an analysis pass so the next
+	// analysis can share it. A single-analysis snapshot releases each tree
+	// instead.
+	retain bool
 }
 
 // ProjectFile is one file after read and parse, plus the lazily built CFGs the
@@ -30,51 +45,71 @@ type ProjectFile struct {
 	ReadErr  error
 	ParseErr error
 
+	loaded   bool
+	released bool
+
 	cfgOnce sync.Once
 	cfgs    map[string]*analyzer.CFG
 	cfgErr  error
 }
 
-// BuildProjectSnapshot reads and parses each file once, in parallel. Files come
+// NewProjectSnapshot names the files of a single-analysis run without reading
+// them. The analysis loads each file as its fan-out reaches it and releases the
+// parse tree right after, so the snapshot never holds the whole project at
+// once. The entry points reject a second analysis over the same snapshot: the
+// trees it would need are gone.
+func NewProjectSnapshot(paths []string) *ProjectSnapshot {
+	files := make([]*ProjectFile, len(paths))
+	for index, path := range paths {
+		files[index] = &ProjectFile{Path: path}
+	}
+	return &ProjectSnapshot{Files: files}
+}
+
+// BuildProjectSnapshot reads and parses each file once, in parallel, and keeps
+// the parse trees for every analysis that runs over the snapshot. Files come
 // out in path order regardless of scheduling, so downstream reports stay
 // deterministic. Read and parse failures are recorded per file rather than
 // aborting the build: each analysis reports them in its own format.
 func BuildProjectSnapshot(ctx context.Context, paths []string) *ProjectSnapshot {
-	results := analyzeFilesConcurrently(ctx, paths,
-		func(_ context.Context, path string) fileAnalysis[*ProjectFile] {
-			return fileAnalysis[*ProjectFile]{value: buildProjectFile(path)}
+	snapshot := NewProjectSnapshot(paths)
+	snapshot.retain = true
+	// Loading is the whole job here, so the pass analyzes nothing.
+	analyzeSnapshotFiles(ctx, snapshot, func(*ProjectFile) fileAnalysis[struct{}] {
+		return fileAnalysis[struct{}]{}
+	})
+	return snapshot
+}
+
+// analyzeSnapshotFiles applies analyze to every file of the snapshot across
+// worker goroutines and returns the results in file order. Each file is loaded
+// before analyze sees it, so analyze can read Content, AST, ReadErr and
+// ParseErr directly, and a single-analysis snapshot releases the file right
+// after. Files a cancelled pass never reached record the cancellation as their
+// read error, so the accounting stays complete.
+func analyzeSnapshotFiles[T any](
+	ctx context.Context,
+	snapshot *ProjectSnapshot,
+	analyze func(*ProjectFile) fileAnalysis[T],
+) []fileAnalysis[T] {
+	results := analyzeFilesConcurrently(ctx, snapshot.Files,
+		func(_ context.Context, file *ProjectFile) fileAnalysis[T] {
+			file.load()
+			result := analyze(file)
+			if !snapshot.retain {
+				file.release()
+			}
+			return result
 		})
 
-	files := make([]*ProjectFile, len(paths))
-	for index, result := range results {
-		if result.value != nil {
-			files[index] = result.value
-			continue
-		}
-		// The worker never reached this slot: the context was cancelled.
-		files[index] = &ProjectFile{
-			Path:    paths[index],
-			ReadErr: fmt.Errorf("analysis cancelled: %w", context.Cause(ctx)),
+	for _, file := range snapshot.Files {
+		if !file.loaded {
+			file.loaded = true
+			file.ReadErr = fmt.Errorf("analysis cancelled: %w", context.Cause(ctx))
 		}
 	}
 
-	return &ProjectSnapshot{Files: files}
-}
-
-// analyzeProjectFilesFromPaths reads, parses, and analyzes each path inside the
-// fan-out, so every analysis sees the same *ProjectFile shape as the snapshot
-// path while each file's parse tree is released as soon as analyze returns.
-// This is the memory-lean pipeline for a single analysis; a run that shares
-// files across several analyses builds a ProjectSnapshot instead.
-func analyzeProjectFilesFromPaths[T any](
-	ctx context.Context,
-	paths []string,
-	analyze func(*ProjectFile) fileAnalysis[T],
-) []fileAnalysis[T] {
-	return analyzeFilesConcurrently(ctx, paths,
-		func(_ context.Context, path string) fileAnalysis[T] {
-			return analyze(buildProjectFile(path))
-		})
+	return results
 }
 
 // Paths returns the snapshot's file paths in analysis order.
@@ -86,14 +121,44 @@ func (s *ProjectSnapshot) Paths() []string {
 	return paths
 }
 
-// validateRequestPaths guards the AnalyzeSnapshot entry points: the snapshot
+// Accounting reports the run's file set the way the health score charges it:
+// every file the run covered, and those no analysis could use. It reads what
+// the analyses learned about each file, so it must be called once they have
+// finished; calling it earlier is a programming error and panics.
+func (s *ProjectSnapshot) Accounting() domain.FileAccounting {
+	accounting := domain.FileAccounting{Total: len(s.Files)}
+	for _, file := range s.Files {
+		if !file.loaded {
+			panic(fmt.Sprintf("file accounting requested before %s was analyzed", file.Path))
+		}
+		err := file.ReadErr
+		if err == nil {
+			err = file.ParseErr
+		}
+		if err == nil {
+			continue
+		}
+		accounting.Skipped++
+		accounting.Errors = append(accounting.Errors, fmt.Sprintf("%s: %v", file.Path, err))
+	}
+	return accounting
+}
+
+// validateRequest guards the AnalyzeSnapshot entry points. The snapshot
 // defines the analyzed file set, so a request that names paths must name the
 // snapshot's files — anything else means the caller built the snapshot from a
 // different selection than it thinks it is analyzing. An empty path list
-// defers to the snapshot entirely.
-func (s *ProjectSnapshot) validateRequestPaths(paths []string) error {
+// defers to the snapshot entirely. A single-analysis snapshot has released its
+// parse trees after its one pass, so it cannot be analyzed again.
+func (s *ProjectSnapshot) validateRequest(paths []string) error {
 	if s == nil {
 		return domain.NewInvalidInputError("project snapshot cannot be nil", nil)
+	}
+	for _, file := range s.Files {
+		if file.released {
+			return domain.NewInvalidInputError(
+				fmt.Sprintf("file %s was released after its single analysis and cannot be analyzed again", file.Path), nil)
+		}
 	}
 	if len(paths) == 0 {
 		return nil
@@ -116,24 +181,38 @@ func (s *ProjectSnapshot) validateRequestPaths(paths []string) error {
 	return nil
 }
 
-func buildProjectFile(path string) *ProjectFile {
-	file := &ProjectFile{Path: path}
-
-	content, err := os.ReadFile(path)
-	if err != nil {
-		file.ReadErr = err
-		return file
+// load reads and parses the file once. Only the fan-out calls it, one call per
+// file per pass, so it needs no lock: a retained file is simply already loaded
+// on the next pass.
+func (f *ProjectFile) load() {
+	if f.loaded {
+		return
 	}
-	file.Content = content
+	f.loaded = true
 
-	ast, err := parser.ParseForLanguage(path, content)
+	content, err := os.ReadFile(f.Path)
 	if err != nil {
-		file.ParseErr = err
-		return file
+		f.ReadErr = err
+		return
 	}
-	file.AST = ast
+	f.Content = content
 
-	return file
+	ast, err := parser.ParseForLanguage(f.Path, content)
+	if err != nil {
+		f.ParseErr = err
+		return
+	}
+	f.AST = ast
+}
+
+// release drops the file's contents, parse tree and CFGs once its single
+// analysis is done with them, keeping only the path and the errors the
+// accounting reads.
+func (f *ProjectFile) release() {
+	f.released = true
+	f.Content = nil
+	f.AST = nil
+	f.cfgs = nil
 }
 
 // Parsed reports whether the file has a valid parse tree to analyze.

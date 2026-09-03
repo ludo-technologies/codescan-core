@@ -100,6 +100,8 @@ The `*_enabled` flags say which dimensions actually ran and therefore which the 
 
 `grade` is one of `A`, `B`, `C`, `D`, `F`, or `N/A`. The last appears only when the summary failed validation, in which case `health_score` is 0 as well.
 
+`total_files`, `analyzed_files` and `skipped_files` describe the whole run, whichever analyses were selected: a file that could not be read or parsed is counted as skipped and charged the parse-error penalty even when complexity analysis did not run. The complexity object below carries its own file counts, which cover only the files that analysis saw.
+
 `project_scale` is a size label derived from `analyzed_files`. See [Project scale](health-score.md#project-scale) for the thresholds. `total_loc` is the number of lines the clone analysis read, so it is `0` when clone analysis is turned off.
 
 ## `complexity`

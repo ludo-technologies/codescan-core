@@ -43,29 +43,22 @@ func NewCBOServiceWithDefaults() *CBOServiceImpl {
 // extracted — use AnalyzeSnapshot when several analyses should share the
 // parse trees.
 func (s *CBOServiceImpl) Analyze(ctx context.Context, req domain.CBORequest) (*domain.CBOResponse, error) {
-	config := s.effectiveConfig(req)
-	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
-
-	results := analyzeProjectFilesFromPaths(ctx, req.Paths,
-		func(file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
-			return s.analyzeProjectFile(cboAnalyzer, file)
-		})
-	return s.buildResponse(ctx, results, &config, req)
+	return s.AnalyzeSnapshot(ctx, NewProjectSnapshot(req.Paths), req)
 }
 
 // AnalyzeSnapshot performs CBO analysis on already parsed project files. The
 // snapshot defines the analyzed file set; req.Paths, when set, must name the
 // same files.
 func (s *CBOServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req domain.CBORequest) (*domain.CBOResponse, error) {
-	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+	if err := snapshot.validateRequest(req.Paths); err != nil {
 		return nil, err
 	}
 
 	config := s.effectiveConfig(req)
 	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
 
-	results := analyzeFilesConcurrently(ctx, snapshot.Files,
-		func(_ context.Context, file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
+	results := analyzeSnapshotFiles(ctx, snapshot,
+		func(file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
 			return s.analyzeProjectFile(cboAnalyzer, file)
 		})
 	return s.buildResponse(ctx, results, &config, req)

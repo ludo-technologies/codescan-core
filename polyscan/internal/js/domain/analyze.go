@@ -108,6 +108,40 @@ type AnalyzeResponse struct {
 	Version     string    `json:"version" yaml:"version"`
 }
 
+// FileAccounting counts the files a run covered, kept apart from any one
+// analysis: every analysis silently excludes the files it cannot parse, so the
+// health score charges them separately whichever dimensions ran.
+type FileAccounting struct {
+	// Total is the number of files the run covered.
+	Total int
+	// Skipped is the number of files no analysis could use because they could
+	// not be read or parsed.
+	Skipped int
+	// Errors says, per skipped file, why it was skipped.
+	Errors []string
+}
+
+// Add folds another run's accounting into this one, as when the generic
+// engine and the JavaScript pipeline each cover part of a tree.
+func (a *FileAccounting) Add(other FileAccounting) {
+	a.Total += other.Total
+	a.Skipped += other.Skipped
+	a.Errors = append(a.Errors, other.Errors...)
+}
+
+// AnalysisResults is one run's output: the file set it covered and the
+// response of each analysis that ran. An analysis that did not run, or found
+// nothing to analyze, leaves its response nil, and the health score leaves
+// that dimension out instead of scoring it as clean.
+type AnalysisResults struct {
+	Files      FileAccounting
+	Complexity *ComplexityResponse
+	DeadCode   *DeadCodeResponse
+	Clone      *CloneResponse
+	CBO        *CBOResponse
+	Deps       *DependencyGraphResponse
+}
+
 // AnalyzeSummary provides an overall summary of all analyses
 type AnalyzeSummary struct {
 	// File statistics

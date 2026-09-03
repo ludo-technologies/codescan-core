@@ -92,12 +92,7 @@ func AnalyzeDeadCode(ctx context.Context, req domain.DeadCodeRequest) (*domain.D
 		ctx = context.Background()
 	}
 
-	moduleAnalyzer := analyzer.NewModuleAnalyzer(nil)
-	scanned := analyzeProjectFilesFromPaths(ctx, req.Paths,
-		func(file *ProjectFile) fileAnalysis[*scannedFile] {
-			return scanFileForDeadCode(moduleAnalyzer, file)
-		})
-	return aggregateDeadCodeScans(ctx, scanned, req.Paths, req)
+	return AnalyzeDeadCodeSnapshot(ctx, NewProjectSnapshot(req.Paths), req)
 }
 
 // AnalyzeDeadCodeSnapshot runs dead code analysis on already parsed project
@@ -107,13 +102,13 @@ func AnalyzeDeadCodeSnapshot(ctx context.Context, snapshot *ProjectSnapshot, req
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if err := snapshot.validateRequestPaths(req.Paths); err != nil {
+	if err := snapshot.validateRequest(req.Paths); err != nil {
 		return nil, err
 	}
 
 	moduleAnalyzer := analyzer.NewModuleAnalyzer(nil)
-	scanned := analyzeFilesConcurrently(ctx, snapshot.Files,
-		func(_ context.Context, file *ProjectFile) fileAnalysis[*scannedFile] {
+	scanned := analyzeSnapshotFiles(ctx, snapshot,
+		func(file *ProjectFile) fileAnalysis[*scannedFile] {
 			return scanFileForDeadCode(moduleAnalyzer, file)
 		})
 	return aggregateDeadCodeScans(ctx, scanned, snapshot.Paths(), req)
