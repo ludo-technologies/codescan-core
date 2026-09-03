@@ -50,6 +50,15 @@ var Language = &engine.Language{
 (communication_case) @case
 (binary_expression operator: ["&&" "||"]) @logical_operator
 `,
+	// An if in the else arm of another if continues that if's chain.
+	Nesting: `
+(if_statement) @nesting
+(if_statement alternative: (if_statement) @continuation)
+(for_statement) @nesting
+(expression_switch_statement) @nesting
+(type_switch_statement) @nesting
+(select_statement) @nesting
+`,
 	Clone: engine.CloneSpec{
 		Identifiers: []string{"identifier", "field_identifier", "type_identifier", "package_identifier", "label_name"},
 		Literals: []string{

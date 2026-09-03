@@ -18,7 +18,7 @@ func genericReport() *analysis.Report {
 		Files: analysis.Files{Total: 3, Analyzed: 2, Skipped: 1},
 		Complexity: &analysis.Complexity{
 			Functions: []analysis.Function{
-				{Name: "Sum", FilePath: "a.go", Language: "Go", StartLine: 1, EndLine: 10, Complexity: 12, RiskLevel: coredomain.RiskLevelMedium},
+				{Name: "Sum", FilePath: "a.go", Language: "Go", StartLine: 1, EndLine: 10, Complexity: 12, NestingDepth: 3, RiskLevel: coredomain.RiskLevelMedium},
 				{Name: "Add", FilePath: "b.go", Language: "Go", StartLine: 5, EndLine: 14, Complexity: 2, RiskLevel: coredomain.RiskLevelLow},
 			},
 			Summary: analysis.ComplexitySummary{
@@ -64,7 +64,7 @@ func TestCombineGenericOnly(t *testing.T) {
 		t.Fatalf("functions = %+v", complexity.Functions)
 	}
 	first := complexity.Functions[0]
-	if first.Language != "Go" || first.Metrics.Complexity != 12 || first.RiskLevel != domain.RiskLevelMedium {
+	if first.Language != "Go" || first.Metrics.Complexity != 12 || first.Metrics.NestingDepth != 3 || first.RiskLevel != domain.RiskLevelMedium {
 		t.Errorf("converted function = %+v", first)
 	}
 	summary := complexity.Summary

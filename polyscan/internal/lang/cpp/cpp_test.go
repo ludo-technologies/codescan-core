@@ -176,3 +176,52 @@ int broken(int a) { if ( return a; }
 		t.Error("a function containing the error must not be analyzed")
 	}
 }
+
+func TestNestingDepth(t *testing.T) {
+	functions := analyze(t, `
+void flat(bool a) {
+    if (a) {}
+    while (a) {}
+}
+
+void else_if_continues_the_chain(bool a, bool b) {
+    if (a) {
+    } else if (b) {
+        for (;;) {}
+    } else {
+        if (a) { if (b) {} }
+    }
+}
+
+void deep(bool a, int xs[]) {
+    if (a) {
+        for (int x : xs) {
+            switch (x) {
+            case 1:
+                try { } catch (...) { do {} while (a); }
+            }
+        }
+    }
+}
+
+void lambda(bool a, bool b) {
+    auto l = [&] { if (a) { if (b) {} } };
+}
+`)
+	want := map[string]int{
+		"flat":                        1,
+		"else_if_continues_the_chain": 3,
+		"deep":                        5,
+		"lambda":                      2,
+	}
+	for name, depth := range want {
+		fn, ok := functions[name]
+		if !ok {
+			t.Errorf("missing function %q", name)
+			continue
+		}
+		if fn.NestingDepth != depth {
+			t.Errorf("%s: nesting depth = %d, want %d", name, fn.NestingDepth, depth)
+		}
+	}
+}

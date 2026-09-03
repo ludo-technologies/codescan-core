@@ -47,6 +47,16 @@ type Language struct {
 	// that contains it and counted under the capture's name, so the capture
 	// names double as the breakdown reported next to the complexity.
 	Decisions string
+	// Nesting is a tree-sitter query whose captures are the constructs that
+	// open a nesting level: branches, loops, switches and try blocks. A
+	// capture named @continuation marks a construct that continues the
+	// level its parent opened rather than deepening it, as an if in the
+	// else arm of another if does. A function's nesting depth is the
+	// longest chain of these constructs inside it, with the function body
+	// at depth 0. Code inside a function that is extracted on its own
+	// belongs to that function; code inside a closure that is not counts
+	// toward the enclosing function, as its decision points do.
+	Nesting string
 	// Clone names the node types clone detection prices and compares.
 	Clone CloneSpec
 	// TestFiles names test files: a glob matches the file name, and a
@@ -63,6 +73,7 @@ type Language struct {
 	compileErr  error
 	definitions *sitter.Query
 	decisions   *sitter.Query
+	nesting     *sitter.Query
 	scopes      *sitter.Query
 	testCode    *sitter.Query
 	identifiers map[string]struct{}
@@ -117,6 +128,10 @@ type Function struct {
 	// Decisions breaks the decision points down by the name of the capture
 	// that produced them.
 	Decisions map[string]int
+	// NestingDepth is the deepest chain of nested control structures inside
+	// the function, per the language's Nesting query. It is 0 for a
+	// language without one.
+	NestingDepth int
 	// Tree is the function's syntax tree in the form the tree edit distance
 	// consumes: named nodes only, comments dropped, labeled per CloneSpec.
 	Tree *apted.TreeNode
@@ -136,11 +151,12 @@ type Function struct {
 }
 
 const (
-	definitionPrefix = "definition."
-	nameCapture      = "name"
-	receiverCapture  = "receiver"
-	scopeCapture     = "scope"
-	operatorField    = "operator"
+	definitionPrefix    = "definition."
+	nameCapture         = "name"
+	receiverCapture     = "receiver"
+	scopeCapture        = "scope"
+	continuationCapture = "continuation"
+	operatorField       = "operator"
 )
 
 func (l *Language) separator() string {
@@ -208,6 +224,7 @@ func (l *Language) Analyze(source []byte) (*Result, error) {
 	functions := l.extractFunctions(root, source)
 	l.applyScopes(root, source, functions)
 	l.countDecisions(root, source, functions)
+	l.measureNesting(root, source, functions)
 	l.markTests(root, source, functions)
 	for i := range functions {
 		functions[i].Complexity = 1
@@ -237,6 +254,14 @@ func (l *Language) compile() error {
 		if err != nil {
 			l.compileErr = fmt.Errorf("%s decisions query: %w", l.Name, err)
 			return
+		}
+		if l.Nesting != "" {
+			nesting, err := sitter.NewQuery([]byte(l.Nesting), l.Grammar)
+			if err != nil {
+				l.compileErr = fmt.Errorf("%s nesting query: %w", l.Name, err)
+				return
+			}
+			l.nesting = nesting
 		}
 		if l.Scopes != "" {
 			scopes, err := sitter.NewQuery([]byte(l.Scopes), l.Grammar)
@@ -395,6 +420,46 @@ func (l *Language) countDecisions(root *sitter.Node, source []byte, functions []
 				continue
 			}
 			fn.Decisions[l.decisions.CaptureNameForId(capture.Index)]++
+		}
+	})
+}
+
+// measureNesting sets each function's NestingDepth to the deepest chain of
+// nesting constructs inside it. Every construct the Nesting query captures
+// is attributed to the innermost function that contains it, and its depth
+// is the number of level-opening constructs on the path from it up to that
+// function, itself included. A construct in a nested function belongs to
+// the nested function alone, because that function is the innermost one
+// containing it.
+func (l *Language) measureNesting(root *sitter.Node, source []byte, functions []Function) {
+	if l.nesting == nil {
+		return
+	}
+	// levels maps each captured node to the levels it opens: one, or zero
+	// for a continuation.
+	levels := map[uintptr]int{}
+	forEachMatch(l.nesting, root, source, func(match *sitter.QueryMatch) {
+		for _, capture := range match.Captures {
+			id := capture.Node.ID()
+			if l.nesting.CaptureNameForId(capture.Index) == continuationCapture {
+				levels[id] = 0
+			} else if _, seen := levels[id]; !seen {
+				levels[id] = 1
+			}
+		}
+	})
+	forEachMatch(l.nesting, root, source, func(match *sitter.QueryMatch) {
+		for _, capture := range match.Captures {
+			node := capture.Node
+			fn := innermost(functions, node.StartByte(), node.EndByte())
+			if fn == nil {
+				continue
+			}
+			depth := 0
+			for n := node; n != nil && (n.StartByte() != fn.startByte || n.EndByte() != fn.endByte); n = n.Parent() {
+				depth += levels[n.ID()]
+			}
+			fn.NestingDepth = max(fn.NestingDepth, depth)
 		}
 	})
 }
