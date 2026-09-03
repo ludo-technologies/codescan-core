@@ -79,7 +79,7 @@ windows/amd64.
 
 ## Documentation site
 
-The user-facing documentation at [jscan.codescan.dev](https://jscan.codescan.dev/)
+The user-facing documentation at [polyscan.codescan.dev](https://polyscan.codescan.dev/)
 is built with MkDocs Material from `website/` at the repository root.
 
 ```bash

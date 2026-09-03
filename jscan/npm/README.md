@@ -12,7 +12,9 @@ npx polyscan analyze .
 
 This package is now a thin wrapper that runs the polyscan CLI, so existing
 `npx jscan` invocations keep working while you migrate. It prints a
-deprecation notice and forwards every command to polyscan.
+deprecation notice and forwards every command to polyscan, translating the
+retired `--json`, `--text` and `--html` shorthands to `--format`. `--config`
+exits with a hint instead, because polyscan discovers the file itself.
 
 ## Migrating
 

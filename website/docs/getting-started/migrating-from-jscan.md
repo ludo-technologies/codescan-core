@@ -2,7 +2,7 @@
 
 jscan, the JavaScript/TypeScript analyzer, has merged into polyscan. The same analysis — complexity, dead code, clone detection, coupling, dependencies, and the health score — now runs from the `polyscan` CLI, alongside Go, Rust and C++ support.
 
-The [`jscan` npm package](https://www.npmjs.com/package/jscan) remains published as a thin wrapper that prints a deprecation notice and runs polyscan, so an existing `npx jscan analyze` keeps working while you migrate. New setups should call `polyscan` directly.
+The [`jscan` npm package](https://www.npmjs.com/package/jscan) remains published as a thin wrapper that prints a deprecation notice and runs polyscan, so an existing `npx jscan analyze` keeps working while you migrate: the wrapper translates the `--json`, `--text` and `--html` shorthands to `--format`, and exits with a hint on `--config`. New setups should call `polyscan` directly.
 
 ## Command mapping
 

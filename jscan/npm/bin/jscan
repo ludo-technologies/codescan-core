@@ -32,6 +32,30 @@ if (args.length > 0 && Object.prototype.hasOwnProperty.call(retired, args[0])) {
   process.exit(2);
 }
 
+// Flags of the retired jscan `analyze` that polyscan spells differently, so
+// that an existing `npx jscan analyze --json` keeps producing JSON.
+const formatShorthands = { "--json": "json", "--text": "text", "--html": "html" };
+
+function translateAnalyzeFlags(args) {
+  const out = [];
+  for (const arg of args) {
+    if (Object.prototype.hasOwnProperty.call(formatShorthands, arg)) {
+      out.push("--format", formatShorthands[arg]);
+    } else if (arg === "-c" || arg === "--config" || arg.startsWith("--config=")) {
+      console.error(
+        "jscan analyze --config was retired when jscan merged into polyscan; " +
+          "polyscan finds jscan.config.json by searching upward from the analyzed path."
+      );
+      process.exit(2);
+    } else {
+      out.push(arg);
+    }
+  }
+  return out;
+}
+
+const forwarded = args[0] === "analyze" ? translateAnalyzeFlags(args) : args;
+
 let launcher;
 try {
   launcher = require.resolve("polyscan/bin/polyscan");
@@ -43,7 +67,7 @@ try {
   process.exit(1);
 }
 
-const child = spawn(process.execPath, [launcher, ...args], {
+const child = spawn(process.execPath, [launcher, ...forwarded], {
   stdio: "inherit",
 });
 
