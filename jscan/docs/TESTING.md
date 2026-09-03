@@ -1,38 +1,46 @@
 # Testing Guide
 
+The jscan Go code is the `internal/js` package of the `polyscan` module, so every command below runs from `polyscan/polyscan`, not from `jscan/`.
+
 ## Running Tests
 
 ```bash
-# Run all tests with verbose output
-make test
+cd polyscan
 
-# Run short tests only (skips long-running tests)
-make test-short
+# Run all tests with the race detector
+make test
 
 # Run tests directly with go test
 go test ./...
 
+# Run the JavaScript/TypeScript tests only
+go test ./internal/js/...
+
 # Run tests for a specific package
-go test ./internal/analyzer/...
-go test ./service/...
-go test ./app/...
+go test ./internal/js/analyzer/...
+go test ./internal/js/service/...
+go test ./internal/js/app/...
+
+# Skip long-running tests
+go test -short ./internal/js/...
 ```
 
 ## Running Benchmarks
 
 ```bash
 # Run all benchmarks with memory allocation stats
-make bench
+go test -bench=. -benchmem -run='^$' ./internal/js/...
 
 # Run benchmarks for a specific package
-go test -bench=. -benchmem ./internal/analyzer/...
+go test -bench=. -benchmem -run='^$' ./internal/js/analyzer/...
 ```
 
 ## Code Coverage
 
 ```bash
 # Generate an HTML coverage report
-make coverage
+go test -coverprofile=coverage.out ./internal/js/...
+go tool cover -html=coverage.out -o coverage.html
 
 # This produces:
 #   coverage.out  - raw coverage profile
@@ -41,7 +49,7 @@ make coverage
 
 ## Test Data
 
-Test fixtures live under the `testdata/` directory:
+Test fixtures live under the `polyscan/testdata/` directory:
 
 ```
 testdata/
@@ -86,4 +94,4 @@ func TestComplexity_SimpleFunction(t *testing.T) {
 
 ### Test Utilities
 
-Shared test helpers are available in `internal/testutil/` for common setup and assertion patterns.
+Shared test helpers are available in `internal/js/testutil/` for common setup and assertion patterns.
