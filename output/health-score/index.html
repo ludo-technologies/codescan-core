@@ -2008,10 +2008,10 @@
 <p>Which functions count as high or medium risk depends on the thresholds, so for JavaScript/TypeScript raising <code>complexity.medium_threshold</code> raises the score without changing any code.</p>
 <h3 id="dead-code">Dead code<a class="headerlink" href="#dead-code" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>weighted = 1.0 × critical + 0.5 × warning + 0.2 × info
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>rate     = weighted ÷ total files
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>rate     = weighted ÷ dead_code_files
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>penalty  = 20 × rate ÷ 3.0, capped at 20
 </span></code></pre></div>
-<p>This is a per-file rate rather than a raw count, so a large codebase is not penalized simply for being large. The penalty maxes out at three weighted findings per file. The divisor is the file count the dead code analysis covered, which is the JavaScript/TypeScript files.</p>
+<p>This is a per-file rate rather than a raw count, so a large codebase is not penalized simply for being large. The penalty maxes out at three weighted findings per file. The divisor is the file count the dead code analysis covered, which is the JavaScript/TypeScript files, reported as <code>dead_code_files</code> in the summary. The whole run's <code>total_files</code> is not used here, so Go, Rust and C++ files in a mixed tree do not dilute the rate.</p>
 <h3 id="duplication">Duplication<a class="headerlink" href="#duplication" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>penalty = 20 × duplication percentage ÷ 30, capped at 20
 </span></code></pre></div>
