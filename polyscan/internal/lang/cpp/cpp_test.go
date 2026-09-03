@@ -193,6 +193,13 @@ void else_if_continues_the_chain(bool a, bool b) {
     }
 }
 
+void attributed_else_if_continues_the_chain(bool a, bool b) {
+    if (a) {
+    } else [[likely]] if (b) {
+        while (b) {}
+    }
+}
+
 void deep(bool a, int xs[]) {
     if (a) {
         for (int x : xs) {
@@ -209,10 +216,11 @@ void lambda(bool a, bool b) {
 }
 `)
 	want := map[string]int{
-		"flat":                        1,
-		"else_if_continues_the_chain": 3,
-		"deep":                        5,
-		"lambda":                      2,
+		"flat":                                   1,
+		"else_if_continues_the_chain":            3,
+		"attributed_else_if_continues_the_chain": 2,
+		"deep":                                   5,
+		"lambda":                                 2,
 	}
 	for name, depth := range want {
 		fn, ok := functions[name]

@@ -226,6 +226,13 @@ fn deep(a: bool, xs: Vec<i32>) {
     }
 }
 
+fn let_else(value: Option<i32>, retry: bool) {
+    let Some(_value) = value else {
+        if retry {}
+        return;
+    };
+}
+
 fn outer(a: bool) {
     fn inner(a: bool) {
         if a { if a { if a {} } }
@@ -237,6 +244,7 @@ fn outer(a: bool) {
 		"flat":                        1,
 		"else_if_continues_the_chain": 3,
 		"deep":                        4,
+		"let_else":                    2,
 		"outer":                       2,
 		"inner":                       3,
 	}
