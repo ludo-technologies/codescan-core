@@ -1,106 +1,89 @@
 # Quick Start
 
-This page walks through a first run on a real project. It takes about five minutes and assumes you have jscan available, either through `npx` or through a global install. If you do not, see [installation](installation.md).
+This page walks through a first run on a real project. It takes about five minutes and assumes you have polyscan available, either through `npx` or through a global install. If you do not, see [installation](installation.md).
 
 ## 1. Run the analysis
 
-Point jscan at the directory that holds your source:
+Point polyscan at the directory that holds your source:
 
 ```bash
-jscan analyze src/
+polyscan analyze .
 ```
 
-jscan collects every JavaScript and TypeScript file below that directory, runs all five analyses in parallel, writes an HTML report to `jscan-report.html`, and opens it in your browser. It also prints a summary to the terminal:
+polyscan collects every supported source file below that directory — JavaScript, TypeScript, Go, Rust and C++, detected by extension — runs the analyses in parallel, writes an HTML report to `polyscan-report.html`, and opens it in your browser. It also prints a summary to the terminal:
 
 ```console
-$ jscan analyze src/
-Analyzing 2 files...
-📊 Unified HTML report generated and opened: /home/you/project/jscan-report.html
+$ polyscan analyze .
+HTML report written to /home/you/project/polyscan-report.html
 
 📊 Analysis Summary:
-Health Score: 91/100 (Grade: A)
-Project Scale: Micro (2 files, 4 functions, 49 LOC)
-Total time: 5ms
+Health Score: 95/100 (Grade: A)
+Project Scale: Micro (3 files, 7 functions, 43 LOC)
+Total time: 6ms
 
 📈 Detailed Scores:
-  Complexity:      100/100 ✅  (avg: 4.5, high-risk: 0 functions)
-  Dead Code:        65/100 ⚠️  (3 issues, 1 critical)
+  Complexity:      100/100 ✅  (avg: 1.9, high-risk: 0 functions)
+  Dead Code:        80/100 ✅  (3 issues, 1 critical)
   Duplication:     100/100 ✅  (0.0% fragments cloned, 0 groups)
-  Coupling (CBO):  100/100 ✅  (avg: 0.5, 0/2 high-coupling)
-  Dependencies:     85/100 ✅  (0 cycles, depth: 1)
+  Coupling (CBO):  100/100 ✅  (avg: 1.0, 0/2 high-coupling)
+  Dependencies:     95/100 ✅  (0 cycles, depth: 1)
 ```
 
-The health score is a single number from 0 to 100 with a letter grade attached. It starts at 100 and subtracts a penalty for each category. The [health score page](../output/health-score.md) gives the exact formula. The project scale line below it reports the size of the repository and does not affect the score.
+The health score is a single number from 0 to 100 with a letter grade attached, computed over the dimensions that ran. Complexity and duplication cover every language; dead code, coupling and dependencies come from the JavaScript/TypeScript files, and a project without any lists only the dimensions it has. The [health score page](../output/health-score.md) gives the exact formula. The project scale line reports the size of the repository and does not affect the score.
 
 !!! tip "Working over SSH or in a container?"
 
-    jscan skips the browser step automatically when it detects an SSH session. To suppress it in any other situation, pass `--no-open`.
+    polyscan skips the browser step automatically when it detects an SSH session. To suppress it in any other situation, pass `--no-open`.
 
 ## 2. Read the terminal output instead
 
 If you would rather stay in the terminal, ask for text output. This prints the full findings to standard output and writes no file:
 
 ```bash
-jscan analyze --text src/
+polyscan analyze --format text src/
 ```
 
 The text report lists every function with its complexity, every dead code finding with its file and line, every clone group, the coupling table, and the dependency summary. It ends with the same health score breakdown.
 
 ## 3. Narrow the analysis
 
-Running all five analyses on a large repository takes longer than you may want during an edit and re-run loop. Use `--select` to run only the ones you care about:
+Running every analysis on a large repository takes longer than you may want during an edit and re-run loop. Use `--select` to run only the ones you care about:
 
 ```bash
 # Only complexity
-jscan analyze --select complexity src/
+polyscan analyze --select complexity src/
 
-# Complexity and dead code together
-jscan analyze --select complexity,deadcode src/
+# Complexity and clone detection together
+polyscan analyze --select complexity,clone src/
 ```
 
-The five values accepted by `--select` are `complexity`, `deadcode`, `clone`, `cbo`, and `deps`. Omitting the flag runs all five.
+The five values accepted by `--select` are `complexity`, `deadcode`, `clone`, `cbo`, and `deps`; the last three apply to JavaScript/TypeScript files only. Omitting the flag runs all five.
 
-## 4. Add a quality gate
+## 4. Gate a pipeline on the result
 
-`jscan analyze` always succeeds, because its job is to report rather than to judge. When you want a command that fails, use `jscan check`:
-
-```console
-$ jscan check src/
-FAIL: Quality check failed
-  Violations: 2
-  [ERROR] deadcode: Found 1 critical dead code issues
-  [WARN] deadcode: Found 2 warning-level dead code issues
-$ echo $?
-1
-```
-
-The exit code is 0 when everything passes, 1 when a threshold is violated, and 2 when the analysis itself could not run. That makes it usable directly as a continuous integration step.
-
-!!! warning "The default gate is strict"
-
-    With no flags, `jscan check` fails on any dead code finding at all, including the warning that an exported function is never imported. That warning fires constantly in library packages, whose exports are consumed outside the analyzed directory. Most projects should start with `jscan check --allow-dead-code src/` and tighten from there. The [check reference](../cli/check.md) covers each threshold flag.
-
-## 5. Create a configuration file
-
-Rather than repeating flags, write them down once:
+`polyscan analyze` always exits 0 when the analysis itself succeeds, because its job is to report rather than to judge. To fail a pipeline, gate on the JSON output:
 
 ```bash
-jscan init
+polyscan analyze --format json src/ > report.json
+jq -e '.summary.health_score >= 75' report.json
 ```
 
-This creates `jscan.config.json` in the current directory. Add `--interactive` for a short wizard that asks about your framework and how strict you want the thresholds to be, then writes a file tuned to those answers.
+`jq -e` exits non-zero when the expression is false, which fails the CI step. The [CI/CD page](../integrations/ci-cd.md) has complete pipeline configurations and more precise gates, such as failing only on critical dead code.
 
-Be aware that jscan reads only part of that file today. The [configuration guide](../configuration/index.md) states plainly which keys take effect and which are accepted but not yet applied.
+## 5. Configure the JavaScript/TypeScript analysis
 
-## 6. Look at the dependency graph
+The JavaScript/TypeScript analysis reads a `jscan.config.json` when the project has one — the configuration format carried over from jscan, the analyzer that merged into polyscan. It supplies complexity thresholds and exclude patterns:
 
-The `deps` command exports your module graph in Graphviz DOT format:
-
-```bash
-jscan deps src/ --dot | dot -Tsvg -o deps.svg
+```json title="jscan.config.json"
+{
+  "complexity": {
+    "low_threshold": 10,
+    "medium_threshold": 20
+  }
+}
 ```
 
-This needs Graphviz installed, which provides the `dot` program. The [dependency graph guide](../guides/dependency-graph.md) explains how to read the colors and what the coupling numbers in each tooltip mean.
+Be aware that polyscan reads only part of that file. The [configuration guide](../configuration/index.md) states plainly which keys take effect and which are accepted but not applied. There is no configuration file for the other languages yet.
 
 ## Where to go next
 
@@ -108,3 +91,4 @@ This needs Graphviz installed, which provides the `dot` program. The [dependency
 - The [configuration reference](../configuration/reference.md) lists every key in the config file.
 - The [CI/CD page](../integrations/ci-cd.md) has ready-made GitHub Actions and GitLab CI jobs.
 - The [TypeScript guide](../guides/typescript-projects.md) covers path aliases, type-only imports, and monorepos.
+- Arriving from jscan? The [migration page](migrating-from-jscan.md) maps every old command to its replacement.

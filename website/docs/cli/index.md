@@ -1,66 +1,47 @@
 # CLI Reference
 
-jscan exposes five commands. Every command accepts one or more paths, and every path may be a file or a directory.
+polyscan exposes two commands. `analyze` accepts one or more paths, and every path may be a file or a directory.
 
 | Command | Purpose | Fails the build? |
 | --- | --- | --- |
 | [`analyze`](analyze.md) | Run the full analysis and produce a report | No |
-| [`check`](check.md) | Enforce quality thresholds for continuous integration | Yes, exit code 1 or 2 |
-| [`deps`](deps.md) | Inspect and export the module dependency graph | No |
-| [`init`](init.md) | Write a configuration file | No |
 | [`version`](version.md) | Print version information | No |
 
 ```console
-$ jscan --help
-jscan is a high-performance static analyzer for JavaScript and TypeScript code.
-It provides complexity analysis, dead code detection, and more.
+$ polyscan --help
+polyscan is a static analyzer that measures code quality across languages.
+It currently analyzes cyclomatic complexity and code clones for Go, Rust and C++.
 
 Usage:
-  jscan [command]
+  polyscan [command]
 
 Available Commands:
-  analyze     Analyze JavaScript/TypeScript files
-  check       Fast quality check for CI/CD pipelines
+  analyze     Analyze source files
   completion  Generate the autocompletion script for the specified shell
-  deps        Analyze and visualize module dependencies
   help        Help about any command
-  init        Generate a jscan configuration file
   version     Print version information
 
 Flags:
-  -h, --help      help for jscan
-  -v, --version   version for jscan
+  -h, --help      help for polyscan
+  -v, --version   version for polyscan
 
-Use "jscan [command] --help" for more information about a command.
+Use "polyscan [command] --help" for more information about a command.
 ```
 
-## Which files jscan reads
+To fail a pipeline on the results, gate on the JSON output — there is no separate check command. The [CI/CD page](../integrations/ci-cd.md) shows how. If you are looking for jscan's `check`, `deps` or `init` commands, see [migrating from jscan](../getting-started/migrating-from-jscan.md).
 
-Every command that takes a path walks the directory tree and collects files with these extensions:
+## Which files polyscan reads
 
-`.js` &nbsp; `.jsx` &nbsp; `.mjs` &nbsp; `.cjs` &nbsp; `.ts` &nbsp; `.tsx` &nbsp; `.mts` &nbsp; `.cts`
+`analyze` walks the directory tree and collects files by extension, dispatching each to its language:
 
-The walk always recurses into subdirectories and never follows symbolic links. Directories and filename patterns listed under `analysis.exclude_patterns` in the configuration file are skipped. That list defaults to dependency directories such as `node_modules`, build outputs such as `dist` and `.next`, cache directories, and minified or bundled files. The full default list appears in the [configuration reference](../configuration/reference.md#analysisexclude_patterns).
+| Language | Extensions |
+| --- | --- |
+| JavaScript | `.js`, `.jsx`, `.mjs`, `.cjs` |
+| TypeScript | `.ts`, `.tsx`, `.mts`, `.cts` |
+| Go | `.go` |
+| Rust | `.rs` |
+| C++ | `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx`, `.h`, `.ipp`, `.inl` |
 
-If no matching file is found, the command stops with the error `no JavaScript/TypeScript files found`.
+Header files, `.h` included, are analyzed as C++.
 
-## Shell completion
-
-Cobra, the command line framework jscan is built on, generates completion scripts:
-
-```bash
-# bash
-jscan completion bash > /etc/bash_completion.d/jscan
-
-# zsh
-jscan completion zsh > "${fpath[1]}/_jscan"
-
-# fish
-jscan completion fish > ~/.config/fish/completions/jscan.fish
-```
-
-Run `jscan completion --help` for the PowerShell instructions and for notes on loading the script for the current session only.
-
-## Configuration file discovery
-
-Commands other than `version` look for a configuration file before they run. When you do not pass `--config`, jscan searches upward from the analyzed path toward the filesystem root, then falls back to several well-known locations. The [configuration guide](../configuration/index.md#how-jscan-finds-your-config-file) documents the search order and the accepted filenames.
+The JavaScript/TypeScript collection additionally honors the project's [configuration file](../configuration/index.md) and the `.gitignore` at the root of the analyzed path, exactly as jscan did. The other languages are collected by extension alone.

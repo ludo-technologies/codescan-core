@@ -1,6 +1,6 @@
 # Integrations
 
-jscan is a single binary that reads files and writes results, so it fits anywhere you can run a command.
+polyscan is a single binary that reads files and writes results, so it fits anywhere you can run a command.
 
 <div class="grid cards" markdown>
 
@@ -24,31 +24,31 @@ jscan is a single binary that reads files and writes results, so it fits anywher
 
 ## Editor integration
 
-There is no editor extension yet. The closest thing available today is a task or watch script that runs jscan on save. It is not fast enough to run on every keystroke, since a full analysis of a large project takes seconds rather than milliseconds, but a fast subset works well on save:
+There is no editor extension yet. The closest thing available today is a task or watch script that runs polyscan on save. It is not fast enough to run on every keystroke, since a full analysis of a large project takes seconds rather than milliseconds, but a fast subset works well on save:
 
 ```json title=".vscode/tasks.json"
 {
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "jscan: complexity",
+      "label": "polyscan: complexity",
       "type": "shell",
-      "command": "jscan analyze --select complexity --text src/",
+      "command": "polyscan analyze --select complexity --format text src/",
       "problemMatcher": []
     }
   ]
 }
 ```
 
-## Using jscan from a script
+## Using polyscan from a script
 
-Every command works in a pipeline. `--json` gives machine-readable output, and `jscan check` gives an exit code.
+`--format json` gives machine-readable output on standard output, with the human-readable summary on standard error.
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
-score=$(jscan analyze --json src/ 2>/dev/null | jq '.summary.health_score')
+score=$(polyscan analyze --format json src/ 2>/dev/null | jq '.summary.health_score')
 echo "Health score: $score"
 
 if [ "$score" -lt 75 ]; then
@@ -57,7 +57,7 @@ if [ "$score" -lt 75 ]; then
 fi
 ```
 
-Note the `2>/dev/null`. `jscan analyze --json` writes its score summary to standard error, so discarding standard error keeps the parsed output clean. See [output formats](../output/index.md#standard-output-and-standard-error).
+Note the `2>/dev/null`. `polyscan analyze --format json` writes its score summary to standard error, so discarding standard error keeps the parsed output clean. See [output formats](../output/index.md#standard-output-and-standard-error).
 
 ## Pinning the version
 
@@ -66,7 +66,7 @@ The JSON output shape is not covered by a stability guarantee yet. Anything that
 ```json title="package.json"
 {
   "devDependencies": {
-    "jscan": "0.4.1"
+    "polyscan": "0.1.0"
   }
 }
 ```
@@ -74,5 +74,5 @@ The JSON output shape is not covered by a stability guarantee yet. Anything that
 In a pipeline that uses `npx`, name the version explicitly:
 
 ```bash
-npx jscan@0.4.1 check src/
+npx polyscan@0.1.0 analyze --format json src/
 ```

@@ -1,14 +1,14 @@
-# jscan version
+# polyscan version
 
 Prints version information.
 
 ```bash
-jscan version
+polyscan version
 ```
 
 ```console
-$ jscan version
-jscan version 0.4.1
+$ polyscan version
+polyscan version 0.1.0
 ```
 
 ## Flags
@@ -18,8 +18,8 @@ jscan version 0.4.1
 | `--verbose` | `-v` | `false` | Also print the commit, build date, and builder |
 
 ```console
-$ jscan version --verbose
-0.4.1 (commit: 7b3d1e2, built: 2026-08-14T07:40:09Z, by: release)
+$ polyscan version --verbose
+0.1.0 (commit: 7b3d1e2, built: 2026-08-14T07:40:09Z, by: release)
 ```
 
 Official release builds inject the version tag, commit hash, build timestamp in UTC, and `by: release`.
@@ -28,9 +28,9 @@ A binary you compiled yourself using bare `go build` reports placeholder values 
 
 ## The root flag
 
-`jscan --version` prints the same short string as `jscan version` and exists because Cobra provides it automatically.
+`polyscan --version` prints the same short string as `polyscan version` and exists because Cobra provides it automatically.
 
 ```console
-$ jscan --version
-jscan version 0.4.1
+$ polyscan --version
+polyscan version 0.1.0
 ```

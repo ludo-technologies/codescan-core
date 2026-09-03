@@ -8,9 +8,9 @@
   },
   "plugins": [
     {
-      "name": "jscan",
-      "source": "./jscan/.claude-plugin/jscan",
-      "description": "JavaScript/TypeScript code quality analysis with complexity, dead code, clone detection, and coupling metrics"
+      "name": "polyscan",
+      "source": "./polyscan/.claude-plugin/polyscan",
+      "description": "Multi-language code quality analysis (JavaScript/TypeScript, Go, Rust, C++) with complexity, dead code, clone detection, and coupling metrics"
     }
   ]
 }

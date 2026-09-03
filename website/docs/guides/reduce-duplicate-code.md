@@ -1,9 +1,9 @@
 # Reduce Duplicate Code
 
-jscan finds duplicated code by comparing syntax trees rather than text. That means it still recognizes a copy after the variables have been renamed, the statements reordered, or the formatting changed, which is what separates it from a plain text search.
+polyscan finds duplicated code by comparing syntax trees rather than text, in every supported language. That means it still recognizes a copy after the variables have been renamed, the statements reordered, or the formatting changed, which is what separates it from a plain text search.
 
 ```bash
-jscan analyze --select clone src/
+polyscan analyze --select clone src/
 ```
 
 ## How the detection works
@@ -14,22 +14,24 @@ First, every candidate fragment is reduced to a **MinHash fingerprint**, a compa
 
 Second, the surviving pairs are compared with **APTED**, an algorithm that computes the edit distance between two trees, meaning the cheapest sequence of insertions, deletions, and relabellings that turns one into the other. This is accurate but cubic in fragment size, which is exactly why the first stage exists.
 
-Locality-sensitive hashing switches on automatically once a run exceeds 500 fragments. Below that, every pair is compared directly.
+Fragments of different languages are never compared with each other: a Go function and a TypeScript function can look alike without either being a copy of the other.
 
 ## Clone types
 
 Results are graded by how much the copies differ.
 
-| Type | Meaning | Similarity threshold | On by default |
+| Type | Meaning | Similarity threshold | Reported for |
 | --- | --- | --- | --- |
-| Type 1 | Identical apart from whitespace and comments | 0.85 | Yes |
-| Type 2 | Identical after renaming identifiers and literals | 0.75 | Yes |
-| Type 3 | A copy with statements added, removed, or changed | 0.70 | No |
-| Type 4 | Different code computing the same result | 0.65 | Yes |
+| Type 1 | Identical apart from whitespace and comments | 0.85 | Every language |
+| Type 2 | Identical after renaming identifiers and literals | 0.75 | Every language |
+| Type 3 | A copy with statements added, removed, or changed | 0.70 | Go, Rust and C++; off by default for JS/TS |
+| Type 4 | Different code computing the same result | 0.65 | JavaScript/TypeScript |
 
-Type 3 is disabled by default. Near-miss matching produces a high false positive rate, and the findings it adds tend to be pairs that merely resemble each other rather than pairs worth merging.
+For JavaScript/TypeScript, Type 3 is disabled by default: near-miss matching produces a high false positive rate there, and the findings it adds tend to be pairs that merely resemble each other rather than pairs worth merging.
 
 A fragment must be at least **10 lines** and **20 syntax tree nodes** to be considered at all. This keeps short boilerplate such as getters, simple constructors, and one-line handlers out of the results, since those repeat everywhere and merging them makes code worse rather than better.
+
+In Go, Rust and C++, test code is excluded from clone detection entirely, because test functions share a skeleton by convention. The [analyze reference](../cli/analyze.md#clone) lists exactly what counts as test code per language.
 
 ## A worked example
 
@@ -65,10 +67,10 @@ export function summarizeInvoices(items: any[]) {
 }
 ```
 
-Every identifier differs. A text search finds nothing. jscan reports:
+Every identifier differs. A text search finds nothing. polyscan reports:
 
 ```console
-$ jscan analyze --text --select clone src/
+$ polyscan analyze --format text --select clone src/
 === Clone Detection ===
 
 Statistics:
@@ -108,40 +110,38 @@ Not every clone should be merged. Work through these questions in order.
 
 **Is the copy a bug waiting to happen?** If fixing a bug in one copy requires remembering to fix the others, merge them. This is the strongest argument for extraction and usually the correct one for validation logic, parsing, and formatting.
 
-**Is the duplication accidental or structural?** Two functions that are similar because both iterate a list and filter it are structurally similar without being duplicated. jscan cannot tell the difference, and Type 4 findings in particular often fall into this category.
+**Is the duplication accidental or structural?** Two functions that are similar because both iterate a list and filter it are structurally similar without being duplicated. polyscan cannot tell the difference, and Type 4 findings in particular often fall into this category.
 
-**Is it test code?** Test files repeat setup deliberately, because a test that reads top to bottom without indirection is easier to debug. Exclude test directories from clone analysis if the findings are noise.
+**Is it test code?** Test files repeat setup deliberately, because a test that reads top to bottom without indirection is easier to debug. polyscan already excludes test code from clone detection for Go, Rust and C++; for JavaScript/TypeScript, exclude test directories with `analysis.exclude_patterns` if the findings are noise.
 
 When you do merge, extract the varying parts as parameters. In the example above, the two functions differ only in their variable names, so a single `summarize(rows)` replaces both directly.
 
 ## Reviewing findings efficiently
 
-Start with the highest similarity rather than the largest fragment. A pair at 95 percent is almost certainly a copy. A pair at 66 percent, just over the Type 4 threshold, is often a coincidence.
+Start with the highest similarity rather than the largest fragment. A pair at 95 percent is almost certainly a copy. A pair barely over its type's threshold is often a coincidence.
 
 ```bash
 # The most similar pairs first, which is the default order
-jscan analyze --select clone --text src/ | head -40
+polyscan analyze --select clone --format text src/ | head -40
 ```
 
 For a project you are reviewing over time, track the group count rather than the pair count. Pairs grow quadratically with each new copy and overstate the problem.
 
 ```bash
-jscan analyze --json --select clone src/ 2>/dev/null \
+polyscan analyze --format json --select clone src/ 2>/dev/null \
   | jq '{groups: .summary.clone_groups, pairs: .summary.clone_pairs,
          percent: .summary.code_duplication_percentage}'
 ```
 
 ## Speed
 
-Clone detection is usually the slowest of the five analyses. When you are iterating on something else, leave it out:
+Clone detection is usually the slowest of the analyses. When you are iterating on something else, leave it out:
 
 ```bash
-jscan analyze --select complexity,deadcode src/
+polyscan analyze --select complexity,deadcode src/
 ```
-
-It is also unavailable in `jscan check`, which is deliberate. A gate should be fast, and clone detection is not.
 
 ## See also
 
-- [`jscan analyze` reference](../cli/analyze.md#clone) for the detection settings
+- [`polyscan analyze` reference](../cli/analyze.md#clone) for the detection settings
 - [Health score](../output/health-score.md#duplication) for how duplication affects the score

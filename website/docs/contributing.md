@@ -1,64 +1,60 @@
 # Contributing
 
-jscan lives in the [polyscan monorepo](https://github.com/ludo-technologies/polyscan) under `jscan/`. The standalone `jscan` repository was retired and its history moved here.
+polyscan lives in the [polyscan monorepo](https://github.com/ludo-technologies/polyscan), in the `polyscan/` module. jscan, the JavaScript/TypeScript analyzer it grew out of, merged into that module and survives as its `internal/js` backend.
 
 ## Set up
 
-You need Go 1.24.6 or later, a C compiler, and `golangci-lint`. The C compiler is required because jscan parses with tree-sitter, which is a C library reached through cgo.
+You need Go 1.24.6 or later and a C compiler. The C compiler is required because polyscan parses with tree-sitter, which is a C library reached through cgo.
 
 ```bash
 git clone https://github.com/ludo-technologies/polyscan.git
-cd polyscan/jscan
+cd polyscan/polyscan
 make build
 ```
 
 ## Everyday commands
 
-Run these from the `jscan/` directory.
+Run these from the `polyscan/` directory.
 
 | Command | What it does |
 | --- | --- |
-| `make build` | Build the `jscan` binary |
-| `make test` | Run the full test suite |
-| `make test-short` | Skip the long-running tests |
-| `make lint` | Run `golangci-lint` |
+| `make build` | Build the `polyscan` binary |
+| `make test` | Run the test suite with the race detector |
+| `make lint` | Run `go vet` and check `gofmt` |
 | `make fmt` | Format the Go sources |
-| `make coverage` | Write an HTML coverage report |
-| `make bench` | Run benchmarks with allocation statistics |
-| `make run` | Build and run against the bundled fixtures |
-| `make tidy` | Tidy `go.mod` and `go.sum` |
 
 Run `make lint` and `make test` before opening a pull request. Continuous integration runs both.
 
-!!! note "`make build-all` does not work for every target"
+!!! note "Cross-compilation does not work"
 
-    The target sets `GOOS` and `GOARCH` for five platforms, but tree-sitter needs cgo, so cross-compiling only succeeds for the platform you are already on. The release pipeline builds each target on its own runner for this reason. Use it to check that a build works locally, not to produce release artifacts.
+    tree-sitter needs cgo, so cross-compiling by setting `GOOS` only succeeds for the platform you are already on. The release pipeline builds each target on its own runner for this reason.
 
 ## Where the code lives
 
 ```text
-jscan/
-├── cmd/jscan/     CLI entry point, one file per command
-├── app/           Application use cases
-├── service/       Orchestration, formatting, output
-├── domain/        Models and service interfaces, depends on nothing
+polyscan/
+├── cmd/polyscan/  CLI entry point
+├── cmd/jscan/     The retired jscan CLI, kept buildable from the moved code
 ├── internal/
-│   ├── parser/    tree-sitter integration
-│   ├── analyzer/  The analysis engines
-│   ├── config/    Configuration loading and validation
-│   ├── reporter/  Report formatting
+│   ├── analysis/  File collection and dispatch for the generic engine
+│   ├── engine/    The declarative language engine (grammar + queries)
+│   ├── lang/      Language definitions: golang, rust, cpp
+│   ├── clone/     Clone detection over the generic engine
+│   ├── js/        The JavaScript/TypeScript backend, formerly jscan
+│   ├── report/    Combining every language into one report
 │   └── version/   Version information
-├── npm/           The npm package wrapper
-└── testdata/      Test fixtures
+└── npm/           The npm package wrapper
 ```
 
-The layering follows Clean Architecture, with every layer depending on `domain` and `domain` depending on nothing. Command handlers may call either a use case in `app/` or a service directly, whichever keeps the concurrency simpler. [`jscan/docs/ARCHITECTURE.md`](https://github.com/ludo-technologies/polyscan/blob/main/jscan/docs/ARCHITECTURE.md) describes each layer and the reasoning behind the main design decisions.
+Inside `internal/js` the layering follows Clean Architecture, with every layer depending on `domain` and `domain` depending on nothing. [`jscan/docs/ARCHITECTURE.md`](https://github.com/ludo-technologies/polyscan/blob/main/jscan/docs/ARCHITECTURE.md) describes each layer and the reasoning behind the main design decisions, from before the move.
+
+Adding a language to the generic engine is declarative: a tree-sitter grammar and two queries. `internal/lang/golang/golang.go` is the reference implementation, and the polyscan [README](https://github.com/ludo-technologies/polyscan/blob/main/polyscan/README.md#adding-a-language) documents the query contract.
 
 ## The shared core
 
-Algorithms that are not specific to a language live in the `core/` module at the repository root, which both jscan and pyscn depend on as a published Go module. That covers APTED tree edit distance, control flow graph structures and their analyses, clone grouping, graph algorithms including Tarjan's, MinHash and locality-sensitive hashing, and the health score calculation.
+Algorithms that are not specific to a language live in the `core/` module at the repository root, which both polyscan and pyscn depend on as a published Go module. That covers APTED tree edit distance, control flow graph structures and their analyses, clone grouping, graph algorithms including Tarjan's, MinHash and locality-sensitive hashing, and the health score calculation.
 
-This matters when you plan a change. A fix to a shared algorithm belongs in `core/` and affects both analyzers, so it needs a `core/vX.Y.Z` tag before the consuming change can reference it. A fix to JavaScript-specific behavior, such as the control flow graph builder or the module resolver, belongs in `jscan/`.
+This matters when you plan a change. A fix to a shared algorithm belongs in `core/` and affects both analyzers, so it needs a `core/vX.Y.Z` tag before the consuming change can reference it — the `polyscan` module depends on the published tag rather than a `replace` directive, so that `go install` works. A fix to language-specific behavior, such as the JavaScript module resolver or a tree-sitter query, belongs in `polyscan/`.
 
 If you are unsure which side a change belongs on, say so in the issue before writing it.
 
@@ -99,7 +95,7 @@ One request specific to this site. Much of what is documented here was verified 
 
 ## Reporting bugs
 
-Open an issue in the [polyscan repository](https://github.com/ludo-technologies/polyscan/issues). Include the output of `jscan version`, the exact command, and the smallest input that reproduces the problem.
+Open an issue in the [polyscan repository](https://github.com/ludo-technologies/polyscan/issues). Include the output of `polyscan version`, the exact command, and the smallest input that reproduces the problem.
 
 ## Code of Conduct
 

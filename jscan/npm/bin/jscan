@@ -1,45 +1,54 @@
 #!/usr/bin/env node
 
+// jscan has merged into polyscan. This package is a thin wrapper that runs
+// the polyscan CLI so that existing `npx jscan` invocations keep working
+// while users migrate. https://github.com/ludo-technologies/polyscan
+
 const { spawn } = require("child_process");
 const os = require("os");
 
-const platformPackages = {
-  "darwin-arm64": "jscan-darwin-arm64",
-  "linux-x64": "jscan-linux-x64",
-  "linux-arm64": "jscan-linux-arm64",
-  "win32-x64": "jscan-windows-x64",
+process.stderr.write(
+  "jscan is deprecated: it has merged into polyscan.\n" +
+    "Run `npx polyscan analyze .` instead — the same JavaScript/TypeScript\n" +
+    "analysis, plus Go, Rust and C++. https://github.com/ludo-technologies/polyscan\n\n"
+);
+
+const args = process.argv.slice(2);
+
+// Commands of the retired jscan CLI that polyscan does not have. Exit code 2
+// keeps jscan's convention of "could not run", as opposed to a failed gate.
+const retired = {
+  check:
+    "gate on `polyscan analyze --format json` output in CI instead.",
+  deps: "run `polyscan analyze --select deps` for dependency analysis.",
+  init: "polyscan still reads jscan.config.json when present; write it by hand.",
 };
 
-const key = `${process.platform}-${process.arch}`;
-const pkg = platformPackages[key];
-
-if (!pkg) {
+if (args.length > 0 && Object.prototype.hasOwnProperty.call(retired, args[0])) {
   console.error(
-    `Unsupported platform: ${process.platform}-${process.arch}\n` +
-      `jscan supports: ${Object.keys(platformPackages).join(", ")}`
+    `jscan ${args[0]} was retired when jscan merged into polyscan; ` +
+      retired[args[0]]
   );
-  process.exit(1);
+  process.exit(2);
 }
 
-const ext = process.platform === "win32" ? ".exe" : "";
-let binaryPath;
+let launcher;
 try {
-  binaryPath = require.resolve(`${pkg}/bin/jscan${ext}`);
+  launcher = require.resolve("polyscan/bin/polyscan");
 } catch {
   console.error(
-    `Could not find the jscan binary for ${process.platform}-${process.arch}.\n` +
-      `The platform package "${pkg}" may not be installed.\n` +
-      `Try reinstalling: npm install jscan`
+    "Could not find the polyscan package that jscan now wraps.\n" +
+      "Try reinstalling: npm install jscan"
   );
   process.exit(1);
 }
 
-const child = spawn(binaryPath, process.argv.slice(2), {
+const child = spawn(process.execPath, [launcher, ...args], {
   stdio: "inherit",
 });
 
 child.on("error", (err) => {
-  console.error(`Failed to start jscan: ${err.message}`);
+  console.error(`Failed to start polyscan: ${err.message}`);
   process.exit(1);
 });
 

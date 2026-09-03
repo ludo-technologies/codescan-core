@@ -1,6 +1,6 @@
 # Agent Skills
 
-jscan ships four Agent Skills. A skill is a short instruction file that tells an AI coding agent when a tool is relevant, which command to run, and how to interpret the output. Installing them means you can ask for the analysis in plain language instead of remembering the flags.
+polyscan ships four Agent Skills. A skill is a short instruction file that tells an AI coding agent when a tool is relevant, which command to run, and how to interpret the output. Installing them means you can ask for the analysis in plain language instead of remembering the flags.
 
 ## Install
 
@@ -23,7 +23,7 @@ Claude Code can install the same skills through its plugin system:
 
 ```bash
 claude plugin marketplace add ludo-technologies/polyscan
-claude plugin install jscan@polyscan-marketplace
+claude plugin install polyscan@polyscan-marketplace
 ```
 
 The contents are identical. Choose whichever fits how you already manage tooling. There is no benefit to installing both.
@@ -32,12 +32,12 @@ The contents are identical. Choose whichever fits how you already manage tooling
 
 | Skill | Triggers on | Runs |
 | --- | --- | --- |
-| `health-check` | Questions about overall quality, a grade, or a before and after comparison | `jscan analyze` and reads the health score |
-| `refactoring` | Questions about duplication, complexity hotspots, or dead code | `jscan analyze` with the relevant `--select` |
-| `architecture-review` | Questions about module structure, coupling, or circular imports | `jscan deps` and the coupling analysis |
-| `cli-analysis` | Requests for a report file, a CI gate, or project configuration | `jscan check`, `jscan init`, and report generation |
+| `health-check` | Questions about overall quality, a grade, or a before and after comparison | `polyscan analyze` and reads the health score |
+| `refactoring` | Questions about duplication, complexity hotspots, or dead code | `polyscan analyze` with the relevant `--select` |
+| `architecture-review` | Questions about module structure, coupling, or circular imports | `polyscan analyze --select deps,cbo` and the coupling analysis |
+| `cli-analysis` | Requests for a report file, CI wiring, or project configuration | `polyscan analyze` in its report and JSON modes |
 
-Each skill runs jscan through `npx jscan@latest`, so no separate install is needed. The agent will download it on first use.
+Each skill runs polyscan through `npx polyscan@latest`, so no separate install is needed. The agent will download it on first use.
 
 ## What to ask
 
@@ -52,17 +52,17 @@ Once installed, ordinary requests reach the right analysis:
 
 ## Reading the results critically
 
-An agent will report what jscan says, and jscan has limitations that are easy to miss when the output is summarized for you. Two are worth telling your agent about.
+An agent will report what polyscan says, and polyscan has limitations that are easy to miss when the output is summarized for you. Two are worth telling your agent about.
 
-**Unused exports depend on what was analyzed.** If the agent runs jscan on one directory, every export in it is reported as unused, because the importers elsewhere were never read. Ask the agent to analyze the whole source root before acting on those findings.
+**Unused exports depend on what was analyzed.** If the agent runs polyscan on one directory, every export in it is reported as unused, because the importers elsewhere were never read. Ask the agent to analyze the whole source root before acting on those findings.
 
-**A clean report only covers the files that were read.** If an agent reports a clean codebase, ask it to confirm the file count on the `Analyzing N files...` line against the number of source files you actually have. Versions up to 0.9.0 matched the exclude patterns `out` and `dist` against any part of a path, which silently skipped `src/routes/`, `src/layout/`, and `src/checkout/`. The [configuration reference](../configuration/reference.md#analysisexclude_patterns) describes how patterns match now.
+**A clean report only covers the files that were read.** If an agent reports a clean codebase, ask it to confirm the file count on the `Analyzing N files...` line against the number of source files you actually have. The [configuration reference](../configuration/reference.md#analysisexclude_patterns) describes how the exclude patterns match.
 
 Committing a `jscan.config.json` records your exclude list for every future agent run, since the agent picks the file up automatically.
 
 ## Working with Python too?
 
-pyscn provides the equivalent skills for Python, but they live in the [pyscn repository](https://github.com/ludo-technologies/pyscn) rather than this one. Installing from `ludo-technologies/polyscan` gives you the four jscan skills only. Add the pyscn skills separately for a mixed codebase.
+pyscn provides the equivalent skills for Python, but they live in the [pyscn repository](https://github.com/ludo-technologies/pyscn) rather than this one. Installing from `ludo-technologies/polyscan` gives you the four polyscan skills only. Add the pyscn skills separately for a mixed codebase.
 
 ## See also
 

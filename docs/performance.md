@@ -1,11 +1,11 @@
 # Performance characteristics
 
-How jscan and the shared `core/` algorithms behave as a codebase grows, which
+How the JavaScript/TypeScript analysis in polyscan (formerly jscan) and the shared `core/` algorithms behave as a codebase grows, which
 knobs change that behaviour, and how to reproduce the numbers.
 
 ## Where the time goes
 
-A default `jscan analyze` run reads and parses every file once into a shared
+A default `polyscan analyze` run over JavaScript/TypeScript reads and parses every file once into a shared
 `service.ProjectSnapshot`, then executes five analyses concurrently over the
 shared parse trees. Complexity and deadcode also share per-file CFG
 construction through the snapshot — the CFGs are built by whichever analysis
@@ -160,10 +160,10 @@ the same way. Candidate *generation* (LSH indexing) remains single-threaded.
 The single biggest lever is which analyses run at all:
 
 ```bash
-jscan analyze --select complexity,deadcode,cbo,deps src/   # drops the dominant cost
+polyscan analyze --select complexity,deadcode,cbo,deps src/   # drops the dominant cost
 ```
 
-The rest live in the config file — jscan reads `jscan.config.json`,
+The rest live in the config file — polyscan reads `jscan.config.json`,
 `.jscanrc.json`, and `.jscan.toml`, and falls back to `.pyscn.toml` or
 `pyproject.toml` for a shared polyscan setup. Keys below are given in their TOML
 form, largest effect first:
@@ -185,9 +185,9 @@ End-to-end benchmarks run against a corpus you point them at, and skip when the
 environment variable is unset:
 
 ```bash
-cd jscan
+cd polyscan
 JSCAN_BENCH_CORPUS=/path/to/js-or-ts-repo \
-  go test -run='^$' -bench=BenchmarkPipeline -benchmem -timeout=30m ./service/
+  go test -run='^$' -bench=BenchmarkPipeline -benchmem -timeout=30m ./internal/js/service/
 ```
 
 Each benchmark reports `LOC/s` alongside the usual `ns/op` and allocation
