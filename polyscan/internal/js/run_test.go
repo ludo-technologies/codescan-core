@@ -57,7 +57,7 @@ func TestRunComplexityAnalysisInternal_SortByFromConfig(t *testing.T) {
 	cfg.Output.SortBy = "name"
 
 	files := []string{file}
-	snapshot := service.BuildProjectSnapshot(context.Background(), files, nil)
+	snapshot := service.BuildProjectSnapshot(context.Background(), files)
 	resp, err := runComplexity(context.Background(), snapshot, files, cfg)
 	if err != nil {
 		t.Fatalf("analysis failed: %v", err)
@@ -108,7 +108,7 @@ func TestRunComplexityAnalysisInternal_MinComplexityFromConfig(t *testing.T) {
 	cfg.Complexity.ReportUnchanged = true
 
 	files := []string{file}
-	snapshot := service.BuildProjectSnapshot(context.Background(), files, nil)
+	snapshot := service.BuildProjectSnapshot(context.Background(), files)
 	baseline, err := runComplexity(context.Background(), snapshot, files, cfg)
 	if err != nil {
 		t.Fatalf("baseline analysis failed: %v", err)

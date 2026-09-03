@@ -98,20 +98,6 @@ func TestNewParallelExecutorFromConfig_Defaults(t *testing.T) {
 	}
 }
 
-func TestNewParallelExecutorWithProgress(t *testing.T) {
-	cfg := &config.PerformanceConfig{
-		MaxGoroutines:  4,
-		TimeoutSeconds: 60,
-	}
-	pm := &NoOpProgressManager{}
-
-	executor := NewParallelExecutorWithProgress(cfg, pm)
-
-	if executor.progress != pm {
-		t.Error("progress manager should be set")
-	}
-}
-
 func TestParallelExecutor_EmptyTaskList(t *testing.T) {
 	executor := NewParallelExecutor()
 	ctx := context.Background()
@@ -406,53 +392,6 @@ func TestParallelExecutor_SetTimeout_InvalidValue(t *testing.T) {
 	executor.mu.RUnlock()
 }
 
-func TestParallelExecutor_ProgressIntegration(t *testing.T) {
-	cfg := &config.PerformanceConfig{
-		MaxGoroutines:  4,
-		TimeoutSeconds: 60,
-	}
-
-	var incrementCount atomic.Int32
-	var completed atomic.Bool
-
-	// Create a mock progress manager
-	mockPM := &mockProgressManager{
-		startTaskFunc: func(description string, total int) domain.TaskProgress {
-			return &mockTaskProgress{
-				incrementFunc: func(n int) {
-					incrementCount.Add(int32(n))
-				},
-				completeFunc: func() {
-					completed.Store(true)
-				},
-			}
-		},
-	}
-
-	executor := NewParallelExecutorWithProgress(cfg, mockPM)
-	ctx := context.Background()
-
-	tasks := []domain.ExecutableTask{
-		newMockTask("task1", true),
-		newMockTask("task2", true),
-		newMockTask("task3", true),
-	}
-
-	err := executor.Execute(ctx, tasks)
-
-	if err != nil {
-		t.Errorf("expected nil error, got %v", err)
-	}
-
-	if incrementCount.Load() != 3 {
-		t.Errorf("expected 3 increments, got %d", incrementCount.Load())
-	}
-
-	if !completed.Load() {
-		t.Error("expected Complete() to be called")
-	}
-}
-
 func TestAggregatedError_Error(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -547,44 +486,3 @@ func TestTaskError_Unwrap(t *testing.T) {
 }
 
 // Helper types for testing
-
-type mockProgressManager struct {
-	startTaskFunc func(description string, total int) domain.TaskProgress
-}
-
-func (m *mockProgressManager) StartTask(description string, total int) domain.TaskProgress {
-	if m.startTaskFunc != nil {
-		return m.startTaskFunc(description, total)
-	}
-	return &NoOpTaskProgress{}
-}
-
-func (m *mockProgressManager) IsInteractive() bool {
-	return false
-}
-
-func (m *mockProgressManager) Close() {}
-
-type mockTaskProgress struct {
-	incrementFunc func(n int)
-	describeFunc  func(description string)
-	completeFunc  func()
-}
-
-func (m *mockTaskProgress) Increment(n int) {
-	if m.incrementFunc != nil {
-		m.incrementFunc(n)
-	}
-}
-
-func (m *mockTaskProgress) Describe(description string) {
-	if m.describeFunc != nil {
-		m.describeFunc(description)
-	}
-}
-
-func (m *mockTaskProgress) Complete() {
-	if m.completeFunc != nil {
-		m.completeFunc()
-	}
-}

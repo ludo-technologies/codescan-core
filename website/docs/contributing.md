@@ -34,7 +34,6 @@ Run `make lint` and `make test` before opening a pull request. Continuous integr
 ```text
 polyscan/
 ├── cmd/polyscan/  CLI entry point
-├── cmd/jscan/     The retired jscan CLI, kept buildable from the moved code
 ├── internal/
 │   ├── analysis/  File collection and dispatch for the generic engine
 │   ├── engine/    The declarative language engine (grammar + queries)

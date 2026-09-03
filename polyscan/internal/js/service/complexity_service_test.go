@@ -26,26 +26,6 @@ func TestNewComplexityService(t *testing.T) {
 	if service.config != cfg {
 		t.Error("Service should store config reference")
 	}
-	if service.progress != nil {
-		t.Error("Progress should be nil when not provided")
-	}
-}
-
-func TestNewComplexityServiceWithProgress(t *testing.T) {
-	cfg := &config.ComplexityConfig{
-		LowThreshold:    5,
-		MediumThreshold: 10,
-	}
-	pm := NewProgressManager(false) // Use non-interactive mode for tests
-
-	service := NewComplexityServiceWithProgress(cfg, pm)
-
-	if service == nil {
-		t.Fatal("NewComplexityServiceWithProgress should not return nil")
-	}
-	if service.progress == nil {
-		t.Error("Progress should not be nil")
-	}
 }
 
 func TestComplexityService_Analyze_EmptyPaths(t *testing.T) {
@@ -608,39 +588,6 @@ func TestComplexityService_buildConfigForResponse(t *testing.T) {
 	}
 	if configMap["min_complexity"] != 3 {
 		t.Error("min_complexity should be 3")
-	}
-}
-
-func TestComplexityService_Analyze_WithProgress(t *testing.T) {
-	// Create a temp JS file
-	tempDir := t.TempDir()
-	jsFile := filepath.Join(tempDir, "test.js")
-	content := `function test() { return 1; }`
-	if err := os.WriteFile(jsFile, []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to create test file: %v", err)
-	}
-
-	cfg := &config.ComplexityConfig{
-		LowThreshold:    5,
-		MediumThreshold: 10,
-		Enabled:         true,
-		ReportUnchanged: true,
-	}
-
-	pm := NewProgressManager(false) // Use non-interactive mode for tests
-	service := NewComplexityServiceWithProgress(cfg, pm)
-
-	req := domain.ComplexityRequest{
-		Paths: []string{jsFile},
-	}
-
-	resp, err := service.Analyze(context.Background(), req)
-	if err != nil {
-		t.Fatalf("Analyze should not return error: %v", err)
-	}
-
-	if resp == nil {
-		t.Fatal("Response should not be nil")
 	}
 }
 

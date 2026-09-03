@@ -176,7 +176,6 @@ func TestOutputFormat_Constants(t *testing.T) {
 		OutputFormatYAML: "yaml",
 		OutputFormatCSV:  "csv",
 		OutputFormatHTML: "html",
-		OutputFormatDOT:  "dot",
 	}
 
 	for format, expected := range formats {

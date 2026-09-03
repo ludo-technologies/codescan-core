@@ -20,26 +20,6 @@ type ReportWriter interface {
 	Write(writer io.Writer, outputPath string, format OutputFormat, noOpen bool, writeFunc func(io.Writer) error) error
 }
 
-// ProgressManager manages progress tracking for analysis
-type ProgressManager interface {
-	// StartTask creates a new progress task with a description and total count
-	StartTask(description string, total int) TaskProgress
-	// IsInteractive returns true if progress bars should be shown
-	IsInteractive() bool
-	// Close cleans up all tasks
-	Close()
-}
-
-// TaskProgress tracks progress for a single analysis task
-type TaskProgress interface {
-	// Increment adds n to the current progress
-	Increment(n int)
-	// Describe updates the current item description
-	Describe(description string)
-	// Complete marks the task as finished
-	Complete()
-}
-
 // ParallelExecutor manages parallel execution of tasks
 type ParallelExecutor interface {
 	// Execute runs tasks in parallel with the given configuration

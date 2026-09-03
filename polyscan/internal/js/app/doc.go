@@ -6,12 +6,11 @@
 // formatting the result. AnalyzeUseCase covers the full pipeline, while
 // ComplexityUseCase and DeadCodeUseCase cover a single analysis each.
 //
-// Not every command routes through this package. Handlers in cmd/jscan call
-// services directly when doing so makes the concurrency clearer, which is why
-// the analyze command runs its five analyses itself rather than through
-// AnalyzeUseCase.
+// Not every entry point routes through this package. js.Run calls services
+// directly when doing so makes the concurrency clearer, which is why polyscan
+// analyze runs the five analyses itself rather than through AnalyzeUseCase.
 //
-// FileHelper is the piece every command does share. Its CollectJSFiles walks
+// FileHelper is the piece every entry point does share. Its CollectJSFiles walks
 // the given paths and returns the JavaScript and TypeScript files to analyze.
 // Two behaviors of that walk are worth knowing, because both silently reduce
 // the input:

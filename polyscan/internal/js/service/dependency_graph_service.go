@@ -22,19 +22,6 @@ type DependencyGraphServiceImpl struct {
 	includeExternal    bool
 }
 
-// NewDependencyGraphService creates a new dependency graph service
-func NewDependencyGraphService(includeExternal, includeTypeImports bool) *DependencyGraphServiceImpl {
-	return &DependencyGraphServiceImpl{
-		graphBuilderConfig: &analyzer.DependencyGraphBuilderConfig{
-			IncludeExternal:    includeExternal,
-			IncludeTypeImports: includeTypeImports,
-		},
-		couplingConfig:     analyzer.DefaultCouplingMetricsConfig(),
-		includeTypeImports: includeTypeImports,
-		includeExternal:    includeExternal,
-	}
-}
-
 // NewDependencyGraphServiceWithDefaults creates a new service with default configuration
 func NewDependencyGraphServiceWithDefaults() *DependencyGraphServiceImpl {
 	return &DependencyGraphServiceImpl{
@@ -50,7 +37,7 @@ func NewDependencyGraphServiceWithDefaults() *DependencyGraphServiceImpl {
 // every module's AST at once, so a single-analysis run holds the same one set
 // of parse trees a shared snapshot would.
 func (s *DependencyGraphServiceImpl) Analyze(ctx context.Context, req domain.DependencyGraphRequest) (*domain.DependencyGraphResponse, error) {
-	snapshot := BuildProjectSnapshot(ctx, req.Paths, nil)
+	snapshot := BuildProjectSnapshot(ctx, req.Paths)
 	return s.AnalyzeSnapshot(ctx, snapshot, req)
 }
 

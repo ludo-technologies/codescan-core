@@ -80,7 +80,7 @@ func (s *CloneServiceImpl) DetectClones(ctx context.Context, req *domain.CloneRe
 	config := s.effectiveConfig(req)
 	detector := analyzer.NewCloneDetector(&config)
 
-	results := analyzeProjectFilesFromPaths(ctx, req.Paths, nil,
+	results := analyzeProjectFilesFromPaths(ctx, req.Paths,
 		func(file *ProjectFile) fileAnalysis[*extractedFragments] {
 			return extractFileFragments(detector, file)
 		})
@@ -102,7 +102,7 @@ func (s *CloneServiceImpl) DetectClonesInSnapshot(ctx context.Context, snapshot 
 	config := s.effectiveConfig(req)
 	detector := analyzer.NewCloneDetector(&config)
 
-	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+	results := analyzeFilesConcurrently(ctx, snapshot.Files,
 		func(_ context.Context, file *ProjectFile) fileAnalysis[*extractedFragments] {
 			return extractFileFragments(detector, file)
 		})

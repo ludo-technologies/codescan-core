@@ -1,6 +1,6 @@
 // Package service orchestrates the analyzers and turns their results into
-// output. It sits between the CLI in cmd/jscan and the engines in
-// internal/analyzer.
+// output. It sits between the entry point in js.go and the engines in
+// internal/js/analyzer.
 //
 // Each analysis has a service that owns its pipeline: ComplexityServiceImpl,
 // the dead code functions in dead_code_service.go and dead_code_aggregate.go,
@@ -16,8 +16,7 @@
 // pass is why analyzing a subdirectory reports its exports as unused: the
 // importers were never part of the input.
 //
-// Output is handled by OutputFormatterImpl for text, JSON, YAML, CSV, and HTML,
-// and by DOTFormatter for Graphviz.
+// Output is handled by OutputFormatterImpl for text, JSON, YAML, CSV, and HTML.
 //
 // BuildAnalyzeSummary combines the five responses into a domain.AnalyzeSummary
 // and computes the health score. Because a nil response is treated as an

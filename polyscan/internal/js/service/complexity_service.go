@@ -15,8 +15,7 @@ import (
 
 // ComplexityServiceImpl implements the ComplexityService interface
 type ComplexityServiceImpl struct {
-	config   *config.ComplexityConfig
-	progress domain.ProgressManager
+	config *config.ComplexityConfig
 }
 
 // NewComplexityService creates a new complexity service implementation
@@ -26,27 +25,12 @@ func NewComplexityService(cfg *config.ComplexityConfig) *ComplexityServiceImpl {
 	}
 }
 
-// NewComplexityServiceWithProgress creates a new complexity service with progress reporting
-func NewComplexityServiceWithProgress(cfg *config.ComplexityConfig, pm domain.ProgressManager) *ComplexityServiceImpl {
-	return &ComplexityServiceImpl{
-		config:   cfg,
-		progress: pm,
-	}
-}
-
 // Analyze performs complexity analysis on multiple files. Each file is read,
 // parsed, and analyzed inside the fan-out and released as soon as its results
 // are extracted, so peak memory holds only as many parse trees as there are
 // workers — use AnalyzeSnapshot when several analyses should share the trees.
 func (s *ComplexityServiceImpl) Analyze(ctx context.Context, req domain.ComplexityRequest) (*domain.ComplexityResponse, error) {
-	// Set up progress tracking (use no-op if progress manager not set)
-	var task domain.TaskProgress = &NoOpTaskProgress{}
-	if s.progress != nil {
-		task = s.progress.StartTask("Analyzing complexity", len(req.Paths))
-	}
-	defer task.Complete()
-
-	results := analyzeProjectFilesFromPaths(ctx, req.Paths, task, s.analyzeProjectFile)
+	results := analyzeProjectFilesFromPaths(ctx, req.Paths, s.analyzeProjectFile)
 	return s.buildResponse(ctx, results, req.Paths, req)
 }
 
@@ -58,7 +42,7 @@ func (s *ComplexityServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *P
 		return nil, err
 	}
 
-	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+	results := analyzeFilesConcurrently(ctx, snapshot.Files,
 		func(_ context.Context, file *ProjectFile) fileAnalysis[fileComplexity] {
 			return s.analyzeProjectFile(file)
 		})

@@ -46,7 +46,7 @@ func (s *CBOServiceImpl) Analyze(ctx context.Context, req domain.CBORequest) (*d
 	config := s.effectiveConfig(req)
 	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
 
-	results := analyzeProjectFilesFromPaths(ctx, req.Paths, nil,
+	results := analyzeProjectFilesFromPaths(ctx, req.Paths,
 		func(file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
 			return s.analyzeProjectFile(cboAnalyzer, file)
 		})
@@ -64,7 +64,7 @@ func (s *CBOServiceImpl) AnalyzeSnapshot(ctx context.Context, snapshot *ProjectS
 	config := s.effectiveConfig(req)
 	cboAnalyzer := analyzer.NewCBOAnalyzer(&config)
 
-	results := analyzeFilesConcurrently(ctx, snapshot.Files, nil,
+	results := analyzeFilesConcurrently(ctx, snapshot.Files,
 		func(_ context.Context, file *ProjectFile) fileAnalysis[*domain.ClassCoupling] {
 			return s.analyzeProjectFile(cboAnalyzer, file)
 		})
