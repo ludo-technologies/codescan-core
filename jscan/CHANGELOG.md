@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-09-03
+
+### Fixed
+
+- Require `polyscan >= 0.2.0`, the first polyscan release that analyzes JavaScript and TypeScript. 0.11.0 resolved polyscan 0.1.0, which supports only Go, Rust and C++, so `npx jscan analyze` failed with "no supported source files found"
+
+## [0.11.0] - 2026-09-03
+
+jscan has merged into [polyscan](https://www.npmjs.com/package/polyscan). This package is now a deprecated wrapper that prints a notice and runs the polyscan CLI. The changes listed below under 0.11.0 ship in polyscan 0.2.0.
+
+### Changed
+
+- `jscan analyze` forwards to `polyscan analyze`, translating `--json`, `--text` and `--html` to `--format`. `--config` exits with a hint, because polyscan discovers the configuration file itself
+- `jscan check`, `jscan deps` and `jscan init` are retired and exit 2 with a migration hint. Gate on the JSON output in CI, use `polyscan analyze --select deps`, and write `jscan.config.json` by hand
+- The documentation site moved to https://polyscan.codescan.dev/
+
 ### Added
 
 - Report `complexity.summary.complexity_distribution` in the JSON and YAML output, counting the analyzed functions that have each cyclomatic complexity. The field was declared but never populated. Like every other aggregate in that summary it describes the complete analyzed population, so it is the one field that lets a consumer plot the distribution a filtered report was scored on
@@ -224,7 +240,9 @@ First release built from the polyscan monorepo. The analyzer is unchanged from 0
 - CLI with analyze command
 - Configuration file support (jscan.config.json)
 
-[Unreleased]: https://github.com/ludo-technologies/polyscan/compare/jscan/v0.10.0...HEAD
+[Unreleased]: https://github.com/ludo-technologies/polyscan/compare/jscan/v0.11.1...HEAD
+[0.11.1]: https://github.com/ludo-technologies/polyscan/compare/jscan/v0.11.0...jscan/v0.11.1
+[0.11.0]: https://github.com/ludo-technologies/polyscan/compare/jscan/v0.10.0...jscan/v0.11.0
 [0.10.0]: https://github.com/ludo-technologies/polyscan/compare/jscan/v0.9.1...jscan/v0.10.0
 [0.9.1]: https://github.com/ludo-technologies/polyscan/releases/tag/jscan/v0.9.1
 [0.9.0]: https://github.com/ludo-technologies/jscan/compare/v0.8.0...v0.9.0

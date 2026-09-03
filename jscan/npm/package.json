@@ -32,6 +32,6 @@
     "node": ">=14"
   },
   "dependencies": {
-    "polyscan": "*"
+    "polyscan": ">=0.2.0"
   }
 }

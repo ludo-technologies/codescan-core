@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-03
+
+### Added
+
+- JavaScript and TypeScript analysis, moved in from jscan. `polyscan analyze` runs complexity, dead code, clone detection, class coupling (CBO) and module dependency analysis on `.js`, `.jsx`, `.ts` and `.tsx` files, reads an existing `jscan.config.json` (or any of the other accepted names) when present, and the `jscan` npm package became a deprecated wrapper around this CLI
+
 ### Changed
 
 - One report, one health score across languages. `polyscan analyze` renders every language into the jscan-style report (health score, verdict, per-dimension cards, hotspot files) as HTML, JSON and text; the separate JavaScript report (`polyscan-report.js.html`, the `javascript` JSON key) is gone
