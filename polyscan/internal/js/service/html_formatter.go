@@ -311,7 +311,9 @@ func clampScore(score int) int {
 
 // reportProject derives a project label from the analyzed file paths: the
 // responses carry no explicit root, so the common directory of everything that
-// was analyzed is the closest thing to one.
+// was analyzed is the closest thing to one. Paths are made absolute first so
+// a relative target such as "polyscan/" yields a real directory instead of a
+// path that merely repeats the project name.
 func reportProject(
 	moduleQuality []domain.ModuleQualityMetrics,
 	complexity *domain.ComplexityResponse,
@@ -324,6 +326,13 @@ func reportProject(
 		for _, function := range complexity.Functions {
 			files = append(files, function.FilePath)
 		}
+	}
+	for i, file := range files {
+		absolute, err := filepath.Abs(file)
+		if err != nil {
+			return "", ""
+		}
+		files[i] = absolute
 	}
 	root = commonDirectory(files)
 	if root == "" || root == "." || root == string(filepath.Separator) {
