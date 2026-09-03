@@ -78,10 +78,10 @@ Four of the dimensions use the same shape. A ratio is computed, and the penalty 
 
 ```text
 ratio   = (high risk functions + 0.5 × medium risk functions) ÷ total functions
-penalty = 20 × ratio ÷ 0.05, capped at 20
+penalty = 20 × ratio ÷ 0.30, capped at 20
 ```
 
-The penalty reaches its maximum once the weighted ratio hits 5 percent. That is a demanding target: a codebase where one function in twenty is high risk already receives the full 20 point penalty. Medium risk functions count half as much as high risk ones. The population covers every analyzed function in every language.
+The penalty reaches its maximum once the weighted ratio hits 30 percent. A codebase where one function in twenty is high risk loses about 3 of the 20 points, and one where every third function is high risk loses all of them. Medium risk functions count half as much as high risk ones. The population covers every analyzed function in every language.
 
 Which functions count as high or medium risk depends on the thresholds, so for JavaScript/TypeScript raising `complexity.medium_threshold` raises the score without changing any code.
 
@@ -110,7 +110,7 @@ ratio   = (high coupling modules + 0.3 × medium coupling modules) ÷ total modu
 penalty = 20 × ratio ÷ 0.40, capped at 20
 ```
 
-Medium risk modules are weighted at 0.3 rather than 0.5, which is more forgiving than the complexity weighting. The penalty saturates when the weighted ratio reaches 40 percent.
+Medium risk modules are weighted at 0.3 rather than 0.5, which is more forgiving than the complexity weighting. The penalty saturates when the weighted ratio reaches 40 percent, slightly later than the complexity penalty.
 
 ### Dependencies
 
@@ -192,4 +192,4 @@ The dead code figure is the one worth following through. The weighted finding co
 
 Because every dimension saturates, the fastest gains come from whichever dimension is furthest from zero rather than from whichever has the most raw findings. A project with a dead code score of 65 and a complexity score of 100 should fix dead code first, even if it has far more functions than findings.
 
-The dimensions also differ in how quickly they saturate. Complexity saturates at a weighted ratio of 5 percent, which is by far the tightest of the four. A handful of high complexity functions in a small codebase can max out that penalty on its own.
+The dimensions also differ in how quickly they saturate. Complexity saturates at a weighted ratio of 30 percent and coupling at 40 percent, so a handful of complex functions costs a few points, while a single unparsable file costs at least 11.

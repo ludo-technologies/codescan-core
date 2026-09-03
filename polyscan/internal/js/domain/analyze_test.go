@@ -233,9 +233,9 @@ func TestCalculateHealthScore_MissingDimensionsLeftOut(t *testing.T) {
 		TotalFunctions:    100,
 		TotalFiles:        10,
 		AnalyzedFiles:     10,
-		// 3 high + 2*0.5 medium = 4% weighted ratio -> penalty 16 of 20
-		HighComplexityCount:   3,
-		MediumComplexityCount: 2,
+		// 20 high + 8*0.5 medium = 24% weighted ratio -> penalty 16 of 20
+		HighComplexityCount:   20,
+		MediumComplexityCount: 8,
 		// 15% duplication -> penalty 10 of 20
 		CodeDuplication: 15.0,
 	}
@@ -246,6 +246,42 @@ func TestCalculateHealthScore_MissingDimensionsLeftOut(t *testing.T) {
 	// missing dimensions would have given 100 - 26 = 74 instead.
 	if s.HealthScore != 35 || s.Grade != "F" {
 		t.Errorf("HealthScore = %d (%s), want 35 (F)", s.HealthScore, s.Grade)
+	}
+}
+
+// TestCalculateHealthScore_ComplexityPenaltyCurve pins the complexity curve
+// from #96: a handful of complex functions in a mostly clean codebase costs a
+// few points, and only a codebase where 30% of the functions are high risk
+// takes the full penalty.
+func TestCalculateHealthScore_ComplexityPenaltyCurve(t *testing.T) {
+	tests := []struct {
+		name           string
+		total          int
+		high, medium   int
+		wantComplexity int
+	}{
+		// ky: 128 functions, 5 high and 8 medium, a weighted ratio of 7%.
+		{name: "ky", total: 128, high: 5, medium: 8, wantComplexity: 75},
+		{name: "one high function in twenty", total: 20, high: 1, wantComplexity: 85},
+		{name: "half of the functions medium", total: 100, medium: 50, wantComplexity: 15},
+		{name: "30% high saturates", total: 100, high: 30, wantComplexity: 0},
+		{name: "beyond saturation stays at the floor", total: 100, high: 80, medium: 20, wantComplexity: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &AnalyzeSummary{
+				ComplexityEnabled:     true,
+				TotalFunctions:        tt.total,
+				HighComplexityCount:   tt.high,
+				MediumComplexityCount: tt.medium,
+			}
+			if err := s.CalculateHealthScore(); err != nil {
+				t.Fatalf("CalculateHealthScore() error: %v", err)
+			}
+			if s.ComplexityScore != tt.wantComplexity {
+				t.Errorf("ComplexityScore = %d, want %d", s.ComplexityScore, tt.wantComplexity)
+			}
+		})
 	}
 }
 

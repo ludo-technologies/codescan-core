@@ -33,6 +33,14 @@ const (
 	CouplingMediumWeight    = coredomain.CouplingMediumWeight
 	CouplingSaturationRatio = coredomain.CouplingSaturationRatio
 
+	// Complexity scoring curve (used by calculateComplexityPenalty)
+	// Penalty grows linearly with the weighted ratio of high and medium risk
+	// functions and saturates at ComplexitySaturationRatio. The ratio is
+	// wide enough that a few complex functions in an otherwise clean
+	// codebase cost a few points rather than the whole dimension (#96).
+	ComplexityMediumWeight    = 0.5  // Medium-risk functions count 0.5 vs High = 1.0
+	ComplexitySaturationRatio = 0.30 // weighted ratio at which the penalty maxes out
+
 	// Maximum penalties
 	MaxDeadCodePenalty = coredomain.MaxDeadCodePenalty
 	MaxCriticalPenalty = coredomain.MaxCriticalPenalty
@@ -281,18 +289,18 @@ func (s *AnalyzeSummary) calculateParseErrorPenalty() int {
 
 // calculateComplexityPenalty calculates the penalty for complexity (max 20)
 // Uses ratio of high/medium complexity functions (ESLint-aligned: high > 20, medium 10-20)
-// Weight: High = 1.0, Medium = 0.5
-// Reaches max penalty when 30% or more functions are problematic
+// Weight: High = 1.0, Medium = ComplexityMediumWeight
+// Reaches max penalty at a weighted ratio of ComplexitySaturationRatio
 func (s *AnalyzeSummary) calculateComplexityPenalty() int {
 	if s.TotalFunctions == 0 {
 		return 0
 	}
 
 	// Weighted ratio of problematic functions
-	weighted := float64(s.HighComplexityCount) + 0.5*float64(s.MediumComplexityCount)
+	weighted := float64(s.HighComplexityCount) + ComplexityMediumWeight*float64(s.MediumComplexityCount)
 	ratio := weighted / float64(s.TotalFunctions)
 
-	return coredomain.LinearPenalty(ratio, 0, 0.05)
+	return coredomain.LinearPenalty(ratio, 0, ComplexitySaturationRatio)
 }
 
 // calculateDeadCodePenalty calculates the penalty for dead code (max 20)

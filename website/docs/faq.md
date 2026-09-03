@@ -106,7 +106,7 @@ The coupling analysis produces one entry per file, named after the module. The l
 
 Grade A starts at 90 and grade B at 75. In practice, treat the category scores as more actionable than the total, because each category saturates at a different point and the total hides which one is costing you.
 
-The complexity category saturates fastest. Its penalty maxes out once the weighted ratio of problematic functions reaches 5 percent, so a handful of high complexity functions in a small codebase can max it out alone.
+Each category saturates at a different point. The complexity penalty maxes out once the weighted ratio of problematic functions reaches 30 percent, so a handful of high complexity functions cost a few points rather than the whole category. In a very small codebase the same handful is a large share of the population, so the category score moves faster there.
 
 ### Why is `architecture_score` always 0?
 
