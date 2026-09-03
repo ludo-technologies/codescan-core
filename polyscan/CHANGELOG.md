@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The complexity penalty saturated once the weighted ratio of medium and high risk functions reached 5 percent, so a mostly clean codebase with a few complex functions scored 0/100 on complexity. It now saturates at 30 percent, matching the documented intent, and any function above the medium threshold costs at least one point so the score only reads 100 when no function is at risk (#96)
+
 ## [0.2.0] - 2026-09-03
 
 ### Added
