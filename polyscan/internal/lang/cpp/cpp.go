@@ -66,6 +66,23 @@ var Language = &engine.Language{
 (catch_clause) @exception
 (binary_expression operator: ["&&" "||"]) @logical_operator
 `,
+	// An if in the else arm of another if continues that if's chain, also
+	// when an attribute such as [[likely]] wraps it in an
+	// attributed_statement. A catch clause is part of the try statement
+	// that already opened a level.
+	Nesting: `
+(if_statement) @nesting
+(if_statement alternative: (else_clause [
+  (if_statement) @continuation
+  (attributed_statement (if_statement) @continuation)
+]))
+(switch_statement) @nesting
+(for_statement) @nesting
+(for_range_loop) @nesting
+(while_statement) @nesting
+(do_statement) @nesting
+(try_statement) @nesting
+`,
 	Clone: engine.CloneSpec{
 		Identifiers: []string{
 			"identifier", "field_identifier", "type_identifier", "namespace_identifier",

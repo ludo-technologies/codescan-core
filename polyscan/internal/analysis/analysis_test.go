@@ -68,6 +68,14 @@ func TestAnalyzeComplexity(t *testing.T) {
 	if first.Language != "Go" || filepath.Base(first.FilePath) != "sample.go" {
 		t.Errorf("first function language=%q path=%q", first.Language, first.FilePath)
 	}
+	if first.NestingDepth != 1 {
+		t.Errorf("Server.Handle nesting depth = %d, want 1", first.NestingDepth)
+	}
+	for _, fn := range functions {
+		if fn.Name == "Closure" && fn.NestingDepth != 2 {
+			t.Errorf("Closure nesting depth = %d, want 2 (the literal's for and if count toward it)", fn.NestingDepth)
+		}
+	}
 	for i := 1; i < len(functions); i++ {
 		if functions[i].Complexity > functions[i-1].Complexity {
 			t.Errorf("functions are not sorted by descending complexity at %d", i)

@@ -152,3 +152,63 @@ func TestContentDropsCommentsButKeepsTokensApart(t *testing.T) {
 		t.Errorf("code lines = %d, want 3", fn.CodeLines)
 	}
 }
+
+func TestNestingDepth(t *testing.T) {
+	functions := analyze(t, `package p
+
+func Flat(a bool) {
+	if a {
+	}
+	for {
+	}
+}
+
+func ElseIfContinuesTheChain(a, b bool) {
+	if a {
+	} else if b {
+		for {
+		}
+	} else {
+		if a {
+			if b {
+			}
+		}
+	}
+}
+
+func Deep(a bool, xs []int) {
+	if a {
+		for _, x := range xs {
+			switch x {
+			case 1:
+				select {
+				default:
+				}
+			}
+		}
+	}
+}
+
+func Closure(a, b bool) func() {
+	return func() {
+		for {
+			if a {
+				if b {
+				}
+			}
+		}
+	}
+}
+`)
+	want := map[string]int{
+		"Flat":                    1,
+		"ElseIfContinuesTheChain": 3,
+		"Deep":                    4,
+		"Closure":                 3,
+	}
+	for name, depth := range want {
+		if got := functions[name].NestingDepth; got != depth {
+			t.Errorf("%s: nesting depth = %d, want %d", name, got, depth)
+		}
+	}
+}

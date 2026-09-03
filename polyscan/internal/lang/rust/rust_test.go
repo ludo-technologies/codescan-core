@@ -198,3 +198,64 @@ func TestTestFiles(t *testing.T) {
 		}
 	}
 }
+
+func TestNestingDepth(t *testing.T) {
+	functions := analyze(t, `
+fn flat(a: bool) {
+    if a {}
+    loop { break; }
+}
+
+fn else_if_continues_the_chain(a: bool, b: bool) {
+    if a {
+    } else if b {
+        while b {}
+    } else {
+        if a { if b {} }
+    }
+}
+
+fn deep(a: bool, xs: Vec<i32>) {
+    if a {
+        for x in xs {
+            match x {
+                1 => { if let Some(_) = Some(x) {} }
+                _ => {}
+            }
+        }
+    }
+}
+
+fn let_else(value: Option<i32>, retry: bool) {
+    let Some(_value) = value else {
+        if retry {}
+        return;
+    };
+}
+
+fn outer(a: bool) {
+    fn inner(a: bool) {
+        if a { if a { if a {} } }
+    }
+    let closure = || { if a { if a {} } };
+}
+`)
+	want := map[string]int{
+		"flat":                        1,
+		"else_if_continues_the_chain": 3,
+		"deep":                        4,
+		"let_else":                    2,
+		"outer":                       2,
+		"inner":                       3,
+	}
+	for name, depth := range want {
+		fn, ok := functions[name]
+		if !ok {
+			t.Errorf("missing function %q", name)
+			continue
+		}
+		if fn.NestingDepth != depth {
+			t.Errorf("%s: nesting depth = %d, want %d", name, fn.NestingDepth, depth)
+		}
+	}
+}

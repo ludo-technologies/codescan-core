@@ -134,7 +134,7 @@ Each entry in `functions` looks like this:
     "complexity": 4,
     "nodes": 0,
     "edges": 0,
-    "nesting_depth": 0,
+    "nesting_depth": 2,
     "if_statements": 0,
     "loop_statements": 0,
     "exception_handlers": 0,
@@ -146,7 +146,7 @@ Each entry in `functions` looks like this:
 
 `language` names the language the function was analyzed as: `JavaScript`, `TypeScript`, `Go`, `Rust`, or `C++`.
 
-For JavaScript/TypeScript functions, `nodes` and `edges` describe the control flow graph the complexity was derived from, and `nesting_depth` is the deepest chain of nested control structures in the function: an `else if` continues the chain its `if` opened rather than starting a deeper one, a `catch` clause stays at the level of its `try`, and nested functions are measured separately. For the other languages the graph and statement-breakdown fields are `0`, because their complexity is counted from decision points rather than a control flow graph. `risk_level` is `low`, `medium`, or `high`.
+`nesting_depth` is the deepest chain of nested control structures in the function, in every language: the function body is depth 0, an `else if` continues the chain its `if` opened rather than starting a deeper one, a `catch` clause stays at the level of its `try`, and a nested function is measured separately. A Go function literal, a Rust closure or a C++ lambda is not a separate function, so the control structures inside it count toward the function that contains it. For JavaScript/TypeScript functions, `nodes` and `edges` describe the control flow graph the complexity was derived from. For the other languages the graph and statement-breakdown fields are `0`, because their complexity is counted from decision points rather than a control flow graph. `risk_level` is `low`, `medium`, or `high`.
 
 File paths for JavaScript/TypeScript are reported exactly as polyscan resolved them, which means they are absolute when you passed an absolute path and relative when you passed a relative one. Go, Rust and C++ paths are shortened to be relative to the working directory when the file lies under it.
 

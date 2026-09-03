@@ -67,6 +67,17 @@ var Language = &engine.Language{
 (let_chain "&&" @logical_operator)
 (try_expression) @try_operator
 `,
+	// An if in the else arm of another if continues that if's chain. The
+	// else block of a let-else is one level deep, as it branches.
+	Nesting: `
+(if_expression) @nesting
+(if_expression alternative: (else_clause (if_expression) @continuation))
+(let_declaration alternative: (_)) @nesting
+(match_expression) @nesting
+(for_expression) @nesting
+(while_expression) @nesting
+(loop_expression) @nesting
+`,
 	Clone: engine.CloneSpec{
 		Identifiers: []string{
 			"identifier", "field_identifier", "type_identifier", "shorthand_field_identifier",

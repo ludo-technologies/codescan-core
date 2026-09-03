@@ -35,8 +35,11 @@ type Function struct {
 	Complexity int `json:"complexity"`
 	// Decisions breaks the decision points down by kind. The kinds are
 	// defined per language.
-	Decisions map[string]int   `json:"decisions"`
-	RiskLevel domain.RiskLevel `json:"risk_level"`
+	Decisions map[string]int `json:"decisions"`
+	// NestingDepth is the deepest chain of nested control structures, with
+	// the function body at 0.
+	NestingDepth int              `json:"nesting_depth"`
+	RiskLevel    domain.RiskLevel `json:"risk_level"`
 }
 
 // ComplexitySummary aggregates every analyzed function. Report filters only
@@ -194,15 +197,16 @@ func countLines(content []byte) int {
 
 func newFunction(fn engine.Function, language *engine.Language, display string) Function {
 	return Function{
-		Name:        fn.Name,
-		FilePath:    display,
-		Language:    language.Name,
-		StartLine:   fn.StartLine,
-		StartColumn: fn.StartColumn,
-		EndLine:     fn.EndLine,
-		Complexity:  fn.Complexity,
-		Decisions:   fn.Decisions,
-		RiskLevel:   RiskLevel(fn.Complexity),
+		Name:         fn.Name,
+		FilePath:     display,
+		Language:     language.Name,
+		StartLine:    fn.StartLine,
+		StartColumn:  fn.StartColumn,
+		EndLine:      fn.EndLine,
+		Complexity:   fn.Complexity,
+		Decisions:    fn.Decisions,
+		NestingDepth: fn.NestingDepth,
+		RiskLevel:    RiskLevel(fn.Complexity),
 	}
 }
 

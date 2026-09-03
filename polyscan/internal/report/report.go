@@ -69,7 +69,7 @@ func genericComplexity(report *analysis.Report) (*domain.ComplexityResponse, err
 			StartLine:   fn.StartLine,
 			StartColumn: fn.StartColumn,
 			EndLine:     fn.EndLine,
-			Metrics:     domain.ComplexityMetrics{Complexity: fn.Complexity},
+			Metrics:     domain.ComplexityMetrics{Complexity: fn.Complexity, NestingDepth: fn.NestingDepth},
 			RiskLevel:   domain.RiskLevel(fn.RiskLevel),
 		})
 		distribution[fn.Complexity]++
