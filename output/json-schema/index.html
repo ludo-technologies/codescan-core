@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/output/json-schema/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/output/json-schema/">
       
       
         <link rel="prev" href="../html-report/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>JSON Schema - jscan</title>
+        <title>JSON Schema - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -794,12 +824,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -871,90 +895,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1400,17 +1340,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jscan-check-json" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        jscan check --json
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#recipes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1781,17 +1710,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jscan-check-json" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        jscan check --json
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#recipes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1887,12 +1805,12 @@
 
 
 <h1 id="json-schema">JSON Schema<a class="headerlink" href="#json-schema" title="Permanent link">&para;</a></h1>
-<p><code>jscan analyze --json</code> writes a single document to standard output. This page describes its structure. The score summary is written to standard error, so redirecting standard output gives you valid JSON with nothing else mixed in.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w"> </span>&gt;<span class="w"> </span>report.json
+<p><code>polyscan analyze --format json</code> writes a single document to standard output, covering every analyzed language. This page describes its structure. The score summary is written to standard error, so redirecting standard output gives you valid JSON with nothing else mixed in.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span>&gt;<span class="w"> </span>report.json
 </span></code></pre></div>
 <h2 id="top-level">Top level<a class="headerlink" href="#top-level" title="Permanent link">&para;</a></h2>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.4.1"</span><span class="p">,</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1.0"</span><span class="p">,</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">"generated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-08-04T16:20:39+09:00"</span><span class="p">,</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">"duration_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">},</span>
@@ -1916,7 +1834,7 @@
 <tr>
 <td><code>version</code></td>
 <td>string</td>
-<td>The jscan version. <code>dev</code> for a locally built binary</td>
+<td>The polyscan version. <code>dev</code> for a locally built binary</td>
 </tr>
 <tr>
 <td><code>generated_at</code></td>
@@ -1936,7 +1854,7 @@
 <tr>
 <td><code>dead_code</code></td>
 <td>object</td>
-<td>Present only when dead code detection ran</td>
+<td>Present only when dead code detection ran (JavaScript/TypeScript)</td>
 </tr>
 <tr>
 <td><code>clone</code></td>
@@ -1946,12 +1864,12 @@
 <tr>
 <td><code>cbo</code></td>
 <td>object</td>
-<td>Present only when coupling analysis ran</td>
+<td>Present only when coupling analysis ran (JavaScript/TypeScript)</td>
 </tr>
 <tr>
 <td><code>deps</code></td>
 <td>object</td>
-<td>Present only when dependency analysis ran</td>
+<td>Present only when dependency analysis ran (JavaScript/TypeScript)</td>
 </tr>
 <tr>
 <td><code>module_quality</code></td>
@@ -1965,7 +1883,7 @@
 </tr>
 </tbody>
 </table>
-<p>The five analysis keys are omitted entirely when <code>--select</code> excludes them, so consumers should check for their presence rather than assume it.</p>
+<p>The five analysis keys are omitted entirely when <code>--select</code> excludes them or when no analyzed language has them, so consumers should check for their presence rather than assume it.</p>
 <h2 id="summary"><code>summary</code><a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>This is the object most scripts want. It carries the health score, the per-category scores, and the headline counts.</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
@@ -2013,14 +1931,15 @@
 </span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>A few fields need explanation.</p>
-<p><code>total_functions</code> is every function jscan analyzed, which is what every complexity figure here and the health score describe. <code>output.min_complexity</code> and the other report filters change which functions <code>complexity.functions</code> lists, never what is counted here. <code>functions_parsed</code> is retained for output compatibility and carries the same number.</p>
-<p><code>cbo_classes</code>, <code>high_coupling_classes</code>, and <code>medium_coupling_classes</code> count modules rather than classes in jscan, despite the names. See <a href="../../cli/analyze/#cbo">the analyze reference</a>.</p>
-<p><code>arch_enabled</code> is always <code>false</code> and <code>architecture_score</code> is always <code>0</code>, because architecture validation is not implemented in jscan. Ignore both.</p>
+<p><code>total_functions</code> is every function polyscan analyzed, in every language, which is what every complexity figure here and the health score describe. <code>--min-complexity</code> and the other report filters change which functions <code>complexity.functions</code> lists, never what is counted here. <code>functions_parsed</code> is retained for output compatibility and carries the same number.</p>
+<p>The <code>*_enabled</code> flags say which dimensions actually ran and therefore which the health score was computed over. A dimension can be off because <code>--select</code> excluded it or because no analyzed language has it: a pure Go project reports <code>dead_code_enabled: false</code> even under the default selection. See <a href="../health-score/#the-formula">the health score page</a>.</p>
+<p><code>cbo_classes</code>, <code>high_coupling_classes</code>, and <code>medium_coupling_classes</code> count modules rather than classes, despite the names. See <a href="../../cli/analyze/#cbo">the analyze reference</a>.</p>
+<p><code>arch_enabled</code> is always <code>false</code> and <code>architecture_score</code> is always <code>0</code>, because architecture validation is not implemented in polyscan. Ignore both.</p>
 <p><code>grade</code> is one of <code>A</code>, <code>B</code>, <code>C</code>, <code>D</code>, <code>F</code>, or <code>N/A</code>. The last appears only when the summary failed validation, in which case <code>health_score</code> is 0 as well.</p>
 <p><code>project_scale</code> is a size label derived from <code>analyzed_files</code>. See <a href="../health-score/#project-scale">Project scale</a> for the thresholds. <code>total_loc</code> is the number of lines the clone analysis read, so it is <code>0</code> when clone analysis is turned off.</p>
 <h2 id="complexity"><code>complexity</code><a class="headerlink" href="#complexity" title="Permanent link">&para;</a></h2>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.4.1"</span><span class="p">,</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1.0"</span><span class="p">,</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">"generated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-08-04T16:20:39+09:00"</span><span class="p">,</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">"functions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">],</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">"by_directory"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">],</span>
@@ -2032,26 +1951,28 @@
 </span></code></pre></div>
 <p>Each entry in <code>functions</code> looks like this:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"shippingCost"</span><span class="p">,</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">"file_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/home/you/project/src/cart.ts"</span><span class="p">,</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">"start_line"</span><span class="p">:</span><span class="w"> </span><span class="mi">25</span><span class="p">,</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">"start_column"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">"end_line"</span><span class="p">:</span><span class="w"> </span><span class="mi">35</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">"metrics"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">"nodes"</span><span class="p">:</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">"edges"</span><span class="p">:</span><span class="w"> </span><span class="mi">22</span><span class="p">,</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="nt">"nesting_depth"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="nt">"if_statements"</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span><span class="nt">"loop_statements"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">"exception_handlers"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">    </span><span class="nt">"switch_cases"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span><span class="nt">"risk_level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"low"</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="p">}</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"classify"</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">"file_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"main.go"</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">"language"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Go"</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">"start_line"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">"start_column"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">"end_line"</span><span class="p">:</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">"metrics"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">"nodes"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="nt">"edges"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="nt">"nesting_depth"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span><span class="nt">"if_statements"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">"loop_statements"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">    </span><span class="nt">"exception_handlers"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">    </span><span class="nt">"switch_cases"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">  </span><span class="nt">"risk_level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"low"</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>nodes</code> and <code>edges</code> describe the control flow graph the complexity was derived from. <code>nesting_depth</code> is the deepest chain of nested control structures in the function: an <code>else if</code> continues the chain its <code>if</code> opened rather than starting a deeper one, a <code>catch</code> clause stays at the level of its <code>try</code>, and nested functions are measured separately. <code>risk_level</code> is <code>low</code>, <code>medium</code>, or <code>high</code>, determined by your configured thresholds.</p>
-<p>File paths are reported exactly as jscan resolved them, which means they are absolute when you passed an absolute path and relative when you passed a relative one.</p>
+<p><code>language</code> names the language the function was analyzed as: <code>JavaScript</code>, <code>TypeScript</code>, <code>Go</code>, <code>Rust</code>, or <code>C++</code>.</p>
+<p>For JavaScript/TypeScript functions, <code>nodes</code> and <code>edges</code> describe the control flow graph the complexity was derived from, and <code>nesting_depth</code> is the deepest chain of nested control structures in the function: an <code>else if</code> continues the chain its <code>if</code> opened rather than starting a deeper one, a <code>catch</code> clause stays at the level of its <code>try</code>, and nested functions are measured separately. For the other languages the graph and statement-breakdown fields are <code>0</code>, because their complexity is counted from decision points rather than a control flow graph. <code>risk_level</code> is <code>low</code>, <code>medium</code>, or <code>high</code>.</p>
+<p>File paths for JavaScript/TypeScript are reported exactly as polyscan resolved them, which means they are absolute when you passed an absolute path and relative when you passed a relative one. Go, Rust and C++ paths are shortened to be relative to the working directory when the file lies under it.</p>
 <p><code>by_directory</code> groups the reported functions by the directory they live in, always present and empty when nothing was reported:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">"directory_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"src/checkout"</span><span class="p">,</span>
@@ -2063,7 +1984,7 @@
 </span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="nt">"max_nesting_depth"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>directory_path</code> is relative to the deepest directory that contains every analyzed file, so the shared prefix of your selection is stripped and files sitting directly in that directory are reported as <code>.</code>. The rows are ranked worst first: high-risk functions, then maximum complexity, then average complexity. They describe every analyzed function rather than the ones the report lists, so <code>min_complexity</code> does not shrink them along with <code>functions</code>.</p>
+<p><code>directory_path</code> is relative to the deepest directory that contains every analyzed file, so the shared prefix of your selection is stripped and files sitting directly in that directory are reported as <code>.</code>. The rows are ranked worst first: high-risk functions, then maximum complexity, then average complexity. They describe every analyzed function rather than the ones the report lists, so <code>--min-complexity</code> does not shrink them along with <code>functions</code>.</p>
 <p>The <code>summary</code> object describes the same complete population:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">"total_functions"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
@@ -2087,8 +2008,9 @@
 <p><code>complexity_distribution</code> counts the analyzed functions that have each cyclomatic complexity, keyed by that complexity. It is the one field that lets a consumer plot the distribution a filtered report was scored on. It is absent when no function was analyzed.</p>
 <p><code>total_files</code> counts the files the request covered and <code>skipped_files</code> those that could not be read or parsed. Their contents are absent from every figure above, so read <code>skipped_files</code> before trusting the aggregates.</p>
 <h2 id="dead_code"><code>dead_code</code><a class="headerlink" href="#dead_code" title="Permanent link">&para;</a></h2>
+<p><em>JavaScript/TypeScript only.</em></p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.4.1"</span><span class="p">,</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1.0"</span><span class="p">,</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">"generated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-08-04T16:20:39+09:00"</span><span class="p">,</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">"files"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">],</span>
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">"summary"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">},</span>
@@ -2137,7 +2059,7 @@
 </span></code></pre></div>
 <p>Findings inside a function appear under <code>functions[].findings</code>. Findings about the file itself, such as an unused export or an orphan file, appear under <code>file_level_findings</code>. A consumer that reads only one of the two will miss findings.</p>
 <p>Both arrays may be <code>null</code> rather than empty when a file has no findings of that kind, so guard for it.</p>
-<p>The <code>code</code> field is present in the schema but is not populated, because context extraction is controlled by <code>dead_code.show_context</code>, which jscan does not read yet.</p>
+<p>The <code>code</code> field is present in the schema but is not populated, because context extraction is controlled by <code>dead_code.show_context</code>, which polyscan does not read yet.</p>
 <p>The <code>reason</code> values are listed in <a href="../../cli/analyze/#dead-code">the analyze reference</a>. <code>severity</code> is <code>critical</code>, <code>warning</code>, or <code>info</code>.</p>
 <p>The <code>summary</code> object carries a <code>findings_by_reason</code> map, which is the most convenient thing to chart over time:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
@@ -2160,7 +2082,7 @@
 </span></code></pre></div>
 <h2 id="clone"><code>clone</code><a class="headerlink" href="#clone" title="Permanent link">&para;</a></h2>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.4.1"</span><span class="p">,</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1.0"</span><span class="p">,</span>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">"generated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-08-04T16:20:39+09:00"</span><span class="p">,</span>
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="nt">"duration_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="nt">"clone_pairs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">],</span>
@@ -2169,11 +2091,12 @@
 </span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">  </span><span class="nt">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 </span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>clone_pairs</code> lists every pair of similar fragments with its similarity value and clone type. <code>clone_groups</code> collects fragments that are mutually similar, which is the more useful view when the same code has been copied several times. An <code>error</code> field appears alongside <code>success</code> when detection failed.</p>
+<p><code>clone_pairs</code> lists every pair of similar fragments with its similarity value and clone type. <code>clone_groups</code> collects fragments that are mutually similar, which is the more useful view when the same code has been copied several times. Every fragment carries a <code>language</code> field, and fragments of different languages are never paired with each other. An <code>error</code> field appears alongside <code>success</code> when detection failed.</p>
 <p><code>statistics.total_fragments</code> and <code>statistics.total_clones</code> are the two numbers behind the duplication percentage in the summary, which is <code>total_clones ÷ total_fragments × 100</code>.</p>
 <h2 id="cbo"><code>cbo</code><a class="headerlink" href="#cbo" title="Permanent link">&para;</a></h2>
+<p><em>JavaScript/TypeScript only.</em></p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.4.1"</span><span class="p">,</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1.0"</span><span class="p">,</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">"generated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-08-04T16:20:39+09:00"</span><span class="p">,</span>
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nt">"classes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">],</span>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="nt">"summary"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">},</span>
@@ -2207,17 +2130,17 @@
 </span></code></pre></div>
 <p><code>CouplingCount</code> is the CBO value. <code>DependentClasses</code> names what this module depends on, and the four <code>*Dependencies</code> counters break the total down by how the dependency was formed.</p>
 <h2 id="deps"><code>deps</code><a class="headerlink" href="#deps" title="Permanent link">&para;</a></h2>
+<p><em>JavaScript/TypeScript only.</em></p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.4.1"</span><span class="p">,</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1.0"</span><span class="p">,</span>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">"generated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-08-04T16:20:46+09:00"</span><span class="p">,</span>
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">"graph"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">},</span>
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="nt">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
 </span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>graph</code> holds the nodes and edges. <code>analysis</code> holds the derived results, including <code>circular_dependencies</code>, <code>max_depth</code>, and <code>coupling_analysis</code>.</p>
-<p>The same structure is produced by <code>jscan deps --format json</code>, which is the better command to use when you want only this section.</p>
+<p><code>graph</code> holds the nodes and edges of the module import graph. <code>analysis</code> holds the derived results, including the circular dependencies, the maximum depth, the per-module Martin metrics, and the coupling analysis with its Zone of Pain and main-sequence module lists.</p>
 <h2 id="module_quality"><code>module_quality</code><a class="headerlink" href="#module_quality" title="Permanent link">&para;</a></h2>
-<p>One entry per file, joining what each analysis measured about it:</p>
+<p>One entry per file, joining what each analysis measured about it, across every language:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">{</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">"module_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cart"</span><span class="p">,</span>
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">"file_path"</span><span class="p">:</span><span class="w"> </span><span class="s2">"src/cart.ts"</span><span class="p">,</span>
@@ -2231,37 +2154,35 @@
 </span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">  </span><span class="nt">"dead_code_block_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
 </span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>module_name</code> comes from dependency analysis and is omitted when that analysis did not run. The complexity columns come from complexity analysis and the dead-code columns from dead code detection, so a run that skipped one of them leaves those columns at zero rather than dropping the file.</p>
-<p>Unlike the rest of the report, these counts are taken before the presentation filters: <code>min_complexity</code> and <code>min_severity</code> change what <code>complexity.functions</code> and <code>dead_code.files</code> show without changing what a module is measured as carrying. The entries are ranked worst first: high-risk functions, then maximum complexity, then average complexity, then dead-code findings.</p>
-<h2 id="jscan-check-json"><code>jscan check --json</code><a class="headerlink" href="#jscan-check-json" title="Permanent link">&para;</a></h2>
-<p>The check command emits a different and much smaller document. It is documented on <a href="../../cli/check/#json-output">the check page</a>.</p>
+<p><code>module_name</code> comes from dependency analysis and is omitted when that analysis did not run or the file is not JavaScript/TypeScript. The complexity columns come from complexity analysis and the dead-code columns from dead code detection, so a run that skipped one of them leaves those columns at zero rather than dropping the file.</p>
+<p>Unlike the rest of the report, these counts are taken before the presentation filters: <code>--min-complexity</code> and <code>min_severity</code> change what <code>complexity.functions</code> and <code>dead_code.files</code> show without changing what a module is measured as carrying. The entries are ranked worst first: high-risk functions, then maximum complexity, then average complexity, then dead-code findings.</p>
 <h2 id="recipes">Recipes<a class="headerlink" href="#recipes" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Just the score, for a dashboard</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.summary.health_score'</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.summary.health_score'</span>
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
 </span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># Fail a script below grade B</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="nv">score</span><span class="o">=</span><span class="k">$(</span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.summary.health_score'</span><span class="k">)</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="nv">score</span><span class="o">=</span><span class="k">$(</span>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.summary.health_score'</span><span class="k">)</span>
 </span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="o">[</span><span class="w"> </span><span class="s2">"</span><span class="nv">$score</span><span class="s2">"</span><span class="w"> </span>-ge<span class="w"> </span><span class="m">75</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Score </span><span class="nv">$score</span><span class="s2"> is below 75"</span><span class="p">;</span><span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span><span class="p">;</span><span class="w"> </span><span class="o">}</span>
 </span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="c1"># The ten most complex functions as a table</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="c1"># The ten most complex functions as a table, with their language</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.complexity.functions[:10][]</span>
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="s1">           | [.metrics.complexity, .name, "\(.file_path):\(.start_line)"]</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="s1">           | [.metrics.complexity, .language, .name, "\(.file_path):\(.start_line)"]</span>
 </span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="s1">           | @tsv'</span>
 </span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
 </span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="c1"># Every critical dead code finding, from both places they can appear</span>
-</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>deadcode<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>deadcode<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.dead_code.files[]</span>
 </span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="s1">           | (.functions // [] | .[].findings // []), (.file_level_findings // [])</span>
 </span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="s1">           | .[] | select(.severity == "critical")</span>
 </span><span id="__span-15-19"><a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="s1">           | "\(.location.file_path):\(.location.start_line) \(.reason)"'</span>
 </span><span id="__span-15-20"><a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>
 </span><span id="__span-15-21"><a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="c1"># Count findings by reason</span>
-</span><span id="__span-15-22"><a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>deadcode<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-22"><a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>deadcode<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-15-23"><a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.dead_code.summary.findings_by_reason'</span>
 </span></code></pre></div>
 <h2 id="stability">Stability<a class="headerlink" href="#stability" title="Permanent link">&para;</a></h2>
-<p>The JSON shape is not covered by a stability guarantee yet. Fields are more likely to be added than removed, but treat the structure as subject to change between releases, and pin the jscan version in any pipeline that parses it.</p>
+<p>The JSON shape is not covered by a stability guarantee yet. Fields are more likely to be added than removed, but treat the structure as subject to change between releases, and pin the polyscan version in any pipeline that parses it.</p>
 
 
 
@@ -2331,7 +2252,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/cli/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/cli/">
       
       
         <link rel="prev" href="../guides/dependency-graph/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>CLI Reference - jscan</title>
+        <title>CLI Reference - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -796,12 +826,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -874,90 +898,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1525,32 +1465,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#which-files-jscan-reads" class="md-nav__link">
+  <a href="#which-files-polyscan-reads" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Which files jscan reads
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#shell-completion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Shell completion
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration-file-discovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration file discovery
+        Which files polyscan reads
       
     </span>
   </a>
@@ -1631,7 +1549,7 @@
 
 
 <h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
-<p>jscan exposes five commands. Every command accepts one or more paths, and every path may be a file or a directory.</p>
+<p>polyscan exposes two commands. <code>analyze</code> accepts one or more paths, and every path may be a file or a directory.</p>
 <table>
 <thead>
 <tr>
@@ -1647,68 +1565,66 @@
 <td>No</td>
 </tr>
 <tr>
-<td><a href="check/"><code>check</code></a></td>
-<td>Enforce quality thresholds for continuous integration</td>
-<td>Yes, exit code 1 or 2</td>
-</tr>
-<tr>
-<td><a href="deps/"><code>deps</code></a></td>
-<td>Inspect and export the module dependency graph</td>
-<td>No</td>
-</tr>
-<tr>
-<td><a href="init/"><code>init</code></a></td>
-<td>Write a configuration file</td>
-<td>No</td>
-</tr>
-<tr>
 <td><a href="version/"><code>version</code></a></td>
 <td>Print version information</td>
 <td>No</td>
 </tr>
 </tbody>
 </table>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>--help
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">jscan is a high-performance static analyzer for JavaScript and TypeScript code.</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">It provides complexity analysis, dead code detection, and more.</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>--help
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="go">polyscan is a static analyzer that measures code quality across languages.</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="go">It currently analyzes cyclomatic complexity and code clones for Go, Rust and C++.</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="go">Usage:</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="go">  jscan [command]</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="go">  polyscan [command]</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="go">Available Commands:</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">  analyze     Analyze JavaScript/TypeScript files</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">  check       Fast quality check for CI/CD pipelines</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="go">  completion  Generate the autocompletion script for the specified shell</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">  deps        Analyze and visualize module dependencies</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="go">  help        Help about any command</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="go">  init        Generate a jscan configuration file</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="go">  version     Print version information</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="go">Flags:</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="go">  -h, --help      help for jscan</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="go">  -v, --version   version for jscan</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="go">Use "jscan [command] --help" for more information about a command.</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="go">  analyze     Analyze source files</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="go">  completion  Generate the autocompletion script for the specified shell</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="go">  help        Help about any command</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="go">  version     Print version information</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="go">Flags:</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="go">  -h, --help      help for polyscan</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="go">  -v, --version   version for polyscan</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="go">Use "polyscan [command] --help" for more information about a command.</span>
 </span></code></pre></div>
-<h2 id="which-files-jscan-reads">Which files jscan reads<a class="headerlink" href="#which-files-jscan-reads" title="Permanent link">&para;</a></h2>
-<p>Every command that takes a path walks the directory tree and collects files with these extensions:</p>
-<p><code>.js</code> &nbsp; <code>.jsx</code> &nbsp; <code>.mjs</code> &nbsp; <code>.cjs</code> &nbsp; <code>.ts</code> &nbsp; <code>.tsx</code> &nbsp; <code>.mts</code> &nbsp; <code>.cts</code></p>
-<p>The walk always recurses into subdirectories and never follows symbolic links. Directories and filename patterns listed under <code>analysis.exclude_patterns</code> in the configuration file are skipped. That list defaults to dependency directories such as <code>node_modules</code>, build outputs such as <code>dist</code> and <code>.next</code>, cache directories, and minified or bundled files. The full default list appears in the <a href="../configuration/reference/#analysisexclude_patterns">configuration reference</a>.</p>
-<p>If no matching file is found, the command stops with the error <code>no JavaScript/TypeScript files found</code>.</p>
-<h2 id="shell-completion">Shell completion<a class="headerlink" href="#shell-completion" title="Permanent link">&para;</a></h2>
-<p>Cobra, the command line framework jscan is built on, generates completion scripts:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># bash</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>jscan<span class="w"> </span>completion<span class="w"> </span>bash<span class="w"> </span>&gt;<span class="w"> </span>/etc/bash_completion.d/jscan
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># zsh</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>jscan<span class="w"> </span>completion<span class="w"> </span>zsh<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">fpath</span><span class="p">[1]</span><span class="si">}</span><span class="s2">/_jscan"</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># fish</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>jscan<span class="w"> </span>completion<span class="w"> </span>fish<span class="w"> </span>&gt;<span class="w"> </span>~/.config/fish/completions/jscan.fish
-</span></code></pre></div>
-<p>Run <code>jscan completion --help</code> for the PowerShell instructions and for notes on loading the script for the current session only.</p>
-<h2 id="configuration-file-discovery">Configuration file discovery<a class="headerlink" href="#configuration-file-discovery" title="Permanent link">&para;</a></h2>
-<p>Commands other than <code>version</code> look for a configuration file before they run. When you do not pass <code>--config</code>, jscan searches upward from the analyzed path toward the filesystem root, then falls back to several well-known locations. The <a href="../configuration/#how-jscan-finds-your-config-file">configuration guide</a> documents the search order and the accepted filenames.</p>
+<p>To fail a pipeline on the results, gate on the JSON output — there is no separate check command. The <a href="../integrations/ci-cd/">CI/CD page</a> shows how. If you are looking for jscan's <code>check</code>, <code>deps</code> or <code>init</code> commands, see <a href="../getting-started/migrating-from-jscan/">migrating from jscan</a>.</p>
+<h2 id="which-files-polyscan-reads">Which files polyscan reads<a class="headerlink" href="#which-files-polyscan-reads" title="Permanent link">&para;</a></h2>
+<p><code>analyze</code> walks the directory tree and collects files by extension, dispatching each to its language:</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Extensions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JavaScript</td>
+<td><code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code></td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td><code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, <code>.cts</code></td>
+</tr>
+<tr>
+<td>Go</td>
+<td><code>.go</code></td>
+</tr>
+<tr>
+<td>Rust</td>
+<td><code>.rs</code></td>
+</tr>
+<tr>
+<td>C++</td>
+<td><code>.cpp</code>, <code>.cc</code>, <code>.cxx</code>, <code>.hpp</code>, <code>.hh</code>, <code>.hxx</code>, <code>.h</code>, <code>.ipp</code>, <code>.inl</code></td>
+</tr>
+</tbody>
+</table>
+<p>Header files, <code>.h</code> included, are analyzed as C++.</p>
+<p>The JavaScript/TypeScript collection additionally honors the project's <a href="../configuration/">configuration file</a> and the <code>.gitignore</code> at the root of the analyzed path, exactly as jscan did. The other languages are collected by extension alone.</p>
 
 
 
@@ -1778,7 +1694,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/contributing/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/contributing/">
       
       
         <link rel="prev" href="../integrations/agent-skills/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Contributing - jscan</title>
+        <title>Contributing - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -794,12 +824,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -871,90 +895,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1800,15 +1740,15 @@
 
 
 <h1 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h1>
-<p>jscan lives in the <a href="https://github.com/ludo-technologies/polyscan">polyscan monorepo</a> under <code>jscan/</code>. The standalone <code>jscan</code> repository was retired and its history moved here.</p>
+<p>polyscan lives in the <a href="https://github.com/ludo-technologies/polyscan">polyscan monorepo</a>, in the <code>polyscan/</code> module. jscan, the JavaScript/TypeScript analyzer it grew out of, merged into that module and survives as its <code>internal/js</code> backend.</p>
 <h2 id="set-up">Set up<a class="headerlink" href="#set-up" title="Permanent link">&para;</a></h2>
-<p>You need Go 1.24.6 or later, a C compiler, and <code>golangci-lint</code>. The C compiler is required because jscan parses with tree-sitter, which is a C library reached through cgo.</p>
+<p>You need Go 1.24.6 or later and a C compiler. The C compiler is required because polyscan parses with tree-sitter, which is a C library reached through cgo.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ludo-technologies/polyscan.git
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>polyscan/jscan
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>polyscan/polyscan
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>make<span class="w"> </span>build
 </span></code></pre></div>
 <h2 id="everyday-commands">Everyday commands<a class="headerlink" href="#everyday-commands" title="Permanent link">&para;</a></h2>
-<p>Run these from the <code>jscan/</code> directory.</p>
+<p>Run these from the <code>polyscan/</code> directory.</p>
 <table>
 <thead>
 <tr>
@@ -1819,66 +1759,46 @@
 <tbody>
 <tr>
 <td><code>make build</code></td>
-<td>Build the <code>jscan</code> binary</td>
+<td>Build the <code>polyscan</code> binary</td>
 </tr>
 <tr>
 <td><code>make test</code></td>
-<td>Run the full test suite</td>
-</tr>
-<tr>
-<td><code>make test-short</code></td>
-<td>Skip the long-running tests</td>
+<td>Run the test suite with the race detector</td>
 </tr>
 <tr>
 <td><code>make lint</code></td>
-<td>Run <code>golangci-lint</code></td>
+<td>Run <code>go vet</code> and check <code>gofmt</code></td>
 </tr>
 <tr>
 <td><code>make fmt</code></td>
 <td>Format the Go sources</td>
 </tr>
-<tr>
-<td><code>make coverage</code></td>
-<td>Write an HTML coverage report</td>
-</tr>
-<tr>
-<td><code>make bench</code></td>
-<td>Run benchmarks with allocation statistics</td>
-</tr>
-<tr>
-<td><code>make run</code></td>
-<td>Build and run against the bundled fixtures</td>
-</tr>
-<tr>
-<td><code>make tidy</code></td>
-<td>Tidy <code>go.mod</code> and <code>go.sum</code></td>
-</tr>
 </tbody>
 </table>
 <p>Run <code>make lint</code> and <code>make test</code> before opening a pull request. Continuous integration runs both.</p>
 <div class="admonition note">
-<p class="admonition-title"><code>make build-all</code> does not work for every target</p>
-<p>The target sets <code>GOOS</code> and <code>GOARCH</code> for five platforms, but tree-sitter needs cgo, so cross-compiling only succeeds for the platform you are already on. The release pipeline builds each target on its own runner for this reason. Use it to check that a build works locally, not to produce release artifacts.</p>
+<p class="admonition-title">Cross-compilation does not work</p>
+<p>tree-sitter needs cgo, so cross-compiling by setting <code>GOOS</code> only succeeds for the platform you are already on. The release pipeline builds each target on its own runner for this reason.</p>
 </div>
 <h2 id="where-the-code-lives">Where the code lives<a class="headerlink" href="#where-the-code-lives" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>jscan/
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── cmd/jscan/     CLI entry point, one file per command
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>├── app/           Application use cases
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>├── service/       Orchestration, formatting, output
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>├── domain/        Models and service interfaces, depends on nothing
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>├── internal/
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│   ├── parser/    tree-sitter integration
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│   ├── analyzer/  The analysis engines
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│   ├── config/    Configuration loading and validation
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│   ├── reporter/  Report formatting
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>polyscan/
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── cmd/polyscan/  CLI entry point
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>├── cmd/jscan/     The retired jscan CLI, kept buildable from the moved code
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>├── internal/
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│   ├── analysis/  File collection and dispatch for the generic engine
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│   ├── engine/    The declarative language engine (grammar + queries)
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│   ├── lang/      Language definitions: golang, rust, cpp
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│   ├── clone/     Clone detection over the generic engine
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│   ├── js/        The JavaScript/TypeScript backend, formerly jscan
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│   ├── report/    Combining every language into one report
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│   └── version/   Version information
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>├── npm/           The npm package wrapper
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>└── testdata/      Test fixtures
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>└── npm/           The npm package wrapper
 </span></code></pre></div>
-<p>The layering follows Clean Architecture, with every layer depending on <code>domain</code> and <code>domain</code> depending on nothing. Command handlers may call either a use case in <code>app/</code> or a service directly, whichever keeps the concurrency simpler. <a href="https://github.com/ludo-technologies/polyscan/blob/main/jscan/docs/ARCHITECTURE.md"><code>jscan/docs/ARCHITECTURE.md</code></a> describes each layer and the reasoning behind the main design decisions.</p>
+<p>Inside <code>internal/js</code> the layering follows Clean Architecture, with every layer depending on <code>domain</code> and <code>domain</code> depending on nothing. <a href="https://github.com/ludo-technologies/polyscan/blob/main/jscan/docs/ARCHITECTURE.md"><code>jscan/docs/ARCHITECTURE.md</code></a> describes each layer and the reasoning behind the main design decisions, from before the move.</p>
+<p>Adding a language to the generic engine is declarative: a tree-sitter grammar and two queries. <code>internal/lang/golang/golang.go</code> is the reference implementation, and the polyscan <a href="https://github.com/ludo-technologies/polyscan/blob/main/polyscan/README.md#adding-a-language">README</a> documents the query contract.</p>
 <h2 id="the-shared-core">The shared core<a class="headerlink" href="#the-shared-core" title="Permanent link">&para;</a></h2>
-<p>Algorithms that are not specific to a language live in the <code>core/</code> module at the repository root, which both jscan and pyscn depend on as a published Go module. That covers APTED tree edit distance, control flow graph structures and their analyses, clone grouping, graph algorithms including Tarjan's, MinHash and locality-sensitive hashing, and the health score calculation.</p>
-<p>This matters when you plan a change. A fix to a shared algorithm belongs in <code>core/</code> and affects both analyzers, so it needs a <code>core/vX.Y.Z</code> tag before the consuming change can reference it. A fix to JavaScript-specific behavior, such as the control flow graph builder or the module resolver, belongs in <code>jscan/</code>.</p>
+<p>Algorithms that are not specific to a language live in the <code>core/</code> module at the repository root, which both polyscan and pyscn depend on as a published Go module. That covers APTED tree edit distance, control flow graph structures and their analyses, clone grouping, graph algorithms including Tarjan's, MinHash and locality-sensitive hashing, and the health score calculation.</p>
+<p>This matters when you plan a change. A fix to a shared algorithm belongs in <code>core/</code> and affects both analyzers, so it needs a <code>core/vX.Y.Z</code> tag before the consuming change can reference it — the <code>polyscan</code> module depends on the published tag rather than a <code>replace</code> directive, so that <code>go install</code> works. A fix to language-specific behavior, such as the JavaScript module resolver or a tree-sitter query, belongs in <code>polyscan/</code>.</p>
 <p>If you are unsure which side a change belongs on, say so in the issue before writing it.</p>
 <h2 id="commits">Commits<a class="headerlink" href="#commits" title="Permanent link">&para;</a></h2>
 <p>The project uses <a href="https://www.conventionalcommits.org/">Conventional Commits</a>:</p>
@@ -1901,7 +1821,7 @@
 <p>Every page has an edit link in its top right corner that takes you to the source file on GitHub.</p>
 <p>One request specific to this site. Much of what is documented here was verified by running the binary rather than by reading the code, because the two disagreed in several places. If you document a behavior, run it first, and paste the output you actually got.</p>
 <h2 id="reporting-bugs">Reporting bugs<a class="headerlink" href="#reporting-bugs" title="Permanent link">&para;</a></h2>
-<p>Open an issue in the <a href="https://github.com/ludo-technologies/polyscan/issues">polyscan repository</a>. Include the output of <code>jscan version</code>, the exact command, and the smallest input that reproduces the problem.</p>
+<p>Open an issue in the <a href="https://github.com/ludo-technologies/polyscan/issues">polyscan repository</a>. Include the output of <code>polyscan version</code>, the exact command, and the smallest input that reproduces the problem.</p>
 <h2 id="code-of-conduct">Code of Conduct<a class="headerlink" href="#code-of-conduct" title="Permanent link">&para;</a></h2>
 <p>Participation is governed by the <a href="https://github.com/ludo-technologies/polyscan/blob/main/CODE_OF_CONDUCT.md">Code of Conduct</a>.</p>
 
@@ -1973,7 +1893,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/configuration/reference/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/configuration/reference/">
       
       
         <link rel="prev" href="../">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Reference - jscan</title>
+        <title>Reference - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -794,12 +824,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -871,90 +895,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -2221,12 +2161,12 @@
 
 
 <h1 id="configuration-reference">Configuration Reference<a class="headerlink" href="#configuration-reference" title="Permanent link">&para;</a></h1>
-<p>Every key jscan accepts, with its type, its default, and whether it currently changes anything.</p>
-<p>Keys marked <span class="twemoji" title="Applied"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> affect the analysis. Keys marked <span class="twemoji" title="Not applied"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> are parsed and validated, then ignored, and jscan warns on stderr when your file sets one. The <a href="../#which-keys-take-effect-today">configuration guide</a> explains why that distinction exists.</p>
+<p>Every key polyscan accepts, with its type, its default, and whether it currently changes anything. The configuration file tunes the JavaScript/TypeScript analysis only; Go, Rust and C++ run with built-in defaults.</p>
+<p>Keys marked <span class="twemoji" title="Applied"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> affect the analysis. Keys marked <span class="twemoji" title="Not applied"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> are parsed and validated, then ignored, and polyscan warns on stderr when your file sets one. The <a href="../#which-keys-take-effect-today">configuration guide</a> explains why that distinction exists.</p>
 <p>All examples use JSON. YAML and TOML files accept the same keys with the same names.</p>
 <hr />
 <h2 id="complexity"><code>complexity</code><a class="headerlink" href="#complexity" title="Permanent link">&para;</a></h2>
-<p>Controls cyclomatic complexity analysis.</p>
+<p>Controls cyclomatic complexity analysis for JavaScript/TypeScript functions.</p>
 <h3 id="complexitylow_threshold"><code>complexity.low_threshold</code><a class="headerlink" href="#complexitylow_threshold" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; integer &nbsp;&middot;&nbsp; default <code>9</code></p>
 <p>Upper bound of the low risk band, inclusive. A function at or below this value is reported as low risk.</p>
@@ -2235,18 +2175,17 @@
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; integer &nbsp;&middot;&nbsp; default <code>19</code></p>
 <p>Upper bound of the medium risk band, inclusive. Functions above it are high risk.</p>
 <p>Must be greater than <code>low_threshold</code>.</p>
-<h3 id="complexitymax_complexity"><code>complexity.max_complexity</code><a class="headerlink" href="#complexitymax_complexity" title="Permanent link">&para;</a></h3>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied by <code>check</code> only</strong> &nbsp;&middot;&nbsp; integer &nbsp;&middot;&nbsp; default <code>0</code></p>
-<p>Supplies the default for <code>jscan check --max-complexity</code>. It is used only when the flag is absent from the command line and this value is greater than 0. <code>jscan analyze</code> ignores it.</p>
-<p>Must be either 0, meaning no limit, or greater than <code>medium_threshold</code>.</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">"low_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">"medium_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">"max_complexity"</span><span class="p">:</span><span class="w"> </span><span class="mi">25</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">}</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">"medium_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">}</span>
 </span></code></pre></div>
+<h3 id="complexitymax_complexity"><code>complexity.max_complexity</code><a class="headerlink" href="#complexitymax_complexity" title="Permanent link">&para;</a></h3>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; integer &nbsp;&middot;&nbsp; default <code>0</code></p>
+<p>Supplied the default threshold for jscan's retired <code>check</code> command. It is accepted without a warning for backward compatibility, but nothing reads it now. To gate a pipeline on complexity, use the JSON output as shown on the <a href="../../integrations/ci-cd/">CI/CD page</a>.</p>
+<p>Must be either 0, meaning no limit, or greater than <code>medium_threshold</code>.</p>
 <h3 id="complexityenabled"><code>complexity.enabled</code><a class="headerlink" href="#complexityenabled" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>true</code></p>
 <p>Intended to switch complexity analysis off. No command reads it. Use <code>--select</code> to choose analyses instead.</p>
@@ -2257,8 +2196,8 @@
 <hr />
 <h2 id="output"><code>output</code><a class="headerlink" href="#output" title="Permanent link">&para;</a></h2>
 <h3 id="outputmin_complexity"><code>output.min_complexity</code><a class="headerlink" href="#outputmin_complexity" title="Permanent link">&para;</a></h3>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied by <code>analyze</code> only</strong> &nbsp;&middot;&nbsp; integer &nbsp;&middot;&nbsp; default <code>1</code></p>
-<p>Functions below this complexity are excluded from the report. The default of 1 keeps every function, since no function scores lower than 1.</p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; integer &nbsp;&middot;&nbsp; default <code>1</code></p>
+<p>JavaScript/TypeScript functions below this complexity are excluded from the report. The default of 1 keeps every function, since no function scores lower than 1. The <code>--min-complexity</code> flag applies the same filter to every language on the command line.</p>
 <p>Must be at least 1.</p>
 <p>Raising it is the most effective way to shorten the report on a large codebase:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
@@ -2299,12 +2238,12 @@
 </tbody>
 </table>
 <p>Functions the criterion cannot separate are ordered by source location, so the report is stable across runs. The text report names the criterion in its <code>Functions (sorted by ...)</code> heading.</p>
-<p><code>jscan check</code> reads this key too, where it decides the order the complexity violations are listed in. It does not change whether the check passes.</p>
 <h3 id="outputdirectory"><code>output.directory</code><a class="headerlink" href="#outputdirectory" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default <code>""</code></p>
-<p>Use <code>jscan analyze --output &lt;path&gt;</code> to choose where the HTML report goes.</p>
+<p>Use <code>polyscan analyze --output &lt;path&gt;</code> to choose where the HTML report goes.</p>
 <hr />
 <h2 id="analysis"><code>analysis</code><a class="headerlink" href="#analysis" title="Permanent link">&para;</a></h2>
+<p>These keys select which JavaScript/TypeScript files are analyzed. Go, Rust and C++ files are collected by extension alone and are not affected by them.</p>
 <h3 id="analysisexclude_patterns"><code>analysis.exclude_patterns</code><a class="headerlink" href="#analysisexclude_patterns" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; array of strings</p>
 <p>Directory names and filename patterns to skip. A value here <strong>replaces</strong> the default list rather than extending it.</p>
@@ -2345,16 +2284,16 @@
 <p>A pattern is matched against whole names, never against part of one, and matching ignores case, so <code>*.min.js</code> also skips <code>Vendor.MIN.JS</code>.</p>
 <p>A pattern <strong>without a slash</strong> is compared to the file's own name and to each directory name above it. <code>dist</code> skips every directory named <code>dist</code> at any depth along with everything inside it, and it leaves <code>src/utils/distance.ts</code> alone, because no name in that path is exactly <code>dist</code>. Glob characters apply to a single name, so <code>*.min.js</code> matches file names and <code>__*__</code> matches a directory named <code>__tests__</code>.</p>
 <p>A pattern <strong>containing a slash</strong> is compared to the path itself, where <code>**</code> stands for any number of directory levels. <code>src/generated</code> skips that directory and everything under it. <code>**/dist/**</code> skips every file below any directory named <code>dist</code>.</p>
-<p>Patterns are matched relative to the path you pass to jscan, so the directories above it are never considered. A project stored at <code>/home/me/build/myapp</code> is analyzed normally even though <code>build</code> is on the default list. A file you name directly on the command line is matched on its own name alone, so <code>jscan analyze src/dist/bundle.js</code> analyzes that file.</p>
+<p>Patterns are matched relative to the path you pass to polyscan, so the directories above it are never considered. A project stored at <code>/home/me/build/myapp</code> is analyzed normally even though <code>build</code> is on the default list. A file you name directly on the command line is matched on its own name alone, so <code>polyscan analyze src/dist/bundle.js</code> analyzes that file.</p>
 <div class="admonition note">
-<p class="admonition-title">Behavior changed in 0.10.0</p>
-<p>Earlier versions also skipped a file when a pattern appeared anywhere in its path as a plain substring. The default entries <code>out</code> and <code>dist</code> therefore removed <code>src/routes/api.ts</code>, <code>src/layout/Header.tsx</code>, <code>src/checkout/Cart.ts</code>, and <code>src/utils/distance.ts</code> without reporting anything. If you worked around that by trimming the short entries out of your <code>exclude_patterns</code>, you can now go back to the default list.</p>
+<p class="admonition-title">Behavior changed in jscan 0.10.0</p>
+<p>Earlier jscan versions also skipped a file when a pattern appeared anywhere in its path as a plain substring. The default entries <code>out</code> and <code>dist</code> therefore removed <code>src/routes/api.ts</code>, <code>src/layout/Header.tsx</code>, <code>src/checkout/Cart.ts</code>, and <code>src/utils/distance.ts</code> without reporting anything. If you worked around that by trimming the short entries out of your <code>exclude_patterns</code>, you can now go back to the default list.</p>
 </div>
-<p>Because your list replaces the default, start from the list above and append to it rather than writing a short one from scratch. Omitting <code>node_modules</code> in particular will make jscan analyze your entire dependency tree.</p>
+<p>Because your list replaces the default, start from the list above and append to it rather than writing a short one from scratch. Omitting <code>node_modules</code> in particular will make polyscan analyze your entire dependency tree.</p>
 <h3 id="analysisinclude_patterns"><code>analysis.include_patterns</code><a class="headerlink" href="#analysisinclude_patterns" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; array of strings</p>
-<p>Which files to analyze, of those jscan can parse. A file is analyzed when it matches at least one pattern here and no pattern in <code>exclude_patterns</code>.</p>
-<p>The default is every extension jscan understands:</p>
+<p>Which files to analyze, of those the JavaScript/TypeScript analysis can parse. A file is analyzed when it matches at least one pattern here and no pattern in <code>exclude_patterns</code>.</p>
+<p>The default is every extension the JavaScript/TypeScript analysis understands:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">"include_patterns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -2370,12 +2309,12 @@
 </span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span><span class="p">}</span>
 </span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>Patterns use the same matching rules as <a href="#analysisexclude_patterns"><code>exclude_patterns</code></a>, including the part that catches people out: they are matched relative to the path you pass on the command line, so <code>src/**/*.ts</code> matches nothing when you run <code>jscan analyze src/</code>. Prefer a leading <code>**/</code> unless you mean to depend on where the command is run from.</p>
-<p>This key cannot widen the analysis. The analyzed extensions are fixed at <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>, so adding <code>**/*.vue</code> changes nothing. It also must not be an empty array, which would select no files at all.</p>
+<p>Patterns use the same matching rules as <a href="#analysisexclude_patterns"><code>exclude_patterns</code></a>, including the part that catches people out: they are matched relative to the path you pass on the command line, so <code>src/**/*.ts</code> matches nothing when you run <code>polyscan analyze src/</code>. Prefer a leading <code>**/</code> unless you mean to depend on where the command is run from.</p>
+<p>This key cannot widen the analysis. The JavaScript/TypeScript extensions are fixed at <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>, so adding <code>**/*.vue</code> changes nothing, and Go, Rust and C++ files are collected independently of this list.</p>
 <p>A file you name directly on the command line is analyzed whether or not it matches, on the grounds that naming it is a clearer statement of intent than the config file is.</p>
 <h3 id="analysisrecursive"><code>analysis.recursive</code><a class="headerlink" href="#analysisrecursive" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>true</code></p>
-<p>Set it to <code>false</code> to analyze only the files directly inside each directory you pass, without descending into subdirectories. Files named directly on the command line are unaffected.</p>
+<p>Set it to <code>false</code> to analyze only the JavaScript/TypeScript files directly inside each directory you pass, without descending into subdirectories. Files named directly on the command line are unaffected.</p>
 <h3 id="analysisfollow_symlinks"><code>analysis.follow_symlinks</code><a class="headerlink" href="#analysisfollow_symlinks" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied</strong> &nbsp;&middot;&nbsp; boolean &nbsp;&middot;&nbsp; default <code>false</code></p>
 <p>Symbolic links are never followed.</p>
@@ -2386,11 +2325,9 @@
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default <code>"info"</code></p>
 <p>Findings below this severity are dropped before anything is reported or counted. One of <code>critical</code>, <code>warning</code>, or <code>info</code>.</p>
 <p>The default of <code>info</code> keeps every finding, which is what the health score is calibrated against. Raising it to <code>warning</code> also raises the score, so compare scores only between runs that used the same floor.</p>
-<p>Raising it changes <code>jscan check</code> as well: a run whose only findings fall below the floor passes.</p>
 <h3 id="dead_codesort_by"><code>dead_code.sort_by</code><a class="headerlink" href="#dead_codesort_by" title="Permanent link">&para;</a></h3>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8z"/></svg></span> <strong>Applied</strong> &nbsp;&middot;&nbsp; string &nbsp;&middot;&nbsp; default <code>"severity"</code></p>
 <p>Order of the files in the dead code report. One of <code>severity</code>, <code>line</code>, <code>file</code>, or <code>function</code>. Files that the criterion cannot separate are ordered by path, so the report is stable across runs.</p>
-<p><code>jscan check</code> passes this key to the analysis as well, but reports only finding counts, which no ordering can change.</p>
 <h3 id="not-applied">Not applied<a class="headerlink" href="#not-applied" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -2458,10 +2395,10 @@
 </tr>
 </tbody>
 </table>
-<p>To exclude dead code from a gate, use <code>jscan check --allow-dead-code</code> rather than <code>dead_code.enabled</code>.</p>
+<p>To leave dead code out of a run, use <code>--select</code> without <code>deadcode</code>.</p>
 <hr />
 <h2 id="clones"><code>clones</code><a class="headerlink" href="#clones" title="Permanent link">&para;</a></h2>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied.</strong> Clone detection runs with the built-in defaults, which are:</p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 13H7v-2h10m-5-9A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg></span> <strong>Not applied.</strong> Clone detection runs with the built-in defaults, which for JavaScript/TypeScript are:</p>
 <table>
 <thead>
 <tr>
@@ -2504,7 +2441,7 @@
 </tr>
 </tbody>
 </table>
-<p>Type 3 is excluded from the enabled set because near-miss matches produce too many false positives for everyday use.</p>
+<p>Type 3 is excluded from the enabled set because near-miss matches produce too many false positives for everyday use. Go, Rust and C++ clone detection uses the same fragment size and thresholds but reports Type 1, Type 2 and Type 3, with no Type 4; see the <a href="../../cli/analyze/#clone">analyze reference</a>.</p>
 <hr />
 <h2 id="reserved-groups">Reserved groups<a class="headerlink" href="#reserved-groups" title="Permanent link">&para;</a></h2>
 <p>These four groups exist in the schema for planned features. All of them default to disabled and none of them is read by any command today.</p>
@@ -2555,11 +2492,11 @@
 </tr>
 <tr>
 <td><code>XDG_CONFIG_HOME</code></td>
-<td>Changes where jscan looks for a user-level <code>jscan/</code> config directory</td>
+<td>Changes where polyscan looks for a user-level <code>jscan/</code> config directory</td>
 </tr>
 </tbody>
 </table>
-<p>The two config variables are checked only after every directory in the search has been tried, so a <code>jscan.config.json</code> anywhere above your source will take priority over them. See <a href="../#how-jscan-finds-your-config-file">config discovery</a> for the full order.</p>
+<p>The two config variables are checked only after every directory in the search has been tried, so a <code>jscan.config.json</code> anywhere above your source will take priority over them. See <a href="../#how-polyscan-finds-your-config-file">config discovery</a> for the full order.</p>
 
 
 
@@ -2629,7 +2566,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

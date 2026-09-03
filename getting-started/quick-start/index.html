@@ -6,19 +6,19 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/getting-started/quick-start/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/getting-started/quick-start/">
       
       
         <link rel="prev" href="../installation/">
       
       
-        <link rel="next" href="../../guides/typescript-projects/">
+        <link rel="next" href="../migrating-from-jscan/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Quick Start - jscan</title>
+        <title>Quick Start - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -511,6 +511,8 @@
   
     
     
+      
+        
       
         
       
@@ -692,10 +694,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-add-a-quality-gate" class="md-nav__link">
+  <a href="#4-gate-a-pipeline-on-the-result" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Add a quality gate
+        4. Gate a pipeline on the result
       
     </span>
   </a>
@@ -703,21 +705,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-create-a-configuration-file" class="md-nav__link">
+  <a href="#5-configure-the-javascripttypescript-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Create a configuration file
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-look-at-the-dependency-graph" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Look at the dependency graph
+        5. Configure the JavaScript/TypeScript analysis
       
     </span>
   </a>
@@ -739,6 +730,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -921,12 +940,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -998,90 +1011,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1682,10 +1611,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-add-a-quality-gate" class="md-nav__link">
+  <a href="#4-gate-a-pipeline-on-the-result" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Add a quality gate
+        4. Gate a pipeline on the result
       
     </span>
   </a>
@@ -1693,21 +1622,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-create-a-configuration-file" class="md-nav__link">
+  <a href="#5-configure-the-javascripttypescript-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Create a configuration file
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-look-at-the-dependency-graph" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Look at the dependency graph
+        5. Configure the JavaScript/TypeScript analysis
       
     </span>
   </a>
@@ -1799,79 +1717,69 @@
 
 
 <h1 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h1>
-<p>This page walks through a first run on a real project. It takes about five minutes and assumes you have jscan available, either through <code>npx</code> or through a global install. If you do not, see <a href="../installation/">installation</a>.</p>
+<p>This page walks through a first run on a real project. It takes about five minutes and assumes you have polyscan available, either through <code>npx</code> or through a global install. If you do not, see <a href="../installation/">installation</a>.</p>
 <h2 id="1-run-the-analysis">1. Run the analysis<a class="headerlink" href="#1-run-the-analysis" title="Permanent link">&para;</a></h2>
-<p>Point jscan at the directory that holds your source:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
+<p>Point polyscan at the directory that holds your source:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>.
 </span></code></pre></div>
-<p>jscan collects every JavaScript and TypeScript file below that directory, runs all five analyses in parallel, writes an HTML report to <code>jscan-report.html</code>, and opens it in your browser. It also prints a summary to the terminal:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="go">Analyzing 2 files...</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="go">📊 Unified HTML report generated and opened: /home/you/project/jscan-report.html</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="go">📊 Analysis Summary:</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="go">Health Score: 91/100 (Grade: A)</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="go">Project Scale: Micro (2 files, 4 functions, 49 LOC)</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="go">Total time: 5ms</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="go">📈 Detailed Scores:</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="go">  Complexity:      100/100 ✅  (avg: 4.5, high-risk: 0 functions)</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="go">  Dead Code:        65/100 ⚠️  (3 issues, 1 critical)</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="go">  Duplication:     100/100 ✅  (0.0% fragments cloned, 0 groups)</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="go">  Coupling (CBO):  100/100 ✅  (avg: 0.5, 0/2 high-coupling)</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="go">  Dependencies:     85/100 ✅  (0 cycles, depth: 1)</span>
+<p>polyscan collects every supported source file below that directory — JavaScript, TypeScript, Go, Rust and C++, detected by extension — runs the analyses in parallel, writes an HTML report to <code>polyscan-report.html</code>, and opens it in your browser. It also prints a summary to the terminal:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>.
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="go">HTML report written to /home/you/project/polyscan-report.html</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="go">📊 Analysis Summary:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="go">Health Score: 95/100 (Grade: A)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="go">Project Scale: Micro (3 files, 7 functions, 43 LOC)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="go">Total time: 6ms</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="go">📈 Detailed Scores:</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="go">  Complexity:      100/100 ✅  (avg: 1.9, high-risk: 0 functions)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="go">  Dead Code:        80/100 ✅  (3 issues, 1 critical)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="go">  Duplication:     100/100 ✅  (0.0% fragments cloned, 0 groups)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="go">  Coupling (CBO):  100/100 ✅  (avg: 1.0, 0/2 high-coupling)</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="go">  Dependencies:     95/100 ✅  (0 cycles, depth: 1)</span>
 </span></code></pre></div>
-<p>The health score is a single number from 0 to 100 with a letter grade attached. It starts at 100 and subtracts a penalty for each category. The <a href="../../output/health-score/">health score page</a> gives the exact formula. The project scale line below it reports the size of the repository and does not affect the score.</p>
+<p>The health score is a single number from 0 to 100 with a letter grade attached, computed over the dimensions that ran. Complexity and duplication cover every language; dead code, coupling and dependencies come from the JavaScript/TypeScript files, and a project without any lists only the dimensions it has. The <a href="../../output/health-score/">health score page</a> gives the exact formula. The project scale line reports the size of the repository and does not affect the score.</p>
 <div class="admonition tip">
 <p class="admonition-title">Working over SSH or in a container?</p>
-<p>jscan skips the browser step automatically when it detects an SSH session. To suppress it in any other situation, pass <code>--no-open</code>.</p>
+<p>polyscan skips the browser step automatically when it detects an SSH session. To suppress it in any other situation, pass <code>--no-open</code>.</p>
 </div>
 <h2 id="2-read-the-terminal-output-instead">2. Read the terminal output instead<a class="headerlink" href="#2-read-the-terminal-output-instead" title="Permanent link">&para;</a></h2>
 <p>If you would rather stay in the terminal, ask for text output. This prints the full findings to standard output and writes no file:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--text<span class="w"> </span>src/
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>text<span class="w"> </span>src/
 </span></code></pre></div>
 <p>The text report lists every function with its complexity, every dead code finding with its file and line, every clone group, the coupling table, and the dependency summary. It ends with the same health score breakdown.</p>
 <h2 id="3-narrow-the-analysis">3. Narrow the analysis<a class="headerlink" href="#3-narrow-the-analysis" title="Permanent link">&para;</a></h2>
-<p>Running all five analyses on a large repository takes longer than you may want during an edit and re-run loop. Use <code>--select</code> to run only the ones you care about:</p>
+<p>Running every analysis on a large repository takes longer than you may want during an edit and re-run loop. Use <code>--select</code> to run only the ones you care about:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Only complexity</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Complexity and dead code together</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Complexity and clone detection together</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,clone<span class="w"> </span>src/
 </span></code></pre></div>
-<p>The five values accepted by <code>--select</code> are <code>complexity</code>, <code>deadcode</code>, <code>clone</code>, <code>cbo</code>, and <code>deps</code>. Omitting the flag runs all five.</p>
-<h2 id="4-add-a-quality-gate">4. Add a quality gate<a class="headerlink" href="#4-add-a-quality-gate" title="Permanent link">&para;</a></h2>
-<p><code>jscan analyze</code> always succeeds, because its job is to report rather than to judge. When you want a command that fails, use <code>jscan check</code>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>check<span class="w"> </span>src/
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="go">FAIL: Quality check failed</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="go">  Violations: 2</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="go">  [ERROR] deadcode: Found 1 critical dead code issues</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="go">  [WARN] deadcode: Found 2 warning-level dead code issues</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="gp">$ </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$?</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="go">1</span>
+<p>The five values accepted by <code>--select</code> are <code>complexity</code>, <code>deadcode</code>, <code>clone</code>, <code>cbo</code>, and <code>deps</code>; the last three apply to JavaScript/TypeScript files only. Omitting the flag runs all five.</p>
+<h2 id="4-gate-a-pipeline-on-the-result">4. Gate a pipeline on the result<a class="headerlink" href="#4-gate-a-pipeline-on-the-result" title="Permanent link">&para;</a></h2>
+<p><code>polyscan analyze</code> always exits 0 when the analysis itself succeeds, because its job is to report rather than to judge. To fail a pipeline, gate on the JSON output:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span>&gt;<span class="w"> </span>report.json
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>jq<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.summary.health_score &gt;= 75'</span><span class="w"> </span>report.json
 </span></code></pre></div>
-<p>The exit code is 0 when everything passes, 1 when a threshold is violated, and 2 when the analysis itself could not run. That makes it usable directly as a continuous integration step.</p>
-<div class="admonition warning">
-<p class="admonition-title">The default gate is strict</p>
-<p>With no flags, <code>jscan check</code> fails on any dead code finding at all, including the warning that an exported function is never imported. That warning fires constantly in library packages, whose exports are consumed outside the analyzed directory. Most projects should start with <code>jscan check --allow-dead-code src/</code> and tighten from there. The <a href="../../cli/check/">check reference</a> covers each threshold flag.</p>
-</div>
-<h2 id="5-create-a-configuration-file">5. Create a configuration file<a class="headerlink" href="#5-create-a-configuration-file" title="Permanent link">&para;</a></h2>
-<p>Rather than repeating flags, write them down once:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>jscan<span class="w"> </span>init
+<p><code>jq -e</code> exits non-zero when the expression is false, which fails the CI step. The <a href="../../integrations/ci-cd/">CI/CD page</a> has complete pipeline configurations and more precise gates, such as failing only on critical dead code.</p>
+<h2 id="5-configure-the-javascripttypescript-analysis">5. Configure the JavaScript/TypeScript analysis<a class="headerlink" href="#5-configure-the-javascripttypescript-analysis" title="Permanent link">&para;</a></h2>
+<p>The JavaScript/TypeScript analysis reads a <code>jscan.config.json</code> when the project has one — the configuration format carried over from jscan, the analyzer that merged into polyscan. It supplies complexity thresholds and exclude patterns:</p>
+<div class="language-json highlight"><span class="filename">jscan.config.json</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">"low_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">"medium_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>This creates <code>jscan.config.json</code> in the current directory. Add <code>--interactive</code> for a short wizard that asks about your framework and how strict you want the thresholds to be, then writes a file tuned to those answers.</p>
-<p>Be aware that jscan reads only part of that file today. The <a href="../../configuration/">configuration guide</a> states plainly which keys take effect and which are accepted but not yet applied.</p>
-<h2 id="6-look-at-the-dependency-graph">6. Look at the dependency graph<a class="headerlink" href="#6-look-at-the-dependency-graph" title="Permanent link">&para;</a></h2>
-<p>The <code>deps</code> command exports your module graph in Graphviz DOT format:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--dot<span class="w"> </span><span class="p">|</span><span class="w"> </span>dot<span class="w"> </span>-Tsvg<span class="w"> </span>-o<span class="w"> </span>deps.svg
-</span></code></pre></div>
-<p>This needs Graphviz installed, which provides the <code>dot</code> program. The <a href="../../guides/dependency-graph/">dependency graph guide</a> explains how to read the colors and what the coupling numbers in each tooltip mean.</p>
+<p>Be aware that polyscan reads only part of that file. The <a href="../../configuration/">configuration guide</a> states plainly which keys take effect and which are accepted but not applied. There is no configuration file for the other languages yet.</p>
 <h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The <a href="../../cli/">CLI reference</a> documents every command and flag.</li>
 <li>The <a href="../../configuration/reference/">configuration reference</a> lists every key in the config file.</li>
 <li>The <a href="../../integrations/ci-cd/">CI/CD page</a> has ready-made GitHub Actions and GitLab CI jobs.</li>
 <li>The <a href="../../guides/typescript-projects/">TypeScript guide</a> covers path aliases, type-only imports, and monorepos.</li>
+<li>Arriving from jscan? The <a href="../migrating-from-jscan/">migration page</a> maps every old command to its replacement.</li>
 </ul>
 
 
@@ -1942,7 +1850,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

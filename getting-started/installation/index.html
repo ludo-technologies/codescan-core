@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/getting-started/installation/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/getting-started/installation/">
       
       
         <link rel="prev" href="../..">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Installation - jscan</title>
+        <title>Installation - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -511,6 +511,8 @@
   
     
     
+      
+        
       
         
       
@@ -750,6 +752,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -927,12 +957,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1004,90 +1028,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1811,18 +1751,18 @@
 
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<p>jscan is distributed as a single self-contained binary. There is no runtime dependency to install alongside it, and it does not need your project's <code>node_modules</code> to be present.</p>
+<p>polyscan is distributed as a single self-contained binary. There is no runtime dependency to install alongside it, and it does not need your project's <code>node_modules</code> to be present.</p>
 <h2 id="run-without-installing">Run without installing<a class="headerlink" href="#run-without-installing" title="Permanent link">&para;</a></h2>
-<p>The fastest way to try jscan is to let npm fetch it for one run:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>npx<span class="w"> </span>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
+<p>The fastest way to try polyscan is to let npm fetch it for one run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>npx<span class="w"> </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>.
 </span></code></pre></div>
 <p>This downloads the binary for your platform into the npm cache and runs it. Nothing is added to your project.</p>
 <h2 id="install-with-npm">Install with npm<a class="headerlink" href="#install-with-npm" title="Permanent link">&para;</a></h2>
-<p>Install jscan globally when you expect to run it regularly:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>npm<span class="w"> </span>install<span class="w"> </span>-g<span class="w"> </span>jscan
+<p>Install polyscan globally when you expect to run it regularly:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>npm<span class="w"> </span>install<span class="w"> </span>-g<span class="w"> </span>polyscan
 </span></code></pre></div>
 <p>Install it as a development dependency when you want every contributor and every continuous integration run to use the same version:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>npm<span class="w"> </span>install<span class="w"> </span>--save-dev<span class="w"> </span>jscan
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>npm<span class="w"> </span>install<span class="w"> </span>--save-dev<span class="w"> </span>polyscan
 </span></code></pre></div>
 <p>The npm package is a small launcher script. It selects the correct platform package from <code>optionalDependencies</code> and runs the binary inside it, so the download only ever includes the build for the machine doing the install.</p>
 <h3 id="supported-platforms">Supported platforms<a class="headerlink" href="#supported-platforms" title="Permanent link">&para;</a></h3>
@@ -1838,52 +1778,52 @@
 <tr>
 <td>macOS</td>
 <td>arm64 (Apple silicon)</td>
-<td><code>jscan-darwin-arm64</code></td>
+<td><code>polyscan-darwin-arm64</code></td>
 </tr>
 <tr>
 <td>Linux</td>
 <td>x64</td>
-<td><code>jscan-linux-x64</code></td>
+<td><code>polyscan-linux-x64</code></td>
 </tr>
 <tr>
 <td>Linux</td>
 <td>arm64</td>
-<td><code>jscan-linux-arm64</code></td>
+<td><code>polyscan-linux-arm64</code></td>
 </tr>
 <tr>
 <td>Windows</td>
 <td>x64</td>
-<td><code>jscan-windows-x64</code></td>
+<td><code>polyscan-windows-x64</code></td>
 </tr>
 </tbody>
 </table>
 <p>There is no prebuilt binary for Intel macOS or for 32-bit systems. On those machines the launcher exits with an error that names your platform, and you should build from source instead.</p>
 <h2 id="install-with-go">Install with Go<a class="headerlink" href="#install-with-go" title="Permanent link">&para;</a></h2>
-<p>If you already have a Go toolchain, you can install jscan directly:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>go<span class="w"> </span>install<span class="w"> </span>github.com/ludo-technologies/polyscan/polyscan/cmd/jscan@latest
+<p>If you already have a Go toolchain, you can install polyscan directly:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>go<span class="w"> </span>install<span class="w"> </span>github.com/ludo-technologies/polyscan/polyscan/cmd/polyscan@latest
 </span></code></pre></div>
-<p>This places the <code>jscan</code> binary in your <code>GOBIN</code> directory, which defaults to <code>$(go env GOPATH)/bin</code>. Make sure that directory is on your <code>PATH</code>.</p>
+<p>This places the <code>polyscan</code> binary in your <code>GOBIN</code> directory, which defaults to <code>$(go env GOPATH)/bin</code>. Make sure that directory is on your <code>PATH</code>.</p>
 <h2 id="build-from-source">Build from source<a class="headerlink" href="#build-from-source" title="Permanent link">&para;</a></h2>
-<p>Building from source requires Go 1.24.6 or later and a working C compiler. The C compiler is necessary because jscan parses with tree-sitter, which is a C library reached through cgo.</p>
+<p>Building from source requires Go 1.24.6 or later and a working C compiler. The C compiler is necessary because polyscan parses with tree-sitter, which is a C library reached through cgo.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ludo-technologies/polyscan.git
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">cd</span><span class="w"> </span>polyscan/polyscan
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>go<span class="w"> </span>build<span class="w"> </span>-o<span class="w"> </span>jscan<span class="w"> </span>./cmd/jscan
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>go<span class="w"> </span>build<span class="w"> </span>-o<span class="w"> </span>polyscan<span class="w"> </span>./cmd/polyscan
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Cross-compilation does not work</p>
 <p>Because tree-sitter needs cgo, you cannot build a Linux binary on macOS by setting <code>GOOS</code>. Each platform binary has to be compiled on that platform. This is why the release pipeline uses a separate runner for every target.</p>
 </div>
 <h2 id="verify-the-installation">Verify the installation<a class="headerlink" href="#verify-the-installation" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>jscan<span class="w"> </span>version
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>polyscan<span class="w"> </span>version
 </span></code></pre></div>
 <p>The command prints the release version:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>version
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="go">jscan version 0.4.1</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>version
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="go">polyscan version 0.1.0</span>
 </span></code></pre></div>
 <p>A binary you build yourself reports <code>dev</code>, because the version string is injected during the release build through linker flags.</p>
 <p>Adding <code>--verbose</code> prints the same version together with three build metadata fields:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>version<span class="w"> </span>--verbose
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="go">0.4.1 (commit: 7b3d1e2, built: 2026-08-14T07:40:09Z, by: release)</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>version<span class="w"> </span>--verbose
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="go">0.1.0 (commit: 7b3d1e2, built: 2026-08-14T07:40:09Z, by: release)</span>
 </span></code></pre></div>
 <p>Official release binaries include the commit hash, the build timestamp in UTC, and <code>release</code> as the builder.</p>
 <h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
@@ -1957,7 +1897,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

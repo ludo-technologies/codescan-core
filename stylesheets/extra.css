@@ -1,27 +1,27 @@
-/* jscan docs theme — brand tokens, typography, and the homepage hero. */
+/* polyscan docs theme — brand tokens, typography, and the homepage hero. */
 
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap");
 
 :root {
-  --jscan-blue: #3178c6;
-  --jscan-blue-dark: #245a96;
-  --jscan-blue-light: #6aa5e0;
-  --jscan-header: #1b3a5c;
-  --jscan-violet: #7c3aed;
-  --jscan-yellow: #f7df1e;
-  --jscan-amber: #f59e0b;
-  --jscan-ink: #0b1120;
-  --jscan-ink-line: rgba(148, 163, 184, 0.16);
-  --jscan-ink-text: #cbd5e1;
+  --polyscan-blue: #3178c6;
+  --polyscan-blue-dark: #245a96;
+  --polyscan-blue-light: #6aa5e0;
+  --polyscan-header: #1b3a5c;
+  --polyscan-violet: #7c3aed;
+  --polyscan-yellow: #f7df1e;
+  --polyscan-amber: #f59e0b;
+  --polyscan-ink: #0b1120;
+  --polyscan-ink-line: rgba(148, 163, 184, 0.16);
+  --polyscan-ink-text: #cbd5e1;
 
-  /* Wire the custom Material palette to the jscan brand colors. */
-  --md-primary-fg-color: var(--jscan-blue);
-  --md-primary-fg-color--light: var(--jscan-blue-light);
-  --md-primary-fg-color--dark: var(--jscan-blue-dark);
+  /* Wire the custom Material palette to the polyscan brand colors. */
+  --md-primary-fg-color: var(--polyscan-blue);
+  --md-primary-fg-color--light: var(--polyscan-blue-light);
+  --md-primary-fg-color--dark: var(--polyscan-blue-dark);
   --md-primary-bg-color: #ffffff;
   --md-primary-bg-color--light: rgba(255, 255, 255, 0.7);
 
-  --md-accent-fg-color: var(--jscan-violet);
+  --md-accent-fg-color: var(--polyscan-violet);
   --md-accent-fg-color--transparent: rgba(124, 58, 237, 0.1);
   --md-accent-bg-color: #ffffff;
   --md-accent-bg-color--light: rgba(255, 255, 255, 0.7);
@@ -33,7 +33,7 @@
 
 .md-header,
 .md-tabs {
-  background-color: var(--jscan-header);
+  background-color: var(--polyscan-header);
 }
 
 .md-tabs__item {
@@ -48,7 +48,7 @@
   bottom: 0;
   height: 2px;
   border-radius: 2px 2px 0 0;
-  background: var(--jscan-yellow);
+  background: var(--polyscan-yellow);
   transform: scaleX(0);
   transition: transform 0.2s ease;
 }
@@ -72,7 +72,7 @@
 .md-typeset h3,
 .md-typeset h4,
 .md-header__title,
-.jscan-hero__eyebrow {
+.polyscan-hero__eyebrow {
   font-family: "Space Grotesk", "Inter", var(--md-text-font-family), sans-serif;
   letter-spacing: -0.01em;
 }
@@ -111,13 +111,13 @@
 }
 
 .md-typeset .md-button--primary {
-  background-color: var(--jscan-blue);
-  border-color: var(--jscan-blue);
+  background-color: var(--polyscan-blue);
+  border-color: var(--polyscan-blue);
 }
 
 .md-typeset .md-button--primary:hover {
-  background-color: var(--jscan-blue-dark);
-  border-color: var(--jscan-blue-dark);
+  background-color: var(--polyscan-blue-dark);
+  border-color: var(--polyscan-blue-dark);
 }
 
 /* ---------- Grid cards (feature grid on the homepage) ---------- */
@@ -130,17 +130,17 @@
 
 .md-typeset .grid.cards > ul > li:hover,
 .md-typeset .grid.cards > ol > li:hover {
-  border-color: var(--jscan-blue);
+  border-color: var(--polyscan-blue);
   transform: translateY(-2px);
 }
 
 .md-typeset .grid.cards > ul > li > p:first-child .twemoji {
-  color: var(--jscan-blue);
+  color: var(--polyscan-blue);
 }
 
 /* ---------- Hero (homepage) ---------- */
 
-.jscan-hero {
+.polyscan-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 2rem;
@@ -149,46 +149,46 @@
 }
 
 @media screen and (max-width: 76.1875em) {
-  .jscan-hero {
+  .polyscan-hero {
     grid-template-columns: 1fr;
   }
 }
 
-.jscan-hero__copy .md-typeset h1 {
+.polyscan-hero__copy .md-typeset h1 {
   margin: 0.4rem 0 1rem;
   font-size: 2.4rem;
 }
 
-.jscan-hero__eyebrow {
+.polyscan-hero__eyebrow {
   display: inline-block;
   margin: 0;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--jscan-blue);
+  color: var(--polyscan-blue);
 }
 
-[data-md-color-scheme="slate"] .jscan-hero__eyebrow {
-  color: var(--jscan-blue-light);
+[data-md-color-scheme="slate"] .polyscan-hero__eyebrow {
+  color: var(--polyscan-blue-light);
 }
 
-.jscan-hero__lede {
+.polyscan-hero__lede {
   font-size: 1.05rem;
   line-height: 1.7;
   color: var(--md-default-fg-color--light);
   max-width: 42rem;
 }
 
-.jscan-hero__copy .highlight {
+.polyscan-hero__copy .highlight {
   margin: 1.25rem 0;
 }
 
-.jscan-hero__copy .md-button {
+.polyscan-hero__copy .md-button {
   margin: 1rem 0.75rem 0.5rem 0;
 }
 
-.jscan-hero__meta {
+.polyscan-hero__meta {
   font-size: 0.75rem;
   color: var(--md-default-fg-color--light);
   font-family: var(--md-code-font-family);
@@ -196,21 +196,21 @@
 
 /* ---------- Score card (homepage art panel) ---------- */
 
-.jscan-hero__art {
-  background: var(--jscan-ink);
+.polyscan-hero__art {
+  background: var(--polyscan-ink);
   border-radius: 0.75rem;
   padding: 1.5rem;
   background-image:
-    linear-gradient(var(--jscan-ink-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--jscan-ink-line) 1px, transparent 1px);
+    linear-gradient(var(--polyscan-ink-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--polyscan-ink-line) 1px, transparent 1px);
   background-size: 22px 22px;
   font-family: var(--md-code-font-family);
-  color: var(--jscan-ink-text);
+  color: var(--polyscan-ink-text);
   font-size: 0.72rem;
   line-height: 1.9;
 }
 
-.jscan-score__grade {
+.polyscan-score__grade {
   font-family: "Space Grotesk", var(--md-text-font-family), sans-serif;
   font-size: 1.6rem;
   font-weight: 700;
@@ -218,18 +218,18 @@
   letter-spacing: -0.02em;
 }
 
-.jscan-score__row {
+.polyscan-score__row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   white-space: nowrap;
 }
 
-.jscan-score__label {
+.polyscan-score__label {
   flex: 0 0 7.5rem;
 }
 
-.jscan-score__bar {
+.polyscan-score__bar {
   flex: 1 1 auto;
   height: 6px;
   border-radius: 3px;
@@ -238,18 +238,18 @@
   min-width: 3rem;
 }
 
-.jscan-score__fill {
+.polyscan-score__fill {
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: var(--jscan-blue-light);
+  background: var(--polyscan-blue-light);
 }
 
-.jscan-score__fill--warn {
-  background: var(--jscan-amber);
+.polyscan-score__fill--warn {
+  background: var(--polyscan-amber);
 }
 
-.jscan-score__value {
+.polyscan-score__value {
   flex: 0 0 2.5rem;
   text-align: right;
   color: #ffffff;

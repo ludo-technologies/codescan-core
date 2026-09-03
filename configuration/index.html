@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/configuration/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/configuration/">
       
       
         <link rel="prev" href="../cli/version/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Configuration - jscan</title>
+        <title>Configuration - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -794,12 +824,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -871,90 +895,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1525,15 +1465,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-jscan-finds-your-config-file" class="md-nav__link">
+  <a href="#how-polyscan-finds-your-config-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How jscan finds your config file
+        How polyscan finds your config file
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="How jscan finds your config file">
+    <nav class="md-nav" aria-label="How polyscan finds your config file">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1614,10 +1554,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#jscan-also-reads-your-gitignore" class="md-nav__link">
+  <a href="#polyscan-also-reads-your-gitignore" class="md-nav__link">
     <span class="md-ellipsis">
       
-        jscan also reads your .gitignore
+        polyscan also reads your .gitignore
       
     </span>
   </a>
@@ -1731,13 +1671,13 @@
 
 
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
-<p>jscan runs without any configuration at all. A configuration file is for the cases where the defaults do not suit your project, most often because you want different complexity thresholds or a different set of skipped directories.</p>
-<p>Create one with <a href="../cli/init/"><code>jscan init</code></a>, or write it by hand.</p>
-<h2 id="how-jscan-finds-your-config-file">How jscan finds your config file<a class="headerlink" href="#how-jscan-finds-your-config-file" title="Permanent link">&para;</a></h2>
-<p>When you pass <code>--config</code>, jscan loads exactly that file and fails if it cannot be read. When you do not, jscan searches, and the first file it finds wins.</p>
+<p>polyscan runs without any configuration at all. A configuration file tunes the <strong>JavaScript/TypeScript analysis</strong> — most often because you want different complexity thresholds or a different set of skipped directories. There is no configuration file for the Go, Rust and C++ analysis yet; those files are collected by extension and analyzed with the built-in defaults.</p>
+<p>The file format is the one carried over from jscan, the JavaScript/TypeScript analyzer that merged into polyscan, which is why the conventional filename is <code>jscan.config.json</code>. An existing file keeps working unchanged. Write one by hand, or copy a <a href="examples/">complete example</a>.</p>
+<h2 id="how-polyscan-finds-your-config-file">How polyscan finds your config file<a class="headerlink" href="#how-polyscan-finds-your-config-file" title="Permanent link">&para;</a></h2>
+<p>polyscan searches for a configuration file automatically, and the first file it finds wins. There is no <code>--config</code> flag.</p>
 <p>The search runs in this order:</p>
 <ol>
-<li><strong>Upward from the analyzed path.</strong> Starting at the directory you asked jscan to analyze, it checks that directory, then its parent, and so on to the filesystem root. If you passed a file rather than a directory, the search starts from the file's directory.</li>
+<li><strong>Upward from the analyzed path.</strong> Starting at the first directory you asked polyscan to analyze, it checks that directory, then its parent, and so on to the filesystem root. If you passed a file rather than a directory, the search starts from the file's directory.</li>
 <li><strong>The current working directory.</strong></li>
 <li><strong><code>$XDG_CONFIG_HOME/jscan/</code></strong>, then <code>$XDG_CONFIG_HOME/pyscn/</code>, if that variable is set.</li>
 <li><strong><code>~/.config/jscan/</code></strong>, then <code>~/.config/pyscn/</code>.</li>
@@ -1746,7 +1686,7 @@
 </ol>
 <p>Searching upward from the target rather than from the current directory means that analyzing <code>packages/api/src</code> from the repository root still picks up <code>packages/api/jscan.config.json</code>.</p>
 <h3 id="accepted-filenames">Accepted filenames<a class="headerlink" href="#accepted-filenames" title="Permanent link">&para;</a></h3>
-<p>Within each directory, jscan checks these names in order:</p>
+<p>Within each directory, polyscan checks these names in order:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan.config.json
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>.jscanrc.json
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>jscan.yaml
@@ -1759,81 +1699,62 @@
 <p>It then checks the equivalent <code>pyscn</code> names, which are accepted for backward compatibility from when jscan shared its configuration loader with pyscn. Prefer a <code>jscan</code> name in new projects.</p>
 <h3 id="supported-file-formats">Supported file formats<a class="headerlink" href="#supported-file-formats" title="Permanent link">&para;</a></h3>
 <p>The loader reads JSON, YAML, and TOML. The format is chosen from the file extension, so <code>.jscanrc.json</code> must contain JSON and <code>jscan.yaml</code> must contain YAML. JSON is the most common choice because it needs no extra tooling in a JavaScript project.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Confirm which file was used</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--config<span class="w"> </span>./jscan.config.json<span class="w"> </span>src/
-</span></code></pre></div>
-<p>Passing <code>--config</code> to <code>analyze</code> makes it print <code>Using config: &lt;path&gt;</code> before the results, which is the quickest way to confirm that a file is being read at all. The <code>check</code> and <code>deps</code> commands accept <code>--config</code> but print no such line.</p>
 <h2 id="which-keys-take-effect-today">Which keys take effect today<a class="headerlink" href="#which-keys-take-effect-today" title="Permanent link">&para;</a></h2>
-<p>This is the part worth reading carefully. jscan validates the whole configuration schema, but the commands act on only part of it. Setting a key from the second table below is accepted, and validated, and then ignored.</p>
-<p>You do not have to memorize the split. Any command that loads a file naming such a key prints a warning to stderr:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="go">Warning: /work/app/jscan.config.json sets 2 keys that no command reads: dead_code.context_lines, output.format</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="go">  See https://jscan.codescan.dev/configuration/#which-keys-take-effect-today</span>
+<p>This is the part worth reading carefully. polyscan validates the whole configuration schema, but acts on only part of it. Setting a key from the second table below is accepted, and validated, and then ignored.</p>
+<p>You do not have to memorize the split. A run that loads a file naming such a key prints a warning to stderr:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>src/
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="go">Warning: /work/app/jscan.config.json sets 2 keys that no command reads: dead_code.context_lines, output.format</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="go">  See https://polyscan.codescan.dev/configuration/#which-keys-take-effect-today</span>
 </span></code></pre></div>
-<p>The same warning catches misspelled keys, since a key jscan does not recognize is by definition one that no command reads. A file written by <a href="../cli/init/"><code>jscan init</code></a> never triggers it: the generated file contains only keys that work.</p>
+<p>The same warning catches misspelled keys, since a key polyscan does not recognize is by definition one that no command reads.</p>
 <h3 id="keys-that-change-behavior">Keys that change behavior<a class="headerlink" href="#keys-that-change-behavior" title="Permanent link">&para;</a></h3>
+<p>All of these affect the JavaScript/TypeScript analysis inside <code>polyscan analyze</code>.</p>
 <table>
 <thead>
 <tr>
 <th>Key</th>
-<th>Affects</th>
 <th>What it does</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>complexity.low_threshold</code></td>
-<td><code>analyze</code>, <code>check</code></td>
 <td>Upper bound of the low risk band</td>
 </tr>
 <tr>
 <td><code>complexity.medium_threshold</code></td>
-<td><code>analyze</code>, <code>check</code></td>
 <td>Upper bound of the medium risk band</td>
 </tr>
 <tr>
-<td><code>complexity.max_complexity</code></td>
-<td><code>check</code></td>
-<td>Default for <code>--max-complexity</code>, used only when the flag is absent and the value is above 0</td>
-</tr>
-<tr>
 <td><code>complexity.report_unchanged</code></td>
-<td><code>analyze</code>, <code>check</code></td>
 <td>Whether functions with complexity 1 are reported at all</td>
 </tr>
 <tr>
 <td><code>dead_code.min_severity</code></td>
-<td><code>analyze</code>, <code>check</code></td>
 <td>Findings below this severity are dropped</td>
 </tr>
 <tr>
 <td><code>dead_code.sort_by</code></td>
-<td><code>analyze</code></td>
-<td>Order of the files in the dead code report. <code>check</code> reports only counts, which the order cannot change</td>
+<td>Order of the files in the dead code report</td>
 </tr>
 <tr>
 <td><code>output.min_complexity</code></td>
-<td><code>analyze</code></td>
 <td>Functions below this complexity are left out of the report</td>
 </tr>
 <tr>
 <td><code>output.sort_by</code></td>
-<td><code>analyze</code>, <code>check</code></td>
-<td>Order of the functions in the complexity report, and of the complexity violations <code>check</code> lists</td>
+<td>Order of the functions in the complexity report</td>
 </tr>
 <tr>
 <td><code>analysis.include_patterns</code></td>
-<td><code>analyze</code>, <code>check</code>, <code>deps</code></td>
-<td>Which files to analyze, of those jscan can parse</td>
+<td>Which files to analyze, of those the JavaScript/TypeScript analysis can parse</td>
 </tr>
 <tr>
 <td><code>analysis.exclude_patterns</code></td>
-<td><code>analyze</code>, <code>check</code>, <code>deps</code></td>
 <td>Directories and filename patterns to skip</td>
 </tr>
 <tr>
 <td><code>analysis.recursive</code></td>
-<td><code>analyze</code>, <code>check</code>, <code>deps</code></td>
 <td>Whether a directory is walked to its leaves or only at its top level</td>
 </tr>
 </tbody>
@@ -1847,6 +1768,10 @@
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><code>complexity.max_complexity</code></td>
+<td>Was read by jscan's retired <code>check</code> command. Accepted without a warning, but nothing reads it now</td>
+</tr>
 <tr>
 <td><code>dead_code.show_context</code>, <code>dead_code.context_lines</code></td>
 <td>Context lines are never shown.</td>
@@ -1883,51 +1808,51 @@
 </table>
 <p>This is documented rather than hidden because a configuration key that quietly does nothing is worse than one that does not exist. If a setting you need is in the second table, use the equivalent command line flag where one exists, and otherwise track the gap in the <a href="https://github.com/ludo-technologies/polyscan/issues">issue tracker</a>.</p>
 <h3 id="narrowing-what-gets-analyzed">Narrowing what gets analyzed<a class="headerlink" href="#narrowing-what-gets-analyzed" title="Permanent link">&para;</a></h3>
-<p><code>analysis.include_patterns</code> selects from the files jscan can parse; it cannot add file types, because the analyzed extensions are fixed at <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>. Adding <code>**/*.vue</code> to the list changes nothing.</p>
+<p><code>analysis.include_patterns</code> selects from the files the JavaScript/TypeScript analysis can parse; it cannot add file types, because the analyzed extensions are fixed at <code>.js</code>, <code>.jsx</code>, <code>.mjs</code>, <code>.cjs</code>, <code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, and <code>.cts</code>. Adding <code>**/*.vue</code> to the list changes nothing. Go, Rust and C++ files are collected independently of these patterns.</p>
 <p>Patterns are matched the same way <code>exclude_patterns</code> are, and relative to the path you pass on the command line. Analyzing <code>src/</code> with an include pattern of <code>src/**/*.ts</code> therefore matches nothing, because the paths being matched start below <code>src</code>:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">"include_patterns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"**/*.ts"</span><span class="p">,</span><span class="w"> </span><span class="s2">"**/*.tsx"</span><span class="p">]</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">"include_patterns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"**/*.ts"</span><span class="p">,</span><span class="w"> </span><span class="s2">"**/*.tsx"</span><span class="p">]</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>A file you name directly is analyzed whether or not it matches, so <code>jscan analyze src/legacy.js</code> still works under a TypeScript-only include list.</p>
-<h2 id="jscan-also-reads-your-gitignore">jscan also reads your <code>.gitignore</code><a class="headerlink" href="#jscan-also-reads-your-gitignore" title="Permanent link">&para;</a></h2>
-<p>Before applying <code>exclude_patterns</code>, jscan looks for a <code>.gitignore</code> file in the directory you asked it to analyze, and skips anything that file ignores. This is usually what you want, since build output and local artifacts are normally ignored by git as well.</p>
+<p>A file you name directly is analyzed whether or not it matches, so <code>polyscan analyze src/legacy.js</code> still works under a TypeScript-only include list.</p>
+<h2 id="polyscan-also-reads-your-gitignore">polyscan also reads your <code>.gitignore</code><a class="headerlink" href="#polyscan-also-reads-your-gitignore" title="Permanent link">&para;</a></h2>
+<p>Before applying <code>exclude_patterns</code> to the JavaScript/TypeScript files, polyscan looks for a <code>.gitignore</code> file in the directory you asked it to analyze, and skips anything that file ignores. This is usually what you want, since build output and local artifacts are normally ignored by git as well.</p>
 <p>Two details are worth knowing:</p>
 <ul>
-<li>Only the <code>.gitignore</code> at the root of the analyzed path is read. Running <code>jscan analyze src/</code> uses <code>src/.gitignore</code> and does <strong>not</strong> read the repository's top-level <code>.gitignore</code>. Running <code>jscan analyze .</code> from the repository root does read it.</li>
+<li>Only the <code>.gitignore</code> at the root of the analyzed path is read. Running <code>polyscan analyze src/</code> uses <code>src/.gitignore</code> and does <strong>not</strong> read the repository's top-level <code>.gitignore</code>. Running <code>polyscan analyze .</code> from the repository root does read it.</li>
 <li>Global and nested gitignore files are not consulted, and neither is <code>.git/info/exclude</code>.</li>
 </ul>
 <p>If a file you expected in the report is missing, check both your <code>.gitignore</code> and the <code>exclude_patterns</code> behavior described in the <a href="reference/#analysisexclude_patterns">reference</a>.</p>
 <h2 id="a-minimal-useful-file">A minimal useful file<a class="headerlink" href="#a-minimal-useful-file" title="Permanent link">&para;</a></h2>
 <p>Most projects need only this much:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">"low_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">"medium_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">"exclude_patterns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="s2">"node_modules"</span><span class="p">,</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">      </span><span class="s2">"dist"</span><span class="p">,</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="s2">"build"</span><span class="p">,</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">      </span><span class="s2">".next"</span><span class="p">,</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">      </span><span class="s2">"coverage"</span><span class="p">,</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">      </span><span class="s2">"*.min.js"</span><span class="p">,</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">      </span><span class="s2">"**/*.generated.ts"</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">    </span><span class="p">]</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">"low_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">"medium_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">"exclude_patterns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="s2">"node_modules"</span><span class="p">,</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="s2">"dist"</span><span class="p">,</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="s2">"build"</span><span class="p">,</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="s2">".next"</span><span class="p">,</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="s2">"coverage"</span><span class="p">,</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="s2">"*.min.js"</span><span class="p">,</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">      </span><span class="s2">"**/*.generated.ts"</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">    </span><span class="p">]</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">}</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Writing <code>exclude_patterns</code> replaces the default list</p>
-<p>The value you provide is not merged with the built-in defaults. It replaces them. The default list is long and covers dependency directories, build outputs, framework caches, and minified files, so a short custom list will make jscan analyze things you probably did not intend to analyze, such as <code>dist</code>. Copy the <a href="reference/#analysisexclude_patterns">full default list</a> as your starting point and add to it.</p>
+<p>The value you provide is not merged with the built-in defaults. It replaces them. The default list is long and covers dependency directories, build outputs, framework caches, and minified files, so a short custom list will make polyscan analyze things you probably did not intend to analyze, such as <code>dist</code>. Copy the <a href="reference/#analysisexclude_patterns">full default list</a> as your starting point and add to it.</p>
 </div>
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <p>The configuration is validated on load, and an invalid file stops the command with a message naming the offending key:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--config<span class="w"> </span>bad.json<span class="w"> </span>src/
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="go">Error: failed to load configuration: invalid configuration: complexity.medium_threshold (5) must be &gt; low_threshold (10)</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>src/
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="go">Error: failed to load the JavaScript configuration: invalid configuration: complexity.medium_threshold (5) must be &gt; low_threshold (10)</span>
 </span></code></pre></div>
 <p>The rules enforced are listed with each key in the <a href="reference/">reference</a>.</p>
 <h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
@@ -2004,7 +1929,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

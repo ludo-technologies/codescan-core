@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/faq/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/faq/">
       
       
         <link rel="prev" href="../contributing/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>FAQ - jscan</title>
+        <title>FAQ - polyscan</title>
       
     
     
@@ -96,7 +96,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
@@ -109,7 +109,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -450,12 +450,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -507,6 +507,8 @@
   
     
     
+      
+        
       
         
       
@@ -602,6 +604,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -792,12 +822,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -869,90 +893,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1545,10 +1485,32 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-did-jscan-analyze-far-fewer-files-than-my-project-has" class="md-nav__link">
+  <a href="#which-languages-does-polyscan-analyze" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why did jscan analyze far fewer files than my project has?
+        Which languages does polyscan analyze?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-happened-to-jscan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What happened to jscan?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-did-polyscan-analyze-far-fewer-files-than-my-project-has" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why did polyscan analyze far fewer files than my project has?
       
     </span>
   </a>
@@ -1567,10 +1529,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-does-jscan-check-fail-on-a-codebase-that-looks-fine" class="md-nav__link">
+  <a href="#does-polyscan-need-my-project-to-compile" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why does jscan check fail on a codebase that looks fine?
+        Does polyscan need my project to compile?
       
     </span>
   </a>
@@ -1578,10 +1540,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#does-jscan-need-my-project-to-compile" class="md-nav__link">
+  <a href="#does-polyscan-read-tsconfigjson-path-aliases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Does jscan need my project to compile?
+        Does polyscan read tsconfig.json path aliases?
       
     </span>
   </a>
@@ -1589,10 +1551,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#does-jscan-read-tsconfigjson-path-aliases" class="md-nav__link">
+  <a href="#does-polyscan-support-vue-single-file-components" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Does jscan read tsconfig.json path aliases?
+        Does polyscan support Vue single-file components?
       
     </span>
   </a>
@@ -1600,10 +1562,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#does-jscan-support-vue-single-file-components" class="md-nav__link">
+  <a href="#can-i-run-polyscan-on-a-single-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Does jscan support Vue single-file components?
+        Can I run polyscan on a single file?
       
     </span>
   </a>
@@ -1611,10 +1573,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#can-i-run-jscan-on-a-single-file" class="md-nav__link">
+  <a href="#how-do-i-fail-ci-on-the-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Can I run jscan on a single file?
+        How do I fail CI on the results?
       
     </span>
   </a>
@@ -1661,10 +1623,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-does-adding-exclude_patterns-make-jscan-analyze-more-files" class="md-nav__link">
+  <a href="#why-does-adding-exclude_patterns-make-polyscan-analyze-more-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why does adding exclude_patterns make jscan analyze more files?
+        Why does adding exclude_patterns make polyscan analyze more files?
       
     </span>
   </a>
@@ -1683,10 +1645,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#which-config-file-does-jscan-use" class="md-nav__link">
+  <a href="#which-config-file-does-polyscan-use" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Which config file does jscan use?
+        Which config file does polyscan use?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is-there-a-config-file-for-go-rust-or-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Is there a config file for Go, Rust or C++?
       
     </span>
   </a>
@@ -1755,10 +1728,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-does-jscan-flag-code-my-linter-does-not" class="md-nav__link">
+  <a href="#why-does-polyscan-flag-code-my-linter-does-not" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why does jscan flag code my linter does not?
+        Why does polyscan flag code my linter does not?
       
     </span>
   </a>
@@ -1822,10 +1795,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#how-does-jscan-relate-to-pyscn" class="md-nav__link">
+  <a href="#how-does-polyscan-relate-to-pyscn" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How does jscan relate to pyscn?
+        How does polyscan relate to pyscn?
       
     </span>
   </a>
@@ -1833,10 +1806,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#where-does-jscans-source-live" class="md-nav__link">
+  <a href="#where-does-polyscans-source-live" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where does jscan's source live?
+        Where does polyscan's source live?
       
     </span>
   </a>
@@ -1917,10 +1890,32 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-did-jscan-analyze-far-fewer-files-than-my-project-has" class="md-nav__link">
+  <a href="#which-languages-does-polyscan-analyze" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why did jscan analyze far fewer files than my project has?
+        Which languages does polyscan analyze?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-happened-to-jscan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What happened to jscan?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-did-polyscan-analyze-far-fewer-files-than-my-project-has" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why did polyscan analyze far fewer files than my project has?
       
     </span>
   </a>
@@ -1939,10 +1934,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-does-jscan-check-fail-on-a-codebase-that-looks-fine" class="md-nav__link">
+  <a href="#does-polyscan-need-my-project-to-compile" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why does jscan check fail on a codebase that looks fine?
+        Does polyscan need my project to compile?
       
     </span>
   </a>
@@ -1950,10 +1945,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#does-jscan-need-my-project-to-compile" class="md-nav__link">
+  <a href="#does-polyscan-read-tsconfigjson-path-aliases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Does jscan need my project to compile?
+        Does polyscan read tsconfig.json path aliases?
       
     </span>
   </a>
@@ -1961,10 +1956,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#does-jscan-read-tsconfigjson-path-aliases" class="md-nav__link">
+  <a href="#does-polyscan-support-vue-single-file-components" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Does jscan read tsconfig.json path aliases?
+        Does polyscan support Vue single-file components?
       
     </span>
   </a>
@@ -1972,10 +1967,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#does-jscan-support-vue-single-file-components" class="md-nav__link">
+  <a href="#can-i-run-polyscan-on-a-single-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Does jscan support Vue single-file components?
+        Can I run polyscan on a single file?
       
     </span>
   </a>
@@ -1983,10 +1978,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#can-i-run-jscan-on-a-single-file" class="md-nav__link">
+  <a href="#how-do-i-fail-ci-on-the-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Can I run jscan on a single file?
+        How do I fail CI on the results?
       
     </span>
   </a>
@@ -2033,10 +2028,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-does-adding-exclude_patterns-make-jscan-analyze-more-files" class="md-nav__link">
+  <a href="#why-does-adding-exclude_patterns-make-polyscan-analyze-more-files" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why does adding exclude_patterns make jscan analyze more files?
+        Why does adding exclude_patterns make polyscan analyze more files?
       
     </span>
   </a>
@@ -2055,10 +2050,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#which-config-file-does-jscan-use" class="md-nav__link">
+  <a href="#which-config-file-does-polyscan-use" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Which config file does jscan use?
+        Which config file does polyscan use?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is-there-a-config-file-for-go-rust-or-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Is there a config file for Go, Rust or C++?
       
     </span>
   </a>
@@ -2127,10 +2133,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-does-jscan-flag-code-my-linter-does-not" class="md-nav__link">
+  <a href="#why-does-polyscan-flag-code-my-linter-does-not" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why does jscan flag code my linter does not?
+        Why does polyscan flag code my linter does not?
       
     </span>
   </a>
@@ -2194,10 +2200,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#how-does-jscan-relate-to-pyscn" class="md-nav__link">
+  <a href="#how-does-polyscan-relate-to-pyscn" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How does jscan relate to pyscn?
+        How does polyscan relate to pyscn?
       
     </span>
   </a>
@@ -2205,10 +2211,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#where-does-jscans-source-live" class="md-nav__link">
+  <a href="#where-does-polyscans-source-live" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Where does jscan's source live?
+        Where does polyscan's source live?
       
     </span>
   </a>
@@ -2277,84 +2283,83 @@
 
 <h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<h3 id="why-did-jscan-analyze-far-fewer-files-than-my-project-has">Why did jscan analyze far fewer files than my project has?<a class="headerlink" href="#why-did-jscan-analyze-far-fewer-files-than-my-project-has" title="Permanent link">&para;</a></h3>
-<p>Check your exclude patterns first. A pattern in <code>analysis.exclude_patterns</code> matches a whole file or directory name, so <code>dist</code> skips a directory named <code>dist</code> and leaves <code>src/utils/distance.ts</code> alone. A pattern that names a directory you did not mean to exclude removes every file under it, and nothing in the output names the missing files. Compare the <code>Analyzing N files...</code> line against a <code>find</code> count to confirm. The <a href="../configuration/reference/#analysisexclude_patterns">configuration reference</a> describes the matching rules.</p>
-<p>Versions up to 0.9.0 also matched a pattern against any part of a file's path, so the default entries <code>out</code> and <code>dist</code> silently dropped <code>src/routes/</code>, <code>src/layout/</code>, <code>src/checkout/</code>, and <code>src/utils/distance.ts</code>. Upgrade if you see that.</p>
-<p>A second possibility is your <code>.gitignore</code>. jscan reads the one at the root of the analyzed directory and skips whatever it ignores.</p>
+<h3 id="which-languages-does-polyscan-analyze">Which languages does polyscan analyze?<a class="headerlink" href="#which-languages-does-polyscan-analyze" title="Permanent link">&para;</a></h3>
+<p>JavaScript, TypeScript, Go, Rust and C++, detected by file extension in one run. Complexity and clone detection cover every language; dead code, coupling (CBO) and dependency analysis exist for JavaScript/TypeScript. Python has its own analyzer, <a href="https://github.com/ludo-technologies/pyscn">pyscn</a>, built on the same core.</p>
+<h3 id="what-happened-to-jscan">What happened to jscan?<a class="headerlink" href="#what-happened-to-jscan" title="Permanent link">&para;</a></h3>
+<p>It merged into polyscan: <code>polyscan analyze</code> runs the full jscan analysis on JavaScript/TypeScript files. The <code>jscan</code> npm package remains published as a deprecated wrapper that runs polyscan. The <a href="../getting-started/migrating-from-jscan/">migration page</a> maps every old command and flag to its replacement.</p>
+<h3 id="why-did-polyscan-analyze-far-fewer-files-than-my-project-has">Why did polyscan analyze far fewer files than my project has?<a class="headerlink" href="#why-did-polyscan-analyze-far-fewer-files-than-my-project-has" title="Permanent link">&para;</a></h3>
+<p>For JavaScript/TypeScript, check your exclude patterns first. A pattern in <code>analysis.exclude_patterns</code> matches a whole file or directory name, so <code>dist</code> skips a directory named <code>dist</code> and leaves <code>src/utils/distance.ts</code> alone. A pattern that names a directory you did not mean to exclude removes every file under it, and nothing in the output names the missing files. Compare the <code>Analyzing N files...</code> line against a <code>find</code> count to confirm. The <a href="../configuration/reference/#analysisexclude_patterns">configuration reference</a> describes the matching rules.</p>
+<p>A second possibility is your <code>.gitignore</code>. polyscan reads the one at the root of the analyzed directory and skips whatever JavaScript/TypeScript files it ignores.</p>
+<p>Go, Rust and C++ files are collected by extension alone: the config file, its exclude patterns and the <code>.gitignore</code> do not apply to them, so a vendored dependency tree written in those languages is analyzed unless you point polyscan below it.</p>
 <h3 id="why-is-every-one-of-my-exports-reported-as-unused">Why is every one of my exports reported as unused?<a class="headerlink" href="#why-is-every-one-of-my-exports-reported-as-unused" title="Permanent link">&para;</a></h3>
 <p>The unused-export check compares imports against exports across the files in the current run only. It has no way to see importers outside that set.</p>
-<p>This happens in two situations. Analyzing a subdirectory, such as <code>src/components/</code>, means the importers in the rest of <code>src/</code> were never read. Pass the whole source root instead. Analyzing a library means the importers are in other repositories entirely, and there is nothing to do about it except run <code>jscan check --allow-dead-code</code>.</p>
-<h3 id="why-does-jscan-check-fail-on-a-codebase-that-looks-fine">Why does <code>jscan check</code> fail on a codebase that looks fine?<a class="headerlink" href="#why-does-jscan-check-fail-on-a-codebase-that-looks-fine" title="Permanent link">&para;</a></h3>
-<p>The default gate fails on any dead code finding, at any severity. The <code>unused_exported_function</code> warning described above is usually the cause. Start with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan<span class="w"> </span>check<span class="w"> </span>--allow-dead-code<span class="w"> </span>--max-complexity<span class="w"> </span><span class="m">20</span><span class="w"> </span>src/
-</span></code></pre></div>
-<h3 id="does-jscan-need-my-project-to-compile">Does jscan need my project to compile?<a class="headerlink" href="#does-jscan-need-my-project-to-compile" title="Permanent link">&para;</a></h3>
-<p>No. It parses the source with tree-sitter and never invokes <code>tsc</code>. It works on code that currently fails type checking, and it does not read <code>tsconfig.json</code>.</p>
-<h3 id="does-jscan-read-tsconfigjson-path-aliases">Does jscan read <code>tsconfig.json</code> path aliases?<a class="headerlink" href="#does-jscan-read-tsconfigjson-path-aliases" title="Permanent link">&para;</a></h3>
-<p>No. An import written <code>@/lib/util</code> becomes a module node of its own rather than resolving to <code>src/lib/util.ts</code>. This inflates module counts in <code>jscan deps</code>, drops real edges, and hides cycles that pass through an alias. Relative imports resolve correctly. See <a href="../guides/typescript-projects/#path-aliases-are-not-resolved">the TypeScript guide</a>.</p>
-<h3 id="does-jscan-support-vue-single-file-components">Does jscan support Vue single-file components?<a class="headerlink" href="#does-jscan-support-vue-single-file-components" title="Permanent link">&para;</a></h3>
+<p>This happens in two situations. Analyzing a subdirectory, such as <code>src/components/</code>, means the importers in the rest of <code>src/</code> were never read. Pass the whole source root instead. Analyzing a library means the importers are in other repositories entirely, and there is nothing to do about it except gate on <code>critical_dead_code</code> rather than the full count.</p>
+<h3 id="does-polyscan-need-my-project-to-compile">Does polyscan need my project to compile?<a class="headerlink" href="#does-polyscan-need-my-project-to-compile" title="Permanent link">&para;</a></h3>
+<p>No. It parses the source with tree-sitter and never invokes <code>tsc</code>, <code>go build</code>, <code>cargo</code> or a C++ compiler. It works on code that currently fails to compile, and it does not read <code>tsconfig.json</code>. One consequence for C++: files are parsed without the preprocessor, so code whose syntax only makes sense after macro expansion is reported as a partial file and the functions containing the error are left out.</p>
+<h3 id="does-polyscan-read-tsconfigjson-path-aliases">Does polyscan read <code>tsconfig.json</code> path aliases?<a class="headerlink" href="#does-polyscan-read-tsconfigjson-path-aliases" title="Permanent link">&para;</a></h3>
+<p>No. An import written <code>@/lib/util</code> becomes a module node of its own rather than resolving to <code>src/lib/util.ts</code>. This inflates module counts in the dependency analysis, drops real edges, and hides cycles that pass through an alias. Relative imports resolve correctly. See <a href="../guides/typescript-projects/#path-aliases-are-not-resolved">the TypeScript guide</a>.</p>
+<h3 id="does-polyscan-support-vue-single-file-components">Does polyscan support Vue single-file components?<a class="headerlink" href="#does-polyscan-support-vue-single-file-components" title="Permanent link">&para;</a></h3>
 <p>Not yet. <code>.vue</code> files are not collected, so the <code>&lt;script&gt;</code> block inside them is never analyzed. The <code>.ts</code> and <code>.js</code> files in a Vue or Nuxt project are analyzed normally.</p>
-<h3 id="can-i-run-jscan-on-a-single-file">Can I run jscan on a single file?<a class="headerlink" href="#can-i-run-jscan-on-a-single-file" title="Permanent link">&para;</a></h3>
-<p>Yes. Every command accepts files as well as directories:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>jscan<span class="w"> </span>check<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/server/router.ts
+<h3 id="can-i-run-polyscan-on-a-single-file">Can I run polyscan on a single file?<a class="headerlink" href="#can-i-run-polyscan-on-a-single-file" title="Permanent link">&para;</a></h3>
+<p>Yes. <code>analyze</code> accepts files as well as directories:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/server/router.ts
 </span></code></pre></div>
 <p>Bear in mind that cross-file analyses cannot say anything useful about one file. Dead code detection will report its exports as unused, and the dependency graph will have one node.</p>
+<h3 id="how-do-i-fail-ci-on-the-results">How do I fail CI on the results?<a class="headerlink" href="#how-do-i-fail-ci-on-the-results" title="Permanent link">&para;</a></h3>
+<p><code>analyze</code> always exits 0 when the analysis ran; gate on the JSON output with <code>jq -e</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.summary.health_score &gt;= 75'</span>
+</span></code></pre></div>
+<p>The <a href="../integrations/ci-cd/">CI/CD page</a> has complete jobs, including gates on complexity, critical dead code, and cycles.</p>
 <h3 id="why-did-my-score-go-up-when-i-changed-nothing">Why did my score go up when I changed nothing?<a class="headerlink" href="#why-did-my-score-go-up-when-i-changed-nothing" title="Permanent link">&para;</a></h3>
-<p>Check whether the <code>--select</code> value changed. A category that did not run contributes no penalty, so a narrower selection produces a higher score for identical code. Always use the same selection when tracking the score over time. See <a href="../output/health-score/#selecting-fewer-analyses-raises-the-score">the health score page</a>.</p>
+<p>Check whether the <code>--select</code> value changed, or whether the analyzed language mix changed. The score is computed over the dimensions that ran, so a narrower selection is scored against a smaller budget and the numbers are not comparable. Always use the same selection on the same tree when tracking the score over time. See <a href="../output/health-score/#selecting-fewer-analyses-changes-the-budget">the health score page</a>.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <h3 id="i-set-a-value-in-my-config-file-and-nothing-changed-why">I set a value in my config file and nothing changed. Why?<a class="headerlink" href="#i-set-a-value-in-my-config-file-and-nothing-changed-why" title="Permanent link">&para;</a></h3>
-<p>jscan validates the whole configuration schema but acts on only part of it. These keys change behavior today:</p>
+<p>polyscan validates the whole configuration schema but acts on only part of it, and the file applies to the JavaScript/TypeScript analysis only. These keys change behavior today:</p>
 <ul>
 <li><code>complexity.low_threshold</code> and <code>complexity.medium_threshold</code></li>
-<li><code>complexity.max_complexity</code>, used by <code>jscan check</code> only</li>
-<li><code>output.min_complexity</code>, used by <code>jscan analyze</code> only</li>
-<li><code>analysis.exclude_patterns</code></li>
+<li><code>complexity.report_unchanged</code></li>
+<li><code>dead_code.min_severity</code> and <code>dead_code.sort_by</code></li>
+<li><code>output.min_complexity</code> and <code>output.sort_by</code></li>
+<li><code>analysis.include_patterns</code>, <code>analysis.exclude_patterns</code>, <code>analysis.recursive</code></li>
 </ul>
-<p>Everything else, including all of <code>dead_code</code>, is parsed and then ignored. The <a href="../configuration/#which-keys-take-effect-today">configuration guide</a> has the full list of both kinds.</p>
-<h3 id="why-does-adding-exclude_patterns-make-jscan-analyze-more-files">Why does adding <code>exclude_patterns</code> make jscan analyze <em>more</em> files?<a class="headerlink" href="#why-does-adding-exclude_patterns-make-jscan-analyze-more-files" title="Permanent link">&para;</a></h3>
+<p>Everything else is parsed and then ignored, with a warning on stderr. The <a href="../configuration/#which-keys-take-effect-today">configuration guide</a> has the full list of both kinds.</p>
+<h3 id="why-does-adding-exclude_patterns-make-polyscan-analyze-more-files">Why does adding <code>exclude_patterns</code> make polyscan analyze <em>more</em> files?<a class="headerlink" href="#why-does-adding-exclude_patterns-make-polyscan-analyze-more-files" title="Permanent link">&para;</a></h3>
 <p>Your value replaces the default list rather than extending it. The default is 26 entries long and covers dependency directories, build outputs, framework caches, and minified files. A short custom list therefore removes most of that protection. Copy the <a href="../configuration/reference/#analysisexclude_patterns">full default list</a> and add to it.</p>
 <h3 id="can-i-use-yaml-or-toml-instead-of-json">Can I use YAML or TOML instead of JSON?<a class="headerlink" href="#can-i-use-yaml-or-toml-instead-of-json" title="Permanent link">&para;</a></h3>
 <p>Yes. The format is chosen from the file extension. <code>jscan.yaml</code>, <code>jscan.yml</code>, and <code>.jscan.toml</code> all work, with the same keys.</p>
-<h3 id="which-config-file-does-jscan-use">Which config file does jscan use?<a class="headerlink" href="#which-config-file-does-jscan-use" title="Permanent link">&para;</a></h3>
-<p>It searches upward from the path you asked it to analyze, then falls back to the current directory, the XDG config directory, <code>~/.config/jscan/</code>, your home directory, and finally the <code>JSCAN_CONFIG</code> environment variable. The first file found wins. Pass <code>--config</code> to remove the guesswork, and note that <code>jscan analyze --config</code> prints the path it used.</p>
+<h3 id="which-config-file-does-polyscan-use">Which config file does polyscan use?<a class="headerlink" href="#which-config-file-does-polyscan-use" title="Permanent link">&para;</a></h3>
+<p>It searches upward from the path you asked it to analyze, then falls back to the current directory, the XDG config directory, <code>~/.config/jscan/</code>, your home directory, and finally the <code>JSCAN_CONFIG</code> environment variable. The first file found wins. See <a href="../configuration/#how-polyscan-finds-your-config-file">config discovery</a>.</p>
+<h3 id="is-there-a-config-file-for-go-rust-or-c">Is there a config file for Go, Rust or C++?<a class="headerlink" href="#is-there-a-config-file-for-go-rust-or-c" title="Permanent link">&para;</a></h3>
+<p>Not yet. Those languages run with the built-in defaults: the shared complexity thresholds (10 and 20), the shared clone fragment minimums, and a built-in definition of test code that is excluded from clone detection.</p>
 <h2 id="results">Results<a class="headerlink" href="#results" title="Permanent link">&para;</a></h2>
 <h3 id="what-counts-toward-cyclomatic-complexity">What counts toward cyclomatic complexity?<a class="headerlink" href="#what-counts-toward-cyclomatic-complexity" title="Permanent link">&para;</a></h3>
-<p>Each branch adds one to a baseline of 1: <code>if</code>, <code>else if</code>, each loop, each <code>catch</code>, each <code>case</code> label, each ternary, and each <code>&amp;&amp;</code>, <code>||</code>, or <code>??</code>. A <code>default</code> clause adds nothing, the same as <code>else</code>, and neither does optional chaining with <code>?.</code>.</p>
-<p>A function with no branching scores 1.</p>
-<p>Because every <code>case</code> label counts, a <code>switch</code> scores the same as the equivalent chain of <code>if</code> statements:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/d.ts<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.complexity.functions[] | "\(.name): \(.metrics.complexity)"'</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="go">ifChain: 5</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="go">sw4: 5</span>
-</span></code></pre></div>
-<p>The <code>switch_cases</code> field in the JSON output reports how many case labels the function contains, <code>default</code> excluded.</p>
-<p>Versions before this behavior landed scored the whole <code>switch</code> as a single branch, so switch-heavy code such as reducers and state machines will score higher after upgrading. The code did not get worse; it was under-measured.</p>
+<p>Each decision point adds one to a baseline of 1. For JavaScript/TypeScript that is: <code>if</code>, <code>else if</code>, each loop, each <code>catch</code>, each <code>case</code> label, each ternary, and each <code>&amp;&amp;</code>, <code>||</code>, or <code>??</code>. A <code>default</code> clause adds nothing, the same as <code>else</code>, and neither does optional chaining with <code>?.</code>. A function with no branching scores 1.</p>
+<p>Go, Rust and C++ count the equivalent constructs of each language — including <code>select</code> cases in Go, <code>match</code> arms and <code>?</code> in Rust, and <code>catch</code> in C++ — and closures count toward their enclosing function, so the Go numbers match gocyclo. The <a href="../cli/analyze/#complexity">analyze reference</a> has the per-language tables.</p>
 <h3 id="the-cbo-section-says-classes-but-my-code-has-none-why">The CBO section says "classes" but my code has none. Why?<a class="headerlink" href="#the-cbo-section-says-classes-but-my-code-has-none-why" title="Permanent link">&para;</a></h3>
-<p>In jscan the coupling analysis produces one entry per file, named after the module. The label "classes" comes from the shared metric definition and applies literally in pyscn, which analyzes Python. Read every count in that section as a per-module count.</p>
+<p>The coupling analysis produces one entry per file, named after the module. The label "classes" comes from the shared metric definition and applies literally in pyscn, which analyzes Python. Read every count in that section as a per-module count.</p>
 <h3 id="what-is-a-good-health-score">What is a good health score?<a class="headerlink" href="#what-is-a-good-health-score" title="Permanent link">&para;</a></h3>
 <p>Grade A starts at 90 and grade B at 75. In practice, treat the category scores as more actionable than the total, because each category saturates at a different point and the total hides which one is costing you.</p>
 <p>The complexity category saturates fastest. Its penalty maxes out once the weighted ratio of problematic functions reaches 5 percent, so a handful of high complexity functions in a small codebase can max it out alone.</p>
 <h3 id="why-is-architecture_score-always-0">Why is <code>architecture_score</code> always 0?<a class="headerlink" href="#why-is-architecture_score-always-0" title="Permanent link">&para;</a></h3>
-<p>Architecture validation is not implemented in jscan. The field exists because the scoring code is shared with pyscn. Ignore both <code>architecture_score</code> and <code>arch_enabled</code> in JSON output.</p>
-<h3 id="why-does-jscan-flag-code-my-linter-does-not">Why does jscan flag code my linter does not?<a class="headerlink" href="#why-does-jscan-flag-code-my-linter-does-not" title="Permanent link">&para;</a></h3>
-<p>They answer different questions. A linter checks style and known bug patterns statement by statement. jscan builds a control flow graph and an import graph, which lets it find unreachable code, duplication across files, and circular imports. Neither replaces the other, and running both is normal.</p>
+<p>Architecture validation is not implemented in polyscan. The field exists because the scoring code is shared with pyscn. Ignore both <code>architecture_score</code> and <code>arch_enabled</code> in JSON output.</p>
+<h3 id="why-does-polyscan-flag-code-my-linter-does-not">Why does polyscan flag code my linter does not?<a class="headerlink" href="#why-does-polyscan-flag-code-my-linter-does-not" title="Permanent link">&para;</a></h3>
+<p>They answer different questions. A linter checks style and known bug patterns statement by statement. polyscan builds a control flow graph and an import graph, which lets it find unreachable code, duplication across files, and circular imports. Neither replaces the other, and running both is normal.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <h3 id="which-analysis-is-slowest">Which analysis is slowest?<a class="headerlink" href="#which-analysis-is-slowest" title="Permanent link">&para;</a></h3>
-<p>Clone detection, followed by dead code detection. The five analyses run in parallel, so total time is set by the slowest rather than by their sum. Dropping clone detection is the single most effective speedup:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode,cbo,deps<span class="w"> </span>src/
+<p>Clone detection, followed by dead code detection. The analyses run in parallel, so total time is set by the slowest rather than by their sum. Dropping clone detection is the single most effective speedup:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode,cbo,deps<span class="w"> </span>src/
 </span></code></pre></div>
-<p><code>jscan check</code> is fast because it never runs clone or coupling analysis at all.</p>
 <h3 id="the-progress-bar-sits-near-the-end-for-a-long-time-is-it-stuck">The progress bar sits near the end for a long time. Is it stuck?<a class="headerlink" href="#the-progress-bar-sits-near-the-end-for-a-long-time-is-it-stuck" title="Permanent link">&para;</a></h3>
 <p>No. The bar is driven by an elapsed-time estimate rather than by real progress. When a run takes longer than estimated, the bar advances slowly toward 99 percent rather than stopping, so that it does not look frozen. Large repositories often reach that state.</p>
 <h2 id="project">Project<a class="headerlink" href="#project" title="Permanent link">&para;</a></h2>
-<h3 id="how-does-jscan-relate-to-pyscn">How does jscan relate to pyscn?<a class="headerlink" href="#how-does-jscan-relate-to-pyscn" title="Permanent link">&para;</a></h3>
-<p>They are the same analyses for different languages: pyscn for Python, jscan for JavaScript and TypeScript. The language-independent algorithms live in a shared <code>core</code> module in the polyscan repository, which both depend on. That is why grade thresholds and the health score formula are identical across the two.</p>
-<h3 id="where-does-jscans-source-live">Where does jscan's source live?<a class="headerlink" href="#where-does-jscans-source-live" title="Permanent link">&para;</a></h3>
-<p>In the <a href="https://github.com/ludo-technologies/polyscan">polyscan monorepo</a>, under <code>jscan/</code>. The standalone <code>jscan</code> repository was retired and moved into the monorepo.</p>
+<h3 id="how-does-polyscan-relate-to-pyscn">How does polyscan relate to pyscn?<a class="headerlink" href="#how-does-polyscan-relate-to-pyscn" title="Permanent link">&para;</a></h3>
+<p>They are the same analyses for different languages: pyscn for Python, polyscan for everything else it supports. The language-independent algorithms live in a shared <code>core</code> module in the polyscan repository, which both depend on. That is why grade thresholds mean the same thing across the two.</p>
+<h3 id="where-does-polyscans-source-live">Where does polyscan's source live?<a class="headerlink" href="#where-does-polyscans-source-live" title="Permanent link">&para;</a></h3>
+<p>In the <a href="https://github.com/ludo-technologies/polyscan">polyscan monorepo</a>, under <code>polyscan/</code>. jscan's code moved into that module as its JavaScript/TypeScript backend; the standalone <code>jscan</code> repository was retired earlier.</p>
 <h3 id="is-the-json-output-stable">Is the JSON output stable?<a class="headerlink" href="#is-the-json-output-stable" title="Permanent link">&para;</a></h3>
-<p>Not yet. Fields are more likely to be added than removed, but treat the structure as subject to change between releases. Pin the jscan version in anything that parses it.</p>
+<p>Not yet. Fields are more likely to be added than removed, but treat the structure as subject to change between releases. Pin the polyscan version in anything that parses it.</p>
 <h3 id="how-do-i-report-a-bug">How do I report a bug?<a class="headerlink" href="#how-do-i-report-a-bug" title="Permanent link">&para;</a></h3>
-<p>Open an issue in the <a href="https://github.com/ludo-technologies/polyscan/issues">polyscan repository</a>. Including the jscan version from <code>jscan version</code>, the command you ran, and a small reproduction makes it much faster to act on.</p>
+<p>Open an issue in the <a href="https://github.com/ludo-technologies/polyscan/issues">polyscan repository</a>. Including the polyscan version from <code>polyscan version</code>, the command you ran, and a small reproduction makes it much faster to act on.</p>
 
 
 
@@ -2424,7 +2429,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

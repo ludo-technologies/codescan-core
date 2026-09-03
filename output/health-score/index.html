@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/output/health-score/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/output/health-score/">
       
       
         <link rel="prev" href="../json-schema/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Health Score - jscan</title>
+        <title>Health Score - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -794,12 +824,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -871,90 +895,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1439,17 +1379,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1467,10 +1396,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#selecting-fewer-analyses-raises-the-score" class="md-nav__link">
+  <a href="#selecting-fewer-analyses-changes-the-budget" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Selecting fewer analyses raises the score
+        Selecting fewer analyses changes the budget
       
     </span>
   </a>
@@ -1831,17 +1760,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1859,10 +1777,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#selecting-fewer-analyses-raises-the-score" class="md-nav__link">
+  <a href="#selecting-fewer-analyses-changes-the-budget" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Selecting fewer analyses raises the score
+        Selecting fewer analyses changes the budget
       
     </span>
   </a>
@@ -1965,19 +1883,16 @@
 
 
 <h1 id="health-score">Health Score<a class="headerlink" href="#health-score" title="Permanent link">&para;</a></h1>
-<p>The health score is a single number from 0 to 100 summarizing everything jscan measured, with a letter grade attached. It appears at the end of the terminal summary, at the top of the HTML report, and in the <code>summary</code> object of the JSON output.</p>
+<p>The health score is a single number from 0 to 100 summarizing everything polyscan measured, with a letter grade attached. It appears at the end of the terminal summary, at the top of the HTML report, and in the <code>summary</code> object of the JSON output.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Health Score: 91/100 (Grade: A)
 </span></code></pre></div>
 <p>This page documents exactly how that number is produced, so that you can predict how a change to your code will move it.</p>
 <h2 id="the-formula">The formula<a class="headerlink" href="#the-formula" title="Permanent link">&para;</a></h2>
-<p>The score starts at 100 and subtracts one penalty per category:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>score = 100 - (complexity + dead code + duplication + coupling + dependencies + architecture)
-</span></code></pre></div>
-<p>The result is clamped to the range 0 to 100. Every penalty is an integer.</p>
+<p>Each analyzed dimension produces an integer penalty with a fixed maximum:</p>
 <table>
 <thead>
 <tr>
-<th>Category</th>
+<th>Dimension</th>
 <th>Maximum penalty</th>
 </tr>
 </thead>
@@ -2002,13 +1917,18 @@
 <td>Dependencies</td>
 <td>16</td>
 </tr>
-<tr>
-<td>Architecture</td>
-<td>12</td>
-</tr>
 </tbody>
 </table>
-<p>Architecture validation is not implemented in jscan, so its penalty is always 0. In practice the largest penalty a JavaScript or TypeScript project can accumulate is 96, and the lowest reachable score is 4.</p>
+<p>The score charges the run against the dimensions that actually ran:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>score = 100 - round(100 × total penalty ÷ maximum possible penalty)
+</span></code></pre></div>
+<p>where both sums cover only the enabled dimensions. A dimension that did not run — because <code>--select</code> excluded it, or because no analyzed language has it — is left out of both sums entirely, rather than scored as clean. A pure Go project is therefore judged on complexity and duplication alone, out of a budget of 40, while a JavaScript project is judged on all five, out of 96. In both cases a clean codebase scores 100 and a fully saturated one scores near 0.</p>
+<p>Files that could not be parsed at all are charged separately, after the projection: the parse-error penalty grows with the skipped-file ratio, from a floor of 11 points — enough to cost grade A — up to 56 points when everything was skipped. It exists because every dimension above silently excludes unparsable files, so without it a broken tree would look healthy.</p>
+<p>The result is clamped to the range 0 to 100.</p>
+<div class="admonition note">
+<p class="admonition-title">Changed when jscan merged into polyscan</p>
+<p>jscan subtracted the raw penalties from 100 directly, so five clean dimensions were a precondition for a high score. polyscan projects the penalties onto the dimensions that ran, which keeps scores meaningful for languages that only have complexity and clone analysis. On a JavaScript project the two formulas agree closely but not exactly: the projection divides by 96 rather than 100.</p>
+</div>
 <h2 id="grades">Grades<a class="headerlink" href="#grades" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -2042,7 +1962,7 @@
 </table>
 <p>These thresholds are shared with pyscn so that a grade means the same thing regardless of the language being analyzed.</p>
 <h2 id="project-scale">Project scale<a class="headerlink" href="#project-scale" title="Permanent link">&para;</a></h2>
-<p>Directly below the health score, jscan prints the size of the repository it just analyzed:</p>
+<p>Directly below the health score, polyscan prints the size of the repository it just analyzed:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Project Scale: Medium (123 files, 456 functions, 7890 LOC)
 </span></code></pre></div>
 <p>The label comes from the number of analyzed files alone:</p>
@@ -2079,24 +1999,23 @@
 <p>The scale is reported for context only. It does not change the health score or the grade in any way, so two repositories of different sizes with identical metrics receive identical scores.</p>
 <p>The line count comes from the clone analysis, which is the stage that reads whole files. When clone analysis is turned off, the line count is omitted and the line reads <code>Project Scale: Medium (123 files, 456 functions)</code>.</p>
 <h2 id="how-each-penalty-is-computed">How each penalty is computed<a class="headerlink" href="#how-each-penalty-is-computed" title="Permanent link">&para;</a></h2>
-<p>Four of the categories use the same shape. A ratio is computed, and the penalty grows linearly from 0 until the ratio reaches a saturation point, beyond which the penalty stays at its maximum.</p>
+<p>Four of the dimensions use the same shape. A ratio is computed, and the penalty grows linearly from 0 until the ratio reaches a saturation point, beyond which the penalty stays at its maximum.</p>
 <h3 id="complexity">Complexity<a class="headerlink" href="#complexity" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ratio   = (high risk functions + 0.5 × medium risk functions) ÷ total functions
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>penalty = 20 × ratio ÷ 0.05, capped at 20
 </span></code></pre></div>
-<p>The penalty reaches its maximum once the weighted ratio hits 5 percent. That is a demanding target: a codebase where one function in twenty is high risk already receives the full 20 point penalty. Medium risk functions count half as much as high risk ones.</p>
-<p>Which functions count as high or medium risk depends on your configured thresholds, so raising <code>complexity.medium_threshold</code> raises the score without changing any code.</p>
+<p>The penalty reaches its maximum once the weighted ratio hits 5 percent. That is a demanding target: a codebase where one function in twenty is high risk already receives the full 20 point penalty. Medium risk functions count half as much as high risk ones. The population covers every analyzed function in every language.</p>
+<p>Which functions count as high or medium risk depends on the thresholds, so for JavaScript/TypeScript raising <code>complexity.medium_threshold</code> raises the score without changing any code.</p>
 <h3 id="dead-code">Dead code<a class="headerlink" href="#dead-code" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>weighted = 1.0 × critical + 0.5 × warning + 0.2 × info
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>rate     = weighted ÷ total files
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>penalty  = 20 × rate ÷ 3.0, capped at 20
 </span></code></pre></div>
-<p>This is a per-file rate rather than a raw count, so a large codebase is not penalized simply for being large. The penalty maxes out at three weighted findings per file.</p>
-<p>Note that the divisor is the file count reported by the dead code analysis. When dead code detection is not selected, the file count is 0 and the penalty is 0.</p>
+<p>This is a per-file rate rather than a raw count, so a large codebase is not penalized simply for being large. The penalty maxes out at three weighted findings per file. The divisor is the file count the dead code analysis covered, which is the JavaScript/TypeScript files.</p>
 <h3 id="duplication">Duplication<a class="headerlink" href="#duplication" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>penalty = 20 × duplication percentage ÷ 30, capped at 20
 </span></code></pre></div>
-<p>The duplication percentage is the proportion of code fragments that participate in at least one clone pair or group. It reaches the maximum penalty at 30 percent.</p>
+<p>The duplication percentage is the proportion of code fragments, across every language, that participate in at least one clone pair or group. It reaches the maximum penalty at 30 percent.</p>
 <h3 id="coupling">Coupling<a class="headerlink" href="#coupling" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>ratio   = (high coupling modules + 0.3 × medium coupling modules) ÷ total modules
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>penalty = 20 × ratio ÷ 0.40, capped at 20
@@ -2110,15 +2029,13 @@
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>cycle points = min(10, max(proportional, floor))
 </span></code></pre></div>
 <p>The logarithmic floor exists so that circular imports always cost something. Without it, three modules in a cycle inside a thousand-module repository would round away to nothing.</p>
-<p><strong>Depth, up to 3 points.</strong> jscan compares your longest import chain against the depth a healthy graph of that size would have:</p>
+<p><strong>Depth, up to 3 points.</strong> polyscan compares your longest import chain against the depth a healthy graph of that size would have:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>expected     = max(3, ⌈log₂(total modules + 1)⌉ + 1)
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>depth points = min(3, max(0, max depth - expected))
 </span></code></pre></div>
 <p><strong>Main sequence deviation, up to 3 points.</strong> The Martin distance from the main sequence, a value between 0 and 1, multiplied by 3 and rounded. The <a href="../../guides/dependency-graph/">dependency graph guide</a> explains what that metric means.</p>
-<h3 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h3>
-<p>Always 0 in jscan. The category exists because the scoring code is shared with pyscn, where architectural layer validation is implemented.</p>
 <h2 id="category-scores">Category scores<a class="headerlink" href="#category-scores" title="Permanent link">&para;</a></h2>
-<p>Alongside the overall number, jscan reports a 0 to 100 score per category. These are presentation values and do not feed back into the total.</p>
+<p>Alongside the overall number, polyscan reports a 0 to 100 score per dimension. These are presentation values and do not feed back into the total.</p>
 <p>For complexity, dead code, duplication, and coupling the conversion is direct:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>category score = 100 - (penalty × 5)
 </span></code></pre></div>
@@ -2127,26 +2044,23 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>normalized     = round(penalty ÷ 16 × 20)
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>category score = 100 - (normalized × 5)
 </span></code></pre></div>
-<p>The architecture score is the compliance ratio times 100, which in jscan is always 0. Ignore the <code>architecture_score</code> field in JSON output.</p>
-<h2 id="selecting-fewer-analyses-raises-the-score">Selecting fewer analyses raises the score<a class="headerlink" href="#selecting-fewer-analyses-raises-the-score" title="Permanent link">&para;</a></h2>
-<p>A category that did not run contributes no penalty. That makes scores from different <code>--select</code> values incomparable:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
+<p>The <code>architecture_score</code> field in the JSON output is always 0, because architecture validation is not implemented in polyscan; the field exists because the scoring code is shared with pyscn. Ignore it.</p>
+<h2 id="selecting-fewer-analyses-changes-the-budget">Selecting fewer analyses changes the budget<a class="headerlink" href="#selecting-fewer-analyses-changes-the-budget" title="Permanent link">&para;</a></h2>
+<p>A dimension that did not run is left out of both the penalty and the budget, so scores from different <code>--select</code> values are computed over different denominators and are not comparable:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>complexity<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="go">100</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="go">93</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="go">91</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.summary.health_score
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="go">91</span>
 </span></code></pre></div>
-<p>The code is identical in all three runs. Only the number of categories being scored changed.</p>
-<p>If you track the score over time, always run the same selection. The default, which runs all five analyses, is the right choice for a tracked metric.</p>
+<p>The code is identical in both runs. Only the set of dimensions being scored changed. The same applies across languages: a Go project's 90 and a TypeScript project's 90 are both grade A, but they are earned over different dimension sets.</p>
+<p>If you track the score over time, always run the same selection on the same tree. The default, which runs everything a language supports, is the right choice for a tracked metric.</p>
 <h2 id="worked-example">Worked example<a class="headerlink" href="#worked-example" title="Permanent link">&para;</a></h2>
-<p>Take the run summarized as 91 out of 100 with grade A:</p>
+<p>Take a TypeScript run summarized as 91 out of 100 with grade A. All five dimensions ran, so the budget is 20 + 20 + 20 + 20 + 16 = 96:</p>
 <table>
 <thead>
 <tr>
-<th>Category</th>
+<th>Dimension</th>
 <th>Measurement</th>
 <th>Penalty</th>
 <th>Category score</th>
@@ -2183,19 +2097,13 @@
 <td>2</td>
 <td>85</td>
 </tr>
-<tr>
-<td>Architecture</td>
-<td>not implemented</td>
-<td>0</td>
-<td>0</td>
-</tr>
 </tbody>
 </table>
-<p>The total penalty is 9, giving a score of 91 and a grade of A.</p>
+<p>The total penalty is 9 out of a possible 96, so the score is <code>100 - round(100 × 9 ÷ 96) = 100 - 9 = 91</code>, grade A.</p>
 <p>The dead code figure is the one worth following through. The weighted finding count is <code>1.0 × 1 + 0.5 × 2 = 2.0</code>, spread over 2 files, giving a rate of 1.0. That is one third of the way to the saturation point of 3.0, so the penalty is one third of 20, which rounds to 7. The category score is <code>100 - 7 × 5 = 65</code>.</p>
 <h2 id="what-moves-the-score-most">What moves the score most<a class="headerlink" href="#what-moves-the-score-most" title="Permanent link">&para;</a></h2>
-<p>Because every category saturates, the fastest gains come from whichever category is furthest from zero rather than from whichever has the most raw findings. A project with a dead code score of 65 and a complexity score of 100 should fix dead code first, even if it has far more functions than findings.</p>
-<p>The categories also differ in how quickly they saturate. Complexity saturates at a weighted ratio of 5 percent, which is by far the tightest of the four. A handful of high complexity functions in a small codebase can max out that penalty on its own.</p>
+<p>Because every dimension saturates, the fastest gains come from whichever dimension is furthest from zero rather than from whichever has the most raw findings. A project with a dead code score of 65 and a complexity score of 100 should fix dead code first, even if it has far more functions than findings.</p>
+<p>The dimensions also differ in how quickly they saturate. Complexity saturates at a weighted ratio of 5 percent, which is by far the tightest of the four. A handful of high complexity functions in a small codebase can max out that penalty on its own.</p>
 
 
 
@@ -2265,7 +2173,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

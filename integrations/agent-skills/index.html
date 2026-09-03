@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/integrations/agent-skills/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/integrations/agent-skills/">
       
       
         <link rel="prev" href="../ci-cd/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Agent Skills - jscan</title>
+        <title>Agent Skills - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -794,12 +824,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -871,90 +895,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1799,7 +1739,7 @@
 
 
 <h1 id="agent-skills">Agent Skills<a class="headerlink" href="#agent-skills" title="Permanent link">&para;</a></h1>
-<p>jscan ships four Agent Skills. A skill is a short instruction file that tells an AI coding agent when a tool is relevant, which command to run, and how to interpret the output. Installing them means you can ask for the analysis in plain language instead of remembering the flags.</p>
+<p>polyscan ships four Agent Skills. A skill is a short instruction file that tells an AI coding agent when a tool is relevant, which command to run, and how to interpret the output. Installing them means you can ask for the analysis in plain language instead of remembering the flags.</p>
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>npx<span class="w"> </span>skills<span class="w"> </span>add<span class="w"> </span>ludo-technologies/polyscan
 </span></code></pre></div>
@@ -1811,7 +1751,7 @@
 <h2 id="install-as-a-claude-code-plugin">Install as a Claude Code plugin<a class="headerlink" href="#install-as-a-claude-code-plugin" title="Permanent link">&para;</a></h2>
 <p>Claude Code can install the same skills through its plugin system:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>claude<span class="w"> </span>plugin<span class="w"> </span>marketplace<span class="w"> </span>add<span class="w"> </span>ludo-technologies/polyscan
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>jscan@polyscan-marketplace
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>claude<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>polyscan@polyscan-marketplace
 </span></code></pre></div>
 <p>The contents are identical. Choose whichever fits how you already manage tooling. There is no benefit to installing both.</p>
 <h2 id="the-four-skills">The four skills<a class="headerlink" href="#the-four-skills" title="Permanent link">&para;</a></h2>
@@ -1827,26 +1767,26 @@
 <tr>
 <td><code>health-check</code></td>
 <td>Questions about overall quality, a grade, or a before and after comparison</td>
-<td><code>jscan analyze</code> and reads the health score</td>
+<td><code>polyscan analyze</code> and reads the health score</td>
 </tr>
 <tr>
 <td><code>refactoring</code></td>
 <td>Questions about duplication, complexity hotspots, or dead code</td>
-<td><code>jscan analyze</code> with the relevant <code>--select</code></td>
+<td><code>polyscan analyze</code> with the relevant <code>--select</code></td>
 </tr>
 <tr>
 <td><code>architecture-review</code></td>
 <td>Questions about module structure, coupling, or circular imports</td>
-<td><code>jscan deps</code> and the coupling analysis</td>
+<td><code>polyscan analyze --select deps,cbo</code> and the coupling analysis</td>
 </tr>
 <tr>
 <td><code>cli-analysis</code></td>
-<td>Requests for a report file, a CI gate, or project configuration</td>
-<td><code>jscan check</code>, <code>jscan init</code>, and report generation</td>
+<td>Requests for a report file, CI wiring, or project configuration</td>
+<td><code>polyscan analyze</code> in its report and JSON modes</td>
 </tr>
 </tbody>
 </table>
-<p>Each skill runs jscan through <code>npx jscan@latest</code>, so no separate install is needed. The agent will download it on first use.</p>
+<p>Each skill runs polyscan through <code>npx polyscan@latest</code>, so no separate install is needed. The agent will download it on first use.</p>
 <h2 id="what-to-ask">What to ask<a class="headerlink" href="#what-to-ask" title="Permanent link">&para;</a></h2>
 <p>Once installed, ordinary requests reach the right analysis:</p>
 <ul>
@@ -1858,12 +1798,12 @@
 <li>"Generate an HTML quality report."</li>
 </ul>
 <h2 id="reading-the-results-critically">Reading the results critically<a class="headerlink" href="#reading-the-results-critically" title="Permanent link">&para;</a></h2>
-<p>An agent will report what jscan says, and jscan has limitations that are easy to miss when the output is summarized for you. Two are worth telling your agent about.</p>
-<p><strong>Unused exports depend on what was analyzed.</strong> If the agent runs jscan on one directory, every export in it is reported as unused, because the importers elsewhere were never read. Ask the agent to analyze the whole source root before acting on those findings.</p>
-<p><strong>A clean report only covers the files that were read.</strong> If an agent reports a clean codebase, ask it to confirm the file count on the <code>Analyzing N files...</code> line against the number of source files you actually have. Versions up to 0.9.0 matched the exclude patterns <code>out</code> and <code>dist</code> against any part of a path, which silently skipped <code>src/routes/</code>, <code>src/layout/</code>, and <code>src/checkout/</code>. The <a href="../../configuration/reference/#analysisexclude_patterns">configuration reference</a> describes how patterns match now.</p>
+<p>An agent will report what polyscan says, and polyscan has limitations that are easy to miss when the output is summarized for you. Two are worth telling your agent about.</p>
+<p><strong>Unused exports depend on what was analyzed.</strong> If the agent runs polyscan on one directory, every export in it is reported as unused, because the importers elsewhere were never read. Ask the agent to analyze the whole source root before acting on those findings.</p>
+<p><strong>A clean report only covers the files that were read.</strong> If an agent reports a clean codebase, ask it to confirm the file count on the <code>Analyzing N files...</code> line against the number of source files you actually have. The <a href="../../configuration/reference/#analysisexclude_patterns">configuration reference</a> describes how the exclude patterns match.</p>
 <p>Committing a <code>jscan.config.json</code> records your exclude list for every future agent run, since the agent picks the file up automatically.</p>
 <h2 id="working-with-python-too">Working with Python too?<a class="headerlink" href="#working-with-python-too" title="Permanent link">&para;</a></h2>
-<p>pyscn provides the equivalent skills for Python, but they live in the <a href="https://github.com/ludo-technologies/pyscn">pyscn repository</a> rather than this one. Installing from <code>ludo-technologies/polyscan</code> gives you the four jscan skills only. Add the pyscn skills separately for a mixed codebase.</p>
+<p>pyscn provides the equivalent skills for Python, but they live in the <a href="https://github.com/ludo-technologies/pyscn">pyscn repository</a> rather than this one. Installing from <code>ludo-technologies/polyscan</code> gives you the four polyscan skills only. Add the pyscn skills separately for a mixed codebase.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../cli/">CLI reference</a> for what the agent is actually running</li>
@@ -1938,7 +1878,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

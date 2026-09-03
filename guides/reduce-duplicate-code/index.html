@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/guides/reduce-duplicate-code/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/guides/reduce-duplicate-code/">
       
       
         <link rel="prev" href="../typescript-projects/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Reduce Duplicate Code - jscan</title>
+        <title>Reduce Duplicate Code - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -932,12 +962,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1009,90 +1033,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1821,14 +1761,14 @@
 
 
 <h1 id="reduce-duplicate-code">Reduce Duplicate Code<a class="headerlink" href="#reduce-duplicate-code" title="Permanent link">&para;</a></h1>
-<p>jscan finds duplicated code by comparing syntax trees rather than text. That means it still recognizes a copy after the variables have been renamed, the statements reordered, or the formatting changed, which is what separates it from a plain text search.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>clone<span class="w"> </span>src/
+<p>polyscan finds duplicated code by comparing syntax trees rather than text, in every supported language. That means it still recognizes a copy after the variables have been renamed, the statements reordered, or the formatting changed, which is what separates it from a plain text search.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>clone<span class="w"> </span>src/
 </span></code></pre></div>
 <h2 id="how-the-detection-works">How the detection works<a class="headerlink" href="#how-the-detection-works" title="Permanent link">&para;</a></h2>
 <p>Two stages run in sequence, for reasons of cost.</p>
 <p>First, every candidate fragment is reduced to a <strong>MinHash fingerprint</strong>, a compact summary of its structure. Fingerprints are indexed with locality-sensitive hashing so that fragments with similar structure land in the same bucket. This step is fast and approximate, and its job is to discard the overwhelming majority of pairs that could not possibly match.</p>
 <p>Second, the surviving pairs are compared with <strong>APTED</strong>, an algorithm that computes the edit distance between two trees, meaning the cheapest sequence of insertions, deletions, and relabellings that turns one into the other. This is accurate but cubic in fragment size, which is exactly why the first stage exists.</p>
-<p>Locality-sensitive hashing switches on automatically once a run exceeds 500 fragments. Below that, every pair is compared directly.</p>
+<p>Fragments of different languages are never compared with each other: a Go function and a TypeScript function can look alike without either being a copy of the other.</p>
 <h2 id="clone-types">Clone types<a class="headerlink" href="#clone-types" title="Permanent link">&para;</a></h2>
 <p>Results are graded by how much the copies differ.</p>
 <table>
@@ -1837,7 +1777,7 @@
 <th>Type</th>
 <th>Meaning</th>
 <th>Similarity threshold</th>
-<th>On by default</th>
+<th>Reported for</th>
 </tr>
 </thead>
 <tbody>
@@ -1845,30 +1785,31 @@
 <td>Type 1</td>
 <td>Identical apart from whitespace and comments</td>
 <td>0.85</td>
-<td>Yes</td>
+<td>Every language</td>
 </tr>
 <tr>
 <td>Type 2</td>
 <td>Identical after renaming identifiers and literals</td>
 <td>0.75</td>
-<td>Yes</td>
+<td>Every language</td>
 </tr>
 <tr>
 <td>Type 3</td>
 <td>A copy with statements added, removed, or changed</td>
 <td>0.70</td>
-<td>No</td>
+<td>Go, Rust and C++; off by default for JS/TS</td>
 </tr>
 <tr>
 <td>Type 4</td>
 <td>Different code computing the same result</td>
 <td>0.65</td>
-<td>Yes</td>
+<td>JavaScript/TypeScript</td>
 </tr>
 </tbody>
 </table>
-<p>Type 3 is disabled by default. Near-miss matching produces a high false positive rate, and the findings it adds tend to be pairs that merely resemble each other rather than pairs worth merging.</p>
+<p>For JavaScript/TypeScript, Type 3 is disabled by default: near-miss matching produces a high false positive rate there, and the findings it adds tend to be pairs that merely resemble each other rather than pairs worth merging.</p>
 <p>A fragment must be at least <strong>10 lines</strong> and <strong>20 syntax tree nodes</strong> to be considered at all. This keeps short boilerplate such as getters, simple constructors, and one-line handlers out of the results, since those repeat everywhere and merging them makes code worse rather than better.</p>
+<p>In Go, Rust and C++, test code is excluded from clone detection entirely, because test functions share a skeleton by convention. The <a href="../../cli/analyze/#clone">analyze reference</a> lists exactly what counts as test code per language.</p>
 <h2 id="a-worked-example">A worked example<a class="headerlink" href="#a-worked-example" title="Permanent link">&para;</a></h2>
 <p>Two functions written months apart in different files:</p>
 <div class="language-ts highlight"><span class="filename">src/orders.ts</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">summarizeOrders</span><span class="p">(</span><span class="nx">rows</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">[])</span><span class="w"> </span><span class="p">{</span>
@@ -1897,8 +1838,8 @@
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">results</span><span class="p">;</span>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>Every identifier differs. A text search finds nothing. jscan reports:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--text<span class="w"> </span>--select<span class="w"> </span>clone<span class="w"> </span>src/
+<p>Every identifier differs. A text search finds nothing. polyscan reports:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>text<span class="w"> </span>--select<span class="w"> </span>clone<span class="w"> </span>src/
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="go">=== Clone Detection ===</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="go">Statistics:</span>
@@ -1925,27 +1866,26 @@
 <p>Not every clone should be merged. Work through these questions in order.</p>
 <p><strong>Do the copies change for the same reason?</strong> This is the question that matters most. Two functions that look alike but serve different parts of the business will drift apart, and merging them creates a shared function full of conditional branches serving both callers badly. Duplication is cheaper than the wrong abstraction.</p>
 <p><strong>Is the copy a bug waiting to happen?</strong> If fixing a bug in one copy requires remembering to fix the others, merge them. This is the strongest argument for extraction and usually the correct one for validation logic, parsing, and formatting.</p>
-<p><strong>Is the duplication accidental or structural?</strong> Two functions that are similar because both iterate a list and filter it are structurally similar without being duplicated. jscan cannot tell the difference, and Type 4 findings in particular often fall into this category.</p>
-<p><strong>Is it test code?</strong> Test files repeat setup deliberately, because a test that reads top to bottom without indirection is easier to debug. Exclude test directories from clone analysis if the findings are noise.</p>
+<p><strong>Is the duplication accidental or structural?</strong> Two functions that are similar because both iterate a list and filter it are structurally similar without being duplicated. polyscan cannot tell the difference, and Type 4 findings in particular often fall into this category.</p>
+<p><strong>Is it test code?</strong> Test files repeat setup deliberately, because a test that reads top to bottom without indirection is easier to debug. polyscan already excludes test code from clone detection for Go, Rust and C++; for JavaScript/TypeScript, exclude test directories with <code>analysis.exclude_patterns</code> if the findings are noise.</p>
 <p>When you do merge, extract the varying parts as parameters. In the example above, the two functions differ only in their variable names, so a single <code>summarize(rows)</code> replaces both directly.</p>
 <h2 id="reviewing-findings-efficiently">Reviewing findings efficiently<a class="headerlink" href="#reviewing-findings-efficiently" title="Permanent link">&para;</a></h2>
-<p>Start with the highest similarity rather than the largest fragment. A pair at 95 percent is almost certainly a copy. A pair at 66 percent, just over the Type 4 threshold, is often a coincidence.</p>
+<p>Start with the highest similarity rather than the largest fragment. A pair at 95 percent is almost certainly a copy. A pair barely over its type's threshold is often a coincidence.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># The most similar pairs first, which is the default order</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>clone<span class="w"> </span>--text<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-40
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>clone<span class="w"> </span>--format<span class="w"> </span>text<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-40
 </span></code></pre></div>
 <p>For a project you are reviewing over time, track the group count rather than the pair count. Pairs grow quadratically with each new copy and overstate the problem.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>--select<span class="w"> </span>clone<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>clone<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'{groups: .summary.clone_groups, pairs: .summary.clone_pairs,</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s1">         percent: .summary.code_duplication_percentage}'</span>
 </span></code></pre></div>
 <h2 id="speed">Speed<a class="headerlink" href="#speed" title="Permanent link">&para;</a></h2>
-<p>Clone detection is usually the slowest of the five analyses. When you are iterating on something else, leave it out:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/
+<p>Clone detection is usually the slowest of the analyses. When you are iterating on something else, leave it out:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/
 </span></code></pre></div>
-<p>It is also unavailable in <code>jscan check</code>, which is deliberate. A gate should be fast, and clone detection is not.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../cli/analyze/#clone"><code>jscan analyze</code> reference</a> for the detection settings</li>
+<li><a href="../../cli/analyze/#clone"><code>polyscan analyze</code> reference</a> for the detection settings</li>
 <li><a href="../../output/health-score/#duplication">Health score</a> for how duplication affects the score</li>
 </ul>
 
@@ -2017,7 +1957,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

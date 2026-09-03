@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>jscan - jscan</title>
+        <title>polyscan - polyscan</title>
       
     
     
@@ -96,7 +96,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="assets/icon.svg" alt="logo">
 
@@ -109,13 +109,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              jscan
+              polyscan
             
           </span>
         </div>
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -541,10 +541,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-jscan-measures" class="md-nav__link">
+  <a href="#what-polyscan-measures" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What jscan measures
+        What polyscan measures
       
     </span>
   </a>
@@ -589,6 +589,8 @@
   
     
     
+      
+        
       
         
       
@@ -684,6 +686,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -874,12 +904,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -951,90 +975,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1604,10 +1544,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-jscan-measures" class="md-nav__link">
+  <a href="#what-polyscan-measures" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What jscan measures
+        What polyscan measures
       
     </span>
   </a>
@@ -1673,80 +1613,80 @@
   
 
 
-<div class="jscan-hero">
-<div class="jscan-hero__copy">
-<p class="jscan-hero__eyebrow">JavaScript and TypeScript</p>
+<div class="polyscan-hero">
+<div class="polyscan-hero__copy">
+<p class="polyscan-hero__eyebrow">JavaScript · TypeScript · Go · Rust · C++</p>
 <h1 id="find-what-to-fix-first">Find what to fix first<a class="headerlink" href="#find-what-to-fix-first" title="Permanent link">&para;</a></h1>
-<p class="jscan-hero__lede">jscan reads your JavaScript and TypeScript source, scores the codebase from 0 to 100, and produces an HTML report that ranks the problems worth your attention. It runs as a single command and needs no build step, no type checker, and no project configuration.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>npx<span class="w"> </span>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
+<p class="polyscan-hero__lede">polyscan reads your source, scores the codebase from 0 to 100, and produces an HTML report that ranks the problems worth your attention. One command covers every supported language in one report: it runs with no build step, no type checker, and no project configuration.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>npx<span class="w"> </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>.
 </span></code></pre></div>
 <p><a class="md-button md-button--primary" href="getting-started/quick-start/">Get started</a>
 <a class="md-button" href="cli/">Browse the CLI reference</a></p>
-<p class="jscan-hero__meta">Written in Go. Parses with tree-sitter. Runs analyses in parallel.</p>
+<p class="polyscan-hero__meta">Written in Go. Parses with tree-sitter. Runs analyses in parallel.</p>
 </div>
-<div class="jscan-hero__art">
-<p><span class="jscan-score__grade">91/100 &nbsp;Grade A</span></p>
-<div class="jscan-score__row"><span class="jscan-score__label">Complexity</span><span class="jscan-score__bar"><span class="jscan-score__fill" style="width:100%"></span></span><span class="jscan-score__value">100</span></div>
-<div class="jscan-score__row"><span class="jscan-score__label">Dead Code</span><span class="jscan-score__bar"><span class="jscan-score__fill jscan-score__fill--warn" style="width:65%"></span></span><span class="jscan-score__value">65</span></div>
-<div class="jscan-score__row"><span class="jscan-score__label">Duplication</span><span class="jscan-score__bar"><span class="jscan-score__fill" style="width:100%"></span></span><span class="jscan-score__value">100</span></div>
-<div class="jscan-score__row"><span class="jscan-score__label">Coupling</span><span class="jscan-score__bar"><span class="jscan-score__fill" style="width:100%"></span></span><span class="jscan-score__value">100</span></div>
-<div class="jscan-score__row"><span class="jscan-score__label">Dependencies</span><span class="jscan-score__bar"><span class="jscan-score__fill" style="width:85%"></span></span><span class="jscan-score__value">85</span></div>
+<div class="polyscan-hero__art">
+<p><span class="polyscan-score__grade">91/100 &nbsp;Grade A</span></p>
+<div class="polyscan-score__row"><span class="polyscan-score__label">Complexity</span><span class="polyscan-score__bar"><span class="polyscan-score__fill" style="width:100%"></span></span><span class="polyscan-score__value">100</span></div>
+<div class="polyscan-score__row"><span class="polyscan-score__label">Dead Code</span><span class="polyscan-score__bar"><span class="polyscan-score__fill polyscan-score__fill--warn" style="width:65%"></span></span><span class="polyscan-score__value">65</span></div>
+<div class="polyscan-score__row"><span class="polyscan-score__label">Duplication</span><span class="polyscan-score__bar"><span class="polyscan-score__fill" style="width:100%"></span></span><span class="polyscan-score__value">100</span></div>
+<div class="polyscan-score__row"><span class="polyscan-score__label">Coupling</span><span class="polyscan-score__bar"><span class="polyscan-score__fill" style="width:100%"></span></span><span class="polyscan-score__value">100</span></div>
+<div class="polyscan-score__row"><span class="polyscan-score__label">Dependencies</span><span class="polyscan-score__bar"><span class="polyscan-score__fill" style="width:85%"></span></span><span class="polyscan-score__value">85</span></div>
 </div>
 </div>
-<h2 id="what-jscan-measures">What jscan measures<a class="headerlink" href="#what-jscan-measures" title="Permanent link">&para;</a></h2>
-<p>jscan looks at your code from five angles. Each one contributes a category score, and the five combine into a single health score. The <a href="output/health-score/">health score page</a> explains exactly how the arithmetic works.</p>
+<h2 id="what-polyscan-measures">What polyscan measures<a class="headerlink" href="#what-polyscan-measures" title="Permanent link">&para;</a></h2>
+<p>polyscan looks at your code from five angles. Each one contributes a category score, and the analyzed categories combine into a single health score. Complexity and duplicate code cover every supported language; dead code, dependencies and class design run for JavaScript and TypeScript, and a dimension a language does not have is left out of the score rather than counted as clean. The <a href="output/health-score/">health score page</a> explains exactly how the arithmetic works.</p>
 <div class="grid cards">
 <ul>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19.36 2.72 1.42 1.42-5.72 5.71c1.07 1.54 1.22 3.39.32 4.59L9.06 8.12c1.2-.9 3.05-.75 4.59.32zM5.93 17.57c-2.01-2.01-3.24-4.41-3.58-6.65l4.88-2.09 7.44 7.44-2.09 4.88c-2.24-.34-4.64-1.57-6.65-3.58"/></svg></span> <strong>Dead code</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.5 21c-3 0-4.19-4.24-5.45-8.72C10.14 9.04 9 5 7.5 5 4.11 5 4 11.93 4 12H2c0-.37.06-9 5.5-9 3 0 4.21 4.25 5.47 8.74C13.83 14.8 15 19 16.5 19c3.44 0 3.53-6.93 3.53-7h2c0 .37-.06 9-5.53 9"/></svg></span> <strong>Complexity</strong></p>
 <hr />
-<p>Statements that can never execute, exported functions that nothing imports, and imports that nothing uses. jscan finds these by building a control flow graph for every function and walking it from the entry point.</p>
-<p><a href="cli/analyze/#dead-code">Read more</a></p>
+<p>Cyclomatic complexity per function, which counts the number of independent paths through the code, in every supported language. High values mark the functions that are hardest to read and to test.</p>
+<p><a href="cli/analyze/#complexity">Read more</a></p>
 </li>
 <li>
 <p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 17H4a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h12v2H4v12h7v-2l4 3-4 3zm8 4V7H8v6H6V7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-2h2v2z"/></svg></span> <strong>Duplicate code</strong></p>
 <hr />
-<p>Copy-pasted and structurally similar code. jscan compares syntax trees rather than text, so it still matches fragments after variables have been renamed or statements reordered.</p>
+<p>Copy-pasted and structurally similar code, in every supported language. polyscan compares syntax trees rather than text, so it still matches fragments after variables have been renamed or statements reordered.</p>
 <p><a href="guides/reduce-duplicate-code/">Read more</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.5 21c-3 0-4.19-4.24-5.45-8.72C10.14 9.04 9 5 7.5 5 4.11 5 4 11.93 4 12H2c0-.37.06-9 5.5-9 3 0 4.21 4.25 5.47 8.74C13.83 14.8 15 19 16.5 19c3.44 0 3.53-6.93 3.53-7h2c0 .37-.06 9-5.53 9"/></svg></span> <strong>Complexity</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19.36 2.72 1.42 1.42-5.72 5.71c1.07 1.54 1.22 3.39.32 4.59L9.06 8.12c1.2-.9 3.05-.75 4.59.32zM5.93 17.57c-2.01-2.01-3.24-4.41-3.58-6.65l4.88-2.09 7.44 7.44-2.09 4.88c-2.24-.34-4.64-1.57-6.65-3.58"/></svg></span> <strong>Dead code</strong> <small>JS/TS</small></p>
 <hr />
-<p>Cyclomatic complexity per function, which counts the number of independent paths through the code. High values mark the functions that are hardest to read and to test.</p>
-<p><a href="cli/analyze/#complexity">Read more</a></p>
+<p>Statements that can never execute, exported functions that nothing imports, and imports that nothing uses. polyscan finds these by building a control flow graph for every function and walking it from the entry point.</p>
+<p><a href="cli/analyze/#dead-code">Read more</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.5 17c-.14 0-.26 0-.39.04L17.5 13.8c.45-.45.75-1.09.75-1.8a2.5 2.5 0 0 0-2.5-2.5c-.14 0-.25 0-.4.04L13.74 6.3c.47-.46.76-1.09.76-1.8a2.5 2.5 0 0 0-5 0c0 .7.29 1.34.76 1.79L8.65 9.54c-.15-.04-.26-.04-.4-.04a2.5 2.5 0 0 0-2.5 2.5c0 .71.29 1.34.75 1.79l-1.61 3.25C4.76 17 4.64 17 4.5 17a2.5 2.5 0 0 0 0 5A2.5 2.5 0 0 0 7 19.5c0-.7-.29-1.34-.76-1.79l1.62-3.25c.14.04.26.04.39.04s.25 0 .38-.04l1.63 3.25c-.47.45-.76 1.09-.76 1.79a2.5 2.5 0 0 0 5 0A2.5 2.5 0 0 0 12 17c-.13 0-.26 0-.39.04L10 13.8c.45-.45.75-1.09.75-1.8 0-.7-.29-1.33-.75-1.79l1.61-3.25c.13.04.26.04.39.04s.26 0 .39-.04L14 10.21a2.5 2.5 0 0 0 1.75 4.29c.13 0 .25 0 .38-.04l1.63 3.25c-.47.45-.76 1.09-.76 1.79a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0-2.5-2.5m-15 3.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m8.5-1c0 .55-.45 1-1 1s-1-.45-1-1 .45-1 1-1 1 .45 1 1M7.25 12c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1M11 4.5c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1m3.75 7.5c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1m4.75 8.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg></span> <strong>Dependencies</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.5 17c-.14 0-.26 0-.39.04L17.5 13.8c.45-.45.75-1.09.75-1.8a2.5 2.5 0 0 0-2.5-2.5c-.14 0-.25 0-.4.04L13.74 6.3c.47-.46.76-1.09.76-1.8a2.5 2.5 0 0 0-5 0c0 .7.29 1.34.76 1.79L8.65 9.54c-.15-.04-.26-.04-.4-.04a2.5 2.5 0 0 0-2.5 2.5c0 .71.29 1.34.75 1.79l-1.61 3.25C4.76 17 4.64 17 4.5 17a2.5 2.5 0 0 0 0 5A2.5 2.5 0 0 0 7 19.5c0-.7-.29-1.34-.76-1.79l1.62-3.25c.14.04.26.04.39.04s.25 0 .38-.04l1.63 3.25c-.47.45-.76 1.09-.76 1.79a2.5 2.5 0 0 0 5 0A2.5 2.5 0 0 0 12 17c-.13 0-.26 0-.39.04L10 13.8c.45-.45.75-1.09.75-1.8 0-.7-.29-1.33-.75-1.79l1.61-3.25c.13.04.26.04.39.04s.26 0 .39-.04L14 10.21a2.5 2.5 0 0 0 1.75 4.29c.13 0 .25 0 .38-.04l1.63 3.25c-.47.45-.76 1.09-.76 1.79a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0-2.5-2.5m-15 3.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1m8.5-1c0 .55-.45 1-1 1s-1-.45-1-1 .45-1 1-1 1 .45 1 1M7.25 12c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1M11 4.5c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1m3.75 7.5c0-.55.45-1 1-1s1 .45 1 1-.45 1-1 1-1-.45-1-1m4.75 8.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1"/></svg></span> <strong>Dependencies</strong> <small>JS/TS</small></p>
 <hr />
-<p>The module import graph, including circular imports and the Martin coupling metrics. jscan can export the graph as Graphviz DOT for rendering.</p>
+<p>The module import graph, including circular imports and the Martin coupling metrics, derived from resolving every import across the analyzed files.</p>
 <p><a href="guides/dependency-graph/">Read more</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 1c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h11c1.11 0 2-.89 2-2v-3h-2v3H3V3h11v2h2V3c0-1.11-.89-2-2-2M9 7c-1.11 0-2 .89-2 2v3h2V9h11v11H9v-2H7v2c0 1.11.89 2 2 2h11c1.11 0 2-.89 2-2V9c0-1.11-.89-2-2-2z"/></svg></span> <strong>Class design</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 1c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h11c1.11 0 2-.89 2-2v-3h-2v3H3V3h11v2h2V3c0-1.11-.89-2-2-2M9 7c-1.11 0-2 .89-2 2v3h2V9h11v11H9v-2H7v2c0 1.11.89 2 2 2h11c1.11 0 2-.89 2-2V9c0-1.11-.89-2-2-2z"/></svg></span> <strong>Class design</strong> <small>JS/TS</small></p>
 <hr />
 <p>Coupling between objects, which counts how many other types each class or module depends on. Classes near the top of this list are the ones that break when anything else changes.</p>
 <p><a href="cli/analyze/#cbo">Read more</a></p>
 </li>
 <li>
-<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m23 12-2.44-2.78.34-3.68-3.61-.82-1.89-3.18L12 3 8.6 1.54 6.71 4.72l-3.61.81.34 3.68L1 12l2.44 2.78-.34 3.69 3.61.82 1.89 3.18L12 21l3.4 1.46 1.89-3.18 3.61-.82-.34-3.68zm-13 5-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9z"/></svg></span> <strong>Quality gates</strong></p>
+<p><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 3h2v2H5v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5h2v2H5c-1.07-.27-2-.9-2-2v-4a2 2 0 0 0-2-2H0v-2h1a2 2 0 0 0 2-2V5a2 2 0 0 1 2-2m14 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3zm-7 12a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m-4 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m8 0a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1"/></svg></span> <strong>Machine-readable output</strong></p>
 <hr />
-<p>A separate command built for continuous integration. It runs a subset of the analyses, prints a short verdict, and sets a process exit code your pipeline can act on.</p>
-<p><a href="cli/check/">Read more</a></p>
+<p>The same results as one JSON document per run, with the language on every function and clone fragment, for dashboards, bots, and CI gates built on <code>jq</code>.</p>
+<p><a href="output/json-schema/">Read more</a></p>
 </li>
 </ul>
 </div>
 <h2 id="three-commands-worth-knowing">Three commands worth knowing<a class="headerlink" href="#three-commands-worth-knowing" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Full analysis with an HTML report that opens in your browser</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>.
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Fast pass or fail gate for CI, which exits non-zero on a violation</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>jscan<span class="w"> </span>check<span class="w"> </span>src/
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Full findings in the terminal, ending with the health score</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>text<span class="w"> </span>src/
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Dependency graph rendered with Graphviz</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--dot<span class="w"> </span><span class="p">|</span><span class="w"> </span>dot<span class="w"> </span>-Tsvg<span class="w"> </span>-o<span class="w"> </span>deps.svg
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># JSON to stdout, for scripts and CI gates</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span>&gt;<span class="w"> </span>report.json
 </span></code></pre></div>
 <h2 id="working-with-python-instead">Working with Python instead?<a class="headerlink" href="#working-with-python-instead" title="Permanent link">&para;</a></h2>
-<p>The same analyses are available for Python in <a href="https://docs.codescan.dev/">pyscn</a>, which shares its core algorithms with jscan through the <code>polyscan</code> repository.</p>
+<p>The same analyses are available for Python in <a href="https://docs.codescan.dev/">pyscn</a>, which shares its core algorithms with polyscan. And if you are arriving from jscan, the JavaScript/TypeScript analyzer that merged into polyscan, the <a href="getting-started/migrating-from-jscan/">migration page</a> maps every old command to its replacement.</p>
 
 
 
@@ -1821,7 +1761,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/output/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/output/">
       
       
         <link rel="prev" href="../configuration/examples/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Output Formats - jscan</title>
+        <title>Output Formats - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href=".." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -794,12 +824,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -871,90 +895,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1653,97 +1593,56 @@
 
 
 <h1 id="output-formats">Output Formats<a class="headerlink" href="#output-formats" title="Permanent link">&para;</a></h1>
-<p>Which formats are available depends on the command.</p>
+<p><code>polyscan analyze</code> produces one of three formats, chosen with <code>--format</code>.</p>
 <table>
 <thead>
 <tr>
-<th>Command</th>
-<th>Formats</th>
+<th>Format</th>
 <th>Default</th>
 <th>Destination</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>analyze</code></td>
-<td><code>html</code>, <code>json</code>, <code>text</code></td>
 <td><code>html</code></td>
-<td>HTML to a file, the others to standard output</td>
+<td>Yes</td>
+<td>A self-contained report file</td>
 </tr>
 <tr>
-<td><code>check</code></td>
-<td>text, <code>--json</code></td>
-<td>text</td>
+<td><code>json</code></td>
+<td></td>
 <td>Standard output</td>
 </tr>
 <tr>
-<td><code>deps</code></td>
-<td><code>text</code>, <code>json</code>, <code>dot</code></td>
 <td><code>text</code></td>
-<td>Standard output, or <code>--output</code></td>
+<td></td>
+<td>Standard output</td>
 </tr>
 </tbody>
 </table>
 <h2 id="choosing-a-format">Choosing a format<a class="headerlink" href="#choosing-a-format" title="Permanent link">&para;</a></h2>
 <p><strong>HTML</strong> is the format to use when a person is going to read the results. It ranks findings, groups them by category, and is the only format that shows the full clone comparison side by side. See <a href="html-report/">the HTML report</a>.</p>
 <p><strong>Text</strong> is for a quick look in the terminal and for pasting into an issue. It contains everything the HTML report does, in reading order rather than ranked order.</p>
-<p><strong>JSON</strong> is for anything programmatic: a dashboard, a script that tracks the score over time, or a bot that comments on pull requests. See <a href="json-schema/">the JSON schema</a>.</p>
-<p><strong>DOT</strong> applies to <code>jscan deps</code> only, and produces a Graphviz document for rendering the dependency graph as an image.</p>
+<p><strong>JSON</strong> is for anything programmatic: a dashboard, a script that tracks the score over time, a CI gate, or a bot that comments on pull requests. See <a href="json-schema/">the JSON schema</a>.</p>
 <h2 id="standard-output-and-standard-error">Standard output and standard error<a class="headerlink" href="#standard-output-and-standard-error" title="Permanent link">&para;</a></h2>
 <p>This matters when you redirect output in a script.</p>
-<p>For <code>jscan analyze --json</code>, the JSON document goes to standard output and the human-readable score summary goes to standard error. That separation is deliberate, and it means the following works:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w"> </span>&gt;<span class="w"> </span>report.json<span class="w">     </span><span class="c1"># report.json holds valid JSON</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>/dev/null<span class="w">      </span><span class="c1"># summary suppressed, JSON kept</span>
+<p>For <code>polyscan analyze --format json</code>, the JSON document goes to standard output and the human-readable score summary goes to standard error. That separation is deliberate, and it means the following works:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span>&gt;<span class="w"> </span>report.json<span class="w">     </span><span class="c1"># report.json holds valid JSON</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>/dev/null<span class="w">      </span><span class="c1"># summary suppressed, JSON kept</span>
 </span></code></pre></div>
-<p>For <code>jscan analyze --text</code>, everything goes to standard output, because the text report already ends with its own score section and printing it twice would be noise.</p>
-<p>For <code>jscan analyze</code> in HTML mode, the report goes to the file and the summary goes to standard output.</p>
+<p>For <code>polyscan analyze --format text</code>, everything goes to standard output, because the text report already ends with its own score section and printing it twice would be noise.</p>
+<p>For <code>polyscan analyze</code> in HTML mode, the report goes to the file and the summary goes to standard output.</p>
 <p>Progress bars are written only when the output is an interactive terminal, so redirecting to a file never captures escape sequences.</p>
 <h2 id="exit-codes">Exit codes<a class="headerlink" href="#exit-codes" title="Permanent link">&para;</a></h2>
-<p>Only <code>jscan check</code> varies its exit code by result. Every other command exits 0 on success and 1 on an internal error.</p>
-<table>
-<thead>
-<tr>
-<th>Command</th>
-<th>0</th>
-<th>1</th>
-<th>2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>analyze</code></td>
-<td>Analysis completed</td>
-<td>Could not run</td>
-<td>not used</td>
-</tr>
-<tr>
-<td><code>check</code></td>
-<td>All checks passed</td>
-<td>A threshold was violated</td>
-<td>Could not run</td>
-</tr>
-<tr>
-<td><code>deps</code></td>
-<td>Analysis completed</td>
-<td>Could not run</td>
-<td>not used</td>
-</tr>
-<tr>
-<td><code>init</code></td>
-<td>File written</td>
-<td>Could not write</td>
-<td>not used</td>
-</tr>
-</tbody>
-</table>
-<p>An individual analysis failing inside <code>analyze</code> does not fail the command. jscan prints the error to standard error and reports the categories that did succeed, so a parse failure in one file never costs you the whole run.</p>
+<p><code>polyscan analyze</code> exits 0 when the analysis completed, no matter how poor the results, and 1 when it could not run at all. To fail a pipeline on the results, gate on the JSON output; the <a href="../integrations/ci-cd/">CI/CD page</a> shows how.</p>
+<p>An individual analysis failing inside <code>analyze</code> does not fail the command. polyscan prints the error to standard error and reports the categories that did succeed, so a parse failure in one file never costs you the whole run.</p>
 <h2 id="the-health-score">The health score<a class="headerlink" href="#the-health-score" title="Permanent link">&para;</a></h2>
-<p>Every format that carries a summary includes a health score from 0 to 100 and a letter grade. It is computed identically in all of them. See <a href="health-score/">the health score page</a> for the formula.</p>
+<p>Every format includes a health score from 0 to 100 and a letter grade, computed identically in all of them over the dimensions that ran. See <a href="health-score/">the health score page</a> for the formula.</p>
 <h2 id="report-file-location">Report file location<a class="headerlink" href="#report-file-location" title="Permanent link">&para;</a></h2>
-<p>The HTML report is written to <code>jscan-report.html</code> in the current working directory. Change it with <code>--output</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--output<span class="w"> </span>reports/quality.html<span class="w"> </span>src/
+<p>The HTML report is written to <code>polyscan-report.html</code> in the current working directory. Change it with <code>--output</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--output<span class="w"> </span>reports/quality.html<span class="w"> </span>src/
 </span></code></pre></div>
-<p>The directory must already exist. jscan does not create intermediate directories, and the command fails if the path cannot be opened for writing.</p>
+<p>The directory must already exist. polyscan does not create intermediate directories, and the command fails if the path cannot be opened for writing.</p>
 
 
 
@@ -1813,7 +1712,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

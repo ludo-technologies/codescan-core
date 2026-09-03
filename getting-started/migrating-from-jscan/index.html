@@ -6,19 +6,19 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/cli/init/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/getting-started/migrating-from-jscan/">
       
       
-        <link rel="prev" href="../deps/">
+        <link rel="prev" href="../quick-start/">
       
       
-        <link rel="next" href="../version/">
+        <link rel="next" href="../../guides/typescript-projects/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>init - jscan</title>
+        <title>Migrating from jscan - polyscan</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#jscan-init" class="md-skip">
+        <a href="#migrating-from-jscan" class="md-skip">
           Skip to content
         </a>
       
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,13 +111,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              init
+              Migrating from jscan
             
           </span>
         </div>
@@ -256,11 +256,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../getting-started/installation/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../installation/" class="md-tabs__link">
           
   
   
@@ -300,13 +302,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../cli/" class="md-tabs__link">
           
   
   
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -505,8 +505,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -514,25 +516,28 @@
       
         
       
+        
+      
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -550,7 +555,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -568,7 +573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -596,7 +601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/quick-start/" class="md-nav__link">
+      <a href="../quick-start/" class="md-nav__link">
         
   
   
@@ -612,6 +617,158 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#command-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command mapping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flag-changes-on-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flag changes on analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-check-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The check command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-deps-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The deps command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-init-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The init command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-is-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration is unchanged
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-npm-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The npm package
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -781,8 +938,6 @@
       
   
   
-    
-  
   
   
     
@@ -796,33 +951,26 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../cli/" class="md-nav__link ">
               
   
   
@@ -840,13 +988,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -866,7 +1014,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../analyze/" class="md-nav__link">
+      <a href="../../cli/analyze/" class="md-nav__link">
         
   
   
@@ -894,204 +1042,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#synopsis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Synopsis
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#flags" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Flags
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#interactive-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Interactive setup
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-generated-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The generated file
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#which-filenames-jscan-looks-for" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Which filenames jscan looks for
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../version/" class="md-nav__link">
+      <a href="../../cli/version/" class="md-nav__link">
         
   
   
@@ -1638,10 +1589,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#synopsis" class="md-nav__link">
+  <a href="#command-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Synopsis
+        Command mapping
       
     </span>
   </a>
@@ -1649,10 +1600,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#flags" class="md-nav__link">
+  <a href="#flag-changes-on-analyze" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Flags
+        Flag changes on analyze
       
     </span>
   </a>
@@ -1660,10 +1611,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#interactive-setup" class="md-nav__link">
+  <a href="#the-check-command" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interactive setup
+        The check command
       
     </span>
   </a>
@@ -1671,10 +1622,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-generated-file" class="md-nav__link">
+  <a href="#the-deps-command" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The generated file
+        The deps command
       
     </span>
   </a>
@@ -1682,10 +1633,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#which-filenames-jscan-looks-for" class="md-nav__link">
+  <a href="#the-init-command" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Which filenames jscan looks for
+        The init command
       
     </span>
   </a>
@@ -1693,10 +1644,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+  <a href="#configuration-is-unchanged" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See also
+        Configuration is unchanged
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-npm-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The npm package
       
     </span>
   </a>
@@ -1746,10 +1708,10 @@
     
     
       <li class="md-path__item">
-        <a href="../" class="md-path__link">
+        <a href="../installation/" class="md-path__link">
           
   <span class="md-ellipsis">
-    CLI Reference
+    Getting Started
   </span>
 
         </a>
@@ -1768,7 +1730,7 @@
 
 
   
-    <a href="https://github.com/ludo-technologies/polyscan/edit/main/website/docs/cli/init.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/ludo-technologies/polyscan/edit/main/website/docs/getting-started/migrating-from-jscan.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1776,174 +1738,88 @@
   
 
 
-<h1 id="jscan-init">jscan init<a class="headerlink" href="#jscan-init" title="Permanent link">&para;</a></h1>
-<p>Writes a configuration file so you do not have to repeat flags on every run.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan<span class="w"> </span>init
-</span></code></pre></div>
-<p>By default this creates <code>jscan.config.json</code> in the current directory. The command refuses to overwrite an existing file unless you pass <code>--force</code>.</p>
-<h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>jscan<span class="w"> </span>init<span class="w">                        </span><span class="c1"># Write jscan.config.json here</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>jscan<span class="w"> </span>init<span class="w"> </span>--config<span class="w"> </span>custom.json<span class="w">   </span><span class="c1"># Write to another path</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>jscan<span class="w"> </span>init<span class="w"> </span>--force<span class="w">                </span><span class="c1"># Overwrite an existing file</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>jscan<span class="w"> </span>init<span class="w"> </span>--minimal<span class="w">              </span><span class="c1"># Write only the essential keys</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>jscan<span class="w"> </span>init<span class="w"> </span>--interactive<span class="w">          </span><span class="c1"># Answer a few questions first</span>
-</span></code></pre></div>
-<h2 id="flags">Flags<a class="headerlink" href="#flags" title="Permanent link">&para;</a></h2>
+<h1 id="migrating-from-jscan">Migrating from jscan<a class="headerlink" href="#migrating-from-jscan" title="Permanent link">&para;</a></h1>
+<p>jscan, the JavaScript/TypeScript analyzer, has merged into polyscan. The same analysis — complexity, dead code, clone detection, coupling, dependencies, and the health score — now runs from the <code>polyscan</code> CLI, alongside Go, Rust and C++ support.</p>
+<p>The <a href="https://www.npmjs.com/package/jscan"><code>jscan</code> npm package</a> remains published as a thin wrapper that prints a deprecation notice and runs polyscan, so an existing <code>npx jscan analyze</code> keeps working while you migrate: the wrapper translates the <code>--json</code>, <code>--text</code> and <code>--html</code> shorthands to <code>--format</code>, and exits with a hint on <code>--config</code>. New setups should call <code>polyscan</code> directly.</p>
+<h2 id="command-mapping">Command mapping<a class="headerlink" href="#command-mapping" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Flag</th>
-<th>Short</th>
-<th>Default</th>
-<th>Description</th>
+<th>jscan</th>
+<th>polyscan</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--config</code></td>
-<td><code>-c</code></td>
-<td><code>jscan.config.json</code></td>
-<td>Path of the file to write</td>
+<td><code>npx jscan analyze src/</code></td>
+<td><code>npx polyscan analyze src/</code></td>
 </tr>
 <tr>
-<td><code>--force</code></td>
-<td><code>-f</code></td>
-<td><code>false</code></td>
-<td>Overwrite the file if it already exists</td>
+<td><code>jscan analyze --json src/</code></td>
+<td><code>polyscan analyze --format json src/</code></td>
 </tr>
 <tr>
-<td><code>--minimal</code></td>
-<td></td>
-<td><code>false</code></td>
-<td>Write a shorter file with essential keys only</td>
+<td><code>jscan analyze --text src/</code></td>
+<td><code>polyscan analyze --format text src/</code></td>
 </tr>
 <tr>
-<td><code>--interactive</code></td>
-<td><code>-i</code></td>
-<td><code>false</code></td>
-<td>Ask about the project type and strictness first</td>
+<td><code>jscan analyze -o report.html src/</code></td>
+<td><code>polyscan analyze -o report.html src/</code></td>
+</tr>
+<tr>
+<td><code>jscan check src/</code></td>
+<td>Retired — <a href="#the-check-command">gate on the JSON output</a></td>
+</tr>
+<tr>
+<td><code>jscan deps src/</code></td>
+<td><code>polyscan analyze --select deps src/</code></td>
+</tr>
+<tr>
+<td><code>jscan init</code></td>
+<td>Retired — <a href="#the-init-command">write the file by hand</a></td>
+</tr>
+<tr>
+<td><code>jscan version</code></td>
+<td><code>polyscan version</code></td>
 </tr>
 </tbody>
 </table>
-<p>The parent directory must already exist. <code>jscan init --config config/jscan.json</code> fails if there is no <code>config</code> directory.</p>
-<h2 id="interactive-setup">Interactive setup<a class="headerlink" href="#interactive-setup" title="Permanent link">&para;</a></h2>
-<p><code>--interactive</code> asks two questions and then writes a file tuned to the answers.</p>
-<p>The first question is the project type, which decides the include and exclude patterns:</p>
-<table>
-<thead>
-<tr>
-<th>Choice</th>
-<th>Adds to the excluded paths</th>
-<th>Notable include patterns</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Generic JavaScript/TypeScript</td>
-<td><code>node_modules</code>, <code>dist</code>, <code>build</code></td>
-<td><code>.js</code>, <code>.ts</code>, <code>.jsx</code>, <code>.tsx</code></td>
-</tr>
-<tr>
-<td>React or Next.js</td>
-<td>also <code>.next</code> and <code>coverage</code></td>
-<td>same as generic</td>
-</tr>
-<tr>
-<td>Vue or Nuxt</td>
-<td>also <code>.nuxt</code> and <code>coverage</code></td>
-<td>same as generic, plus <code>.vue</code></td>
-</tr>
-<tr>
-<td>Node.js backend</td>
-<td>also <code>test</code>, <code>tests</code>, <code>__tests__</code></td>
-<td><code>.js</code>, <code>.ts</code>, <code>.mjs</code>, <code>.cjs</code></td>
-</tr>
-</tbody>
-</table>
-<p>The second question is how strict the complexity thresholds should be:</p>
-<table>
-<thead>
-<tr>
-<th>Choice</th>
-<th><code>low_threshold</code></th>
-<th><code>medium_threshold</code></th>
-<th><code>max_complexity</code></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Relaxed</td>
-<td>15</td>
-<td>30</td>
-<td>0, meaning no limit</td>
-</tr>
-<tr>
-<td>Standard</td>
-<td>10</td>
-<td>20</td>
-<td>0, meaning no limit</td>
-</tr>
-<tr>
-<td>Strict</td>
-<td>5</td>
-<td>10</td>
-<td>15</td>
-</tr>
-</tbody>
-</table>
-<p>Finally it asks where to write the file, offering the current directory.</p>
-<div class="admonition note">
-<p class="admonition-title">The Vue preset lists a pattern jscan cannot use yet</p>
-<p>Choosing Vue or Nuxt adds <code>**/*.vue</code> to <code>analysis.include_patterns</code>. Include patterns select from the file types jscan can parse rather than adding new ones, and jscan does not parse single-file components today, so the entry has no effect. Vue support is on the roadmap. The <code>.js</code> and <code>.ts</code> files in a Vue project are analyzed normally.</p>
-</div>
-<h2 id="the-generated-file">The generated file<a class="headerlink" href="#the-generated-file" title="Permanent link">&para;</a></h2>
-<p>Without <code>--interactive</code>, <code>jscan init</code> writes the generic project preset at standard strictness:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">"low_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">"medium_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">"max_complexity"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">"report_unchanged"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">"dead_code"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">"min_severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"info"</span><span class="p">,</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="nt">"sort_by"</span><span class="p">:</span><span class="w"> </span><span class="s2">"severity"</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="nt">"output"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="nt">"sort_by"</span><span class="p">:</span><span class="w"> </span><span class="s2">"complexity"</span><span class="p">,</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">    </span><span class="nt">"min_complexity"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">  </span><span class="nt">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="nt">"include_patterns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">      </span><span class="s2">"**/*.js"</span><span class="p">,</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">      </span><span class="s2">"**/*.ts"</span><span class="p">,</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">      </span><span class="s2">"**/*.jsx"</span><span class="p">,</span>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">      </span><span class="s2">"**/*.tsx"</span>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">    </span><span class="p">],</span>
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">    </span><span class="nt">"exclude_patterns"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">      </span><span class="s2">"node_modules"</span><span class="p">,</span>
-</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">      </span><span class="s2">"dist"</span><span class="p">,</span>
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">      </span><span class="s2">"build"</span><span class="p">,</span>
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">      </span><span class="s2">"*.min.js"</span><span class="p">,</span>
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">      </span><span class="s2">"*.bundle.js"</span>
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">    </span><span class="p">],</span>
-</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">    </span><span class="nt">"recursive"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="p">}</span>
-</span></code></pre></div>
-<p><code>--minimal</code> writes a much shorter file with the complexity thresholds, the dead code severity floor, and the file patterns.</p>
-<p>Every key here changes behavior. The templates deliberately leave out the keys jscan parses but does not act on, so that nothing in a generated file is a promise it cannot keep; the <a href="../../configuration/#which-keys-take-effect-today">configuration guide</a> lists those keys, and jscan warns if your file sets one.</p>
-<div class="admonition warning">
-<p class="admonition-title">The generated <code>exclude_patterns</code> is shorter than the default</p>
-<p>Writing a configuration file therefore narrows what jscan skips, since your list replaces the built-in one rather than extending it. If you do not need custom patterns, delete the key and let the default apply.</p>
-</div>
-<h2 id="which-filenames-jscan-looks-for">Which filenames jscan looks for<a class="headerlink" href="#which-filenames-jscan-looks-for" title="Permanent link">&para;</a></h2>
-<p>You do not have to use <code>jscan.config.json</code>. jscan searches for several names, and <code>.jscanrc.json</code> is the common alternative. The <a href="../../configuration/#how-jscan-finds-your-config-file">configuration guide</a> lists the full set and the directories searched.</p>
-<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<p>The default HTML report file is now <code>polyscan-report.html</code> rather than <code>jscan-report.html</code>.</p>
+<h2 id="flag-changes-on-analyze">Flag changes on <code>analyze</code><a class="headerlink" href="#flag-changes-on-analyze" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../configuration/reference/">Configuration reference</a> for every key</li>
-<li><a href="../../configuration/examples/">Configuration examples</a> for files tuned to particular project shapes</li>
+<li>The <code>--json</code>, <code>--text</code> and <code>--html</code> shorthands are gone; use <code>--format json|text|html</code>.</li>
+<li>The <code>--config</code> / <code>-c</code> flag is gone. The configuration file is discovered automatically, <a href="../../configuration/#how-polyscan-finds-your-config-file">searching upward from the analyzed path</a>.</li>
+<li><code>--min-complexity</code> is now a flag on <code>analyze</code>; it limits which functions the report lists without changing any score.</li>
+<li>Everything else — <code>--select</code>, <code>--no-open</code>, <code>-o/--output</code> — is unchanged.</li>
 </ul>
+<h2 id="the-check-command">The <code>check</code> command<a class="headerlink" href="#the-check-command" title="Permanent link">&para;</a></h2>
+<p><code>jscan check</code> was retired with the merge; there is no gate command in polyscan yet. Gate on the JSON output instead, which can express the same thresholds:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span>&gt;<span class="w"> </span>report.json
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Fail below grade B</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>jq<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.summary.health_score &gt;= 75'</span><span class="w"> </span>report.json
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Fail on any high-complexity function</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>jq<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.summary.high_complexity_count == 0'</span><span class="w"> </span>report.json
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Fail on critical dead code or dependency cycles</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>jq<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.summary.critical_dead_code == 0 and .summary.deps_modules_in_cycles == 0'</span><span class="w"> </span>report.json
+</span></code></pre></div>
+<p>The <a href="../../integrations/ci-cd/">CI/CD page</a> has complete pipeline configurations built this way. Note one behavioral difference: <code>jscan check</code> ran a fast subset of the analyses, while <code>analyze</code> runs whatever <code>--select</code> names — pass <code>--select complexity,deadcode,deps</code> to keep a gate fast.</p>
+<h2 id="the-deps-command">The <code>deps</code> command<a class="headerlink" href="#the-deps-command" title="Permanent link">&para;</a></h2>
+<p>Dependency analysis lives in <code>polyscan analyze --select deps</code>. The text output carries the summary and cycle list, and the <code>deps</code> section of the JSON output carries the graph, the per-module Martin metrics, and the coupling analysis:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.deps.analysis'</span>
+</span></code></pre></div>
+<p>The Graphviz DOT export (<code>jscan deps --dot</code>) was retired with the command. The nodes and edges are in <code>.deps.graph</code> of the JSON output if you want to render the graph yourself.</p>
+<h2 id="the-init-command">The <code>init</code> command<a class="headerlink" href="#the-init-command" title="Permanent link">&para;</a></h2>
+<p><code>jscan init</code> was retired. polyscan still reads the same configuration file — <code>jscan.config.json</code> or any of the <a href="../../configuration/#accepted-filenames">other accepted names</a> — it just no longer generates one. The <a href="../../configuration/examples/">configuration examples</a> page has complete files to copy.</p>
+<h2 id="configuration-is-unchanged">Configuration is unchanged<a class="headerlink" href="#configuration-is-unchanged" title="Permanent link">&para;</a></h2>
+<p>Your existing <code>jscan.config.json</code> keeps working as-is for the JavaScript/TypeScript analysis: same discovery order, same keys, same validation, including the <code>JSCAN_CONFIG</code> environment variable. See the <a href="../../configuration/">configuration guide</a>.</p>
+<h2 id="the-npm-package">The npm package<a class="headerlink" href="#the-npm-package" title="Permanent link">&para;</a></h2>
+<p>Replace <code>jscan</code> with <code>polyscan</code> in <code>devDependencies</code> and scripts. Version numbers restart from polyscan's own line, so <code>jscan@0.10.0</code> is older code than the first polyscan releases despite the higher number; jscan's release history up to the merge is in the repository's <a href="https://github.com/ludo-technologies/polyscan/blob/main/jscan/CHANGELOG.md"><code>jscan/CHANGELOG.md</code></a>.</p>
+<p>If you install with Go, the path changed too:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>go<span class="w"> </span>install<span class="w"> </span>github.com/ludo-technologies/polyscan/polyscan/cmd/polyscan@latest
+</span></code></pre></div>
 
 
 
@@ -2013,7 +1889,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

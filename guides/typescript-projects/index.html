@@ -6,16 +6,16 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/guides/typescript-projects/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/guides/typescript-projects/">
       
       
-        <link rel="prev" href="../../getting-started/quick-start/">
+        <link rel="prev" href="../../getting-started/migrating-from-jscan/">
       
       
         <link rel="next" href="../reduce-duplicate-code/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Analyze a TypeScript Project - jscan</title>
+        <title>Analyze a TypeScript Project - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -756,10 +786,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-jscan-understands" class="md-nav__link">
+  <a href="#what-polyscan-understands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What jscan understands
+        What polyscan understands
       
     </span>
   </a>
@@ -767,15 +797,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-jscan-does-not-do" class="md-nav__link">
+  <a href="#what-polyscan-does-not-do" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What jscan does not do
+        What polyscan does not do
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="What jscan does not do">
+    <nav class="md-nav" aria-label="What polyscan does not do">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -829,10 +859,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-point-jscan-at-the-source-root" class="md-nav__link">
+  <a href="#2-point-polyscan-at-the-source-root" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Point jscan at the source root
+        2. Point polyscan at the source root
       
     </span>
   </a>
@@ -851,10 +881,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-allow-dead-code-in-the-gate-at-first" class="md-nav__link">
+  <a href="#4-gate-on-critical-findings-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Allow dead code in the gate at first
+        4. Gate on critical findings first
       
     </span>
   </a>
@@ -1027,12 +1057,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1104,90 +1128,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1755,10 +1695,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-jscan-understands" class="md-nav__link">
+  <a href="#what-polyscan-understands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What jscan understands
+        What polyscan understands
       
     </span>
   </a>
@@ -1766,15 +1706,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-jscan-does-not-do" class="md-nav__link">
+  <a href="#what-polyscan-does-not-do" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What jscan does not do
+        What polyscan does not do
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="What jscan does not do">
+    <nav class="md-nav" aria-label="What polyscan does not do">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1828,10 +1768,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-point-jscan-at-the-source-root" class="md-nav__link">
+  <a href="#2-point-polyscan-at-the-source-root" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Point jscan at the source root
+        2. Point polyscan at the source root
       
     </span>
   </a>
@@ -1850,10 +1790,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-allow-dead-code-in-the-gate-at-first" class="md-nav__link">
+  <a href="#4-gate-on-critical-findings-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Allow dead code in the gate at first
+        4. Gate on critical findings first
       
     </span>
   </a>
@@ -2011,9 +1951,9 @@
 
 
 <h1 id="analyze-a-typescript-project">Analyze a TypeScript Project<a class="headerlink" href="#analyze-a-typescript-project" title="Permanent link">&para;</a></h1>
-<p>jscan reads TypeScript directly. It does not run <code>tsc</code>, does not read <code>tsconfig.json</code>, and does not need your project to compile. Everything it reports comes from parsing the source with a TypeScript grammar, which is why it works on a project that is mid-refactor and currently full of type errors.</p>
+<p>polyscan reads TypeScript directly. It does not run <code>tsc</code>, does not read <code>tsconfig.json</code>, and does not need your project to compile. Everything it reports comes from parsing the source with a TypeScript grammar, which is why it works on a project that is mid-refactor and currently full of type errors.</p>
 <p>That design has consequences worth understanding before you trust the output.</p>
-<h2 id="what-jscan-understands">What jscan understands<a class="headerlink" href="#what-jscan-understands" title="Permanent link">&para;</a></h2>
+<h2 id="what-polyscan-understands">What polyscan understands<a class="headerlink" href="#what-polyscan-understands" title="Permanent link">&para;</a></h2>
 <p>These TypeScript constructs are parsed and analyzed normally:</p>
 <table>
 <thead>
@@ -2041,7 +1981,7 @@
 </tr>
 <tr>
 <td><code>import type</code> and <code>export type</code></td>
-<td>Yes. Included as dependency graph edges by default</td>
+<td>Yes. Included as dependency graph edges</td>
 </tr>
 <tr>
 <td><code>.ts</code>, <code>.tsx</code>, <code>.mts</code>, <code>.cts</code></td>
@@ -2061,21 +2001,22 @@
 </tr>
 </tbody>
 </table>
-<p>Type-only imports are treated as real edges in the dependency graph because they express a design dependency, even though they vanish at compile time. Pass <code>--include-types=false</code> to <code>jscan deps</code> when you want the runtime graph instead.</p>
-<h2 id="what-jscan-does-not-do">What jscan does not do<a class="headerlink" href="#what-jscan-does-not-do" title="Permanent link">&para;</a></h2>
-<p>Because there is no type checker involved, jscan cannot reason about types across files. It will not tell you that a function returns the wrong type or that an interface member is unused. Use <code>tsc --noEmit</code> for that. jscan answers a different question, which is whether the code is structured in a way you can keep working with.</p>
+<p>Type-only imports are treated as real edges in the dependency graph because they express a design dependency, even though they vanish at compile time.</p>
+<h2 id="what-polyscan-does-not-do">What polyscan does not do<a class="headerlink" href="#what-polyscan-does-not-do" title="Permanent link">&para;</a></h2>
+<p>Because there is no type checker involved, polyscan cannot reason about types across files. It will not tell you that a function returns the wrong type or that an interface member is unused. Use <code>tsc --noEmit</code> for that. polyscan answers a different question, which is whether the code is structured in a way you can keep working with.</p>
 <h3 id="path-aliases-are-not-resolved">Path aliases are not resolved<a class="headerlink" href="#path-aliases-are-not-resolved" title="Permanent link">&para;</a></h3>
-<p>This is the limitation most likely to affect you. If your <code>tsconfig.json</code> maps <code>@/*</code> to <code>src/*</code>, jscan does not know that.</p>
+<p>This is the limitation most likely to affect you. If your <code>tsconfig.json</code> maps <code>@/*</code> to <code>src/*</code>, polyscan does not know that.</p>
 <div class="language-ts highlight"><span class="filename">src/app/main.ts</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">label</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/lib/util"</span><span class="p">;</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">import</span><span class="w"> </span><span class="kr">type</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">Role</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/lib/types"</span><span class="p">;</span>
 </span></code></pre></div>
-<p>jscan records <code>@/lib/util</code> as a module in its own right rather than resolving it to <code>src/lib/util.ts</code>. In a three-file project with two aliased imports, the dependency graph reports five modules instead of three:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>deps<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.graph.nodes | keys[]'</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="go">src/app/main.ts</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="go">src/lib/types.ts</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="go">src/lib/util.ts</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="go">@/lib/types</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="go">@/lib/util</span>
+<p>polyscan records <code>@/lib/util</code> as a module in its own right rather than resolving it to <code>src/lib/util.ts</code>. In a three-file project with two aliased imports, the dependency graph reports five modules instead of three:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.deps.graph.nodes | keys[]'</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="go">src/app/main.ts</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="go">src/lib/types.ts</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="go">src/lib/util.ts</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="go">@/lib/types</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="go">@/lib/util</span>
 </span></code></pre></div>
 <p>The two extra entries are phantoms. They have no file behind them, and the real edge from <code>main.ts</code> to <code>util.ts</code> is missing.</p>
 <p>The effects are:</p>
@@ -2085,18 +2026,17 @@
 <li><strong>Maximum depth is understated</strong>, because chains are broken at every alias.</li>
 </ul>
 <p>Relative imports such as <code>./util</code> and <code>../lib/util</code> resolve correctly, so a project that uses relative imports throughout gets an accurate graph.</p>
-<p>There is an <code>module_analysis.alias_patterns</code> key in the configuration schema, defaulting to <code>["@/", "~/"]</code>, but no command reads it yet. See the <a href="../../configuration/reference/#reserved-groups">configuration reference</a>.</p>
+<p>There is a <code>module_analysis.alias_patterns</code> key in the configuration schema, defaulting to <code>["@/", "~/"]</code>, but no command reads it yet. See the <a href="../../configuration/reference/#reserved-groups">configuration reference</a>.</p>
 <div class="admonition tip">
 <p class="admonition-title">Getting an accurate graph today</p>
 <p>If the dependency graph matters to you more than your import style does, relative imports give correct results now. Otherwise, read the <code>deps</code> numbers as a lower bound on your real coupling, and rely on the complexity, dead code, and clone analyses, none of which depend on import resolution.</p>
 </div>
 <h3 id="vue-single-file-components-are-not-parsed">Vue single-file components are not parsed<a class="headerlink" href="#vue-single-file-components-are-not-parsed" title="Permanent link">&para;</a></h3>
 <p><code>.vue</code> files are not collected, so the <code>&lt;script&gt;</code> block inside them is never analyzed. The <code>.ts</code> and <code>.js</code> files in a Vue or Nuxt project are analyzed normally. Support is on the roadmap.</p>
-<p>Note that <code>jscan init --interactive</code> adds <code>**/*.vue</code> to <code>analysis.include_patterns</code> when you choose the Vue preset. Include patterns select from the file types jscan can parse rather than adding new ones, so the entry has no effect either way.</p>
 <h2 id="recommended-setup">Recommended setup<a class="headerlink" href="#recommended-setup" title="Permanent link">&para;</a></h2>
 <h3 id="1-check-the-exclude-patterns-first">1. Check the exclude patterns first<a class="headerlink" href="#1-check-the-exclude-patterns-first" title="Permanent link">&para;</a></h3>
 <p>An exclude pattern matches a whole file or directory name, so <code>dist</code> skips a directory named <code>dist</code> and leaves <code>src/utils/distance.ts</code> alone. Any pattern that names a directory you did not mean to exclude removes every file under it, and nothing in the output mentions the missing files. The only clue is a low count on the <code>Analyzing N files...</code> line.</p>
-<p>Versions up to 0.9.0 matched a pattern against any part of a path, so the default entries <code>out</code> and <code>dist</code> silently dropped <code>src/routes/</code>, <code>src/layout/</code>, <code>app/**/layout.tsx</code>, <code>src/checkout/</code>, and <code>src/utils/distance.ts</code>. Upgrade before trusting a report from one of those versions.</p>
+<p>jscan versions up to 0.9.0 matched a pattern against any part of a path, so the default entries <code>out</code> and <code>dist</code> silently dropped <code>src/routes/</code>, <code>src/layout/</code>, <code>app/**/layout.tsx</code>, <code>src/checkout/</code>, and <code>src/utils/distance.ts</code>. polyscan matches whole names only.</p>
 <p>A short explicit list is still worth writing, because your own list replaces the default rather than extending it:</p>
 <div class="language-json highlight"><span class="filename">jscan.config.json</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">"complexity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2118,16 +2058,16 @@
 </span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>Then confirm the file count matches reality:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>analyze<span class="w"> </span>--text<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>text<span class="w"> </span>src/<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="go">Analyzing 214 files...</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="gp">$ </span>find<span class="w"> </span>src<span class="w"> </span>-name<span class="w"> </span><span class="s1">'*.ts'</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s1">'*.tsx'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="go">214</span>
 </span></code></pre></div>
 <p>Those two numbers should agree, apart from anything your <code>.gitignore</code> excludes. If they do not, a pattern is over-matching.</p>
-<h3 id="2-point-jscan-at-the-source-root">2. Point jscan at the source root<a class="headerlink" href="#2-point-jscan-at-the-source-root" title="Permanent link">&para;</a></h3>
+<h3 id="2-point-polyscan-at-the-source-root">2. Point polyscan at the source root<a class="headerlink" href="#2-point-polyscan-at-the-source-root" title="Permanent link">&para;</a></h3>
 <p>Analyze <code>src/</code> rather than the project root. This keeps build output, configuration files, and scripts out of the analysis without needing patterns for them, which is what lets you keep the list in step one short.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>src/
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>src/
 </span></code></pre></div>
 <p>Pass the whole source root rather than a subdirectory. The unused-export analysis compares imports against exports across the analyzed files only, so running it on <code>src/components/</code> alone reports every component as unused, because the importers in the rest of <code>src/</code> were never read.</p>
 <h3 id="3-raise-the-complexity-thresholds">3. Raise the complexity thresholds<a class="headerlink" href="#3-raise-the-complexity-thresholds" title="Permanent link">&para;</a></h3>
@@ -2139,28 +2079,29 @@
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="p">}</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">}</span>
 </span></code></pre></div>
-<h3 id="4-allow-dead-code-in-the-gate-at-first">4. Allow dead code in the gate at first<a class="headerlink" href="#4-allow-dead-code-in-the-gate-at-first" title="Permanent link">&para;</a></h3>
-<p>An exported symbol that no analyzed file imports produces a warning, and <code>jscan check</code> fails on warnings by default. In a library, or in any project analyzed one directory at a time, that describes most of your public API.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>jscan<span class="w"> </span>check<span class="w"> </span>--allow-dead-code<span class="w"> </span>--max-complexity<span class="w"> </span><span class="m">20</span><span class="w"> </span>src/
+<h3 id="4-gate-on-critical-findings-first">4. Gate on critical findings first<a class="headerlink" href="#4-gate-on-critical-findings-first" title="Permanent link">&para;</a></h3>
+<p>An exported symbol that no analyzed file imports produces a warning-level finding. In a library, or in any project analyzed one directory at a time, that describes most of your public API, so a CI gate should start by counting only the critical findings:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.summary.critical_dead_code == 0'</span>
 </span></code></pre></div>
-<p>Tighten both once the first round of fixes has landed.</p>
+<p>Tighten the gate once the first round of fixes has landed. The <a href="../../integrations/ci-cd/">CI/CD page</a> has complete jobs.</p>
 <h2 id="monorepos">Monorepos<a class="headerlink" href="#monorepos" title="Permanent link">&para;</a></h2>
-<p>There is no workspace-aware mode. Run jscan once per package:</p>
+<p>There is no workspace-aware mode. Run polyscan once per package:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">for</span><span class="w"> </span>pkg<span class="w"> </span><span class="k">in</span><span class="w"> </span>packages/*/<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>jscan<span class="w"> </span>check<span class="w"> </span>--allow-dead-code<span class="w"> </span><span class="s2">"</span><span class="nv">$pkg</span><span class="s2">/src"</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">done</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span><span class="s2">"</span><span class="nv">$pkg</span><span class="s2">/src"</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.summary.critical_dead_code == 0'</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">done</span>
 </span></code></pre></div>
 <p>Because config discovery walks upward from the analyzed path, each package can carry its own <code>jscan.config.json</code> and fall back to a root file when it has none. The <a href="../../configuration/examples/#monorepo">monorepo example</a> shows the layout.</p>
-<p>Cross-package imports usually go through a workspace alias such as <code>@myorg/core</code>, which jscan does not resolve, so a per-package run cannot see them. Run <code>jscan analyze packages/</code> for the combined view and per-package runs for the gates.</p>
+<p>Cross-package imports usually go through a workspace alias such as <code>@myorg/core</code>, which polyscan does not resolve, so a per-package run cannot see them. Run <code>polyscan analyze packages/</code> for the combined view and per-package runs for the gates.</p>
 <h2 id="frameworks">Frameworks<a class="headerlink" href="#frameworks" title="Permanent link">&para;</a></h2>
 <h3 id="nextjs">Next.js<a class="headerlink" href="#nextjs" title="Permanent link">&para;</a></h3>
-<p>jscan knows the App Router conventions. Inside a file under a path containing <code>/app/</code> and named <code>page</code>, <code>layout</code>, <code>template</code>, <code>loading</code>, <code>error</code>, <code>not-found</code>, <code>default</code>, or <code>route</code>, the default export is exempt from the unused-export warning, as are the framework's reserved names such as <code>metadata</code>, <code>generateStaticParams</code>, and <code>revalidate</code>. In <code>route</code> files the HTTP verb exports are exempt too.</p>
-<p>That exemption only helps if the file reaches the analyzer. Versions up to 0.9.0 dropped every file named <code>layout.tsx</code> before the exemption was consulted, because the default pattern <code>out</code> matched part of the name.</p>
+<p>polyscan knows the App Router conventions. Inside a file under a path containing <code>/app/</code> and named <code>page</code>, <code>layout</code>, <code>template</code>, <code>loading</code>, <code>error</code>, <code>not-found</code>, <code>default</code>, or <code>route</code>, the default export is exempt from the unused-export warning, as are the framework's reserved names such as <code>metadata</code>, <code>generateStaticParams</code>, and <code>revalidate</code>. In <code>route</code> files the HTTP verb exports are exempt too.</p>
 <p>Add <code>.next</code>, <code>.vercel</code>, and <code>.turbo</code> to your exclude list.</p>
 <h3 id="nuxt-and-vue">Nuxt and Vue<a class="headerlink" href="#nuxt-and-vue" title="Permanent link">&para;</a></h3>
 <p>Add <code>.nuxt</code> and <code>.output</code> to your exclude list. Only the <code>.ts</code> and <code>.js</code> files are analyzed, since <code>.vue</code> files are not parsed.</p>
 <h3 id="node-backends">Node backends<a class="headerlink" href="#node-backends" title="Permanent link">&para;</a></h3>
-<p>Express and Fastify projects usually have a <code>routes</code> directory, which versions up to 0.9.0 removed from the analysis. Later versions read it normally. Relative imports are common in backend code, so the dependency graph tends to be accurate here.</p>
+<p>Express and Fastify projects usually have a <code>routes</code> directory, which jscan versions up to 0.9.0 removed from the analysis; polyscan reads it normally. Relative imports are common in backend code, so the dependency graph tends to be accurate here.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../configuration/examples/">Configuration examples</a> for complete files</li>
@@ -2236,7 +2177,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

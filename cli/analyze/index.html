@@ -6,19 +6,19 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/cli/analyze/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/cli/analyze/">
       
       
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../check/">
+        <link rel="next" href="../version/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>analyze - jscan</title>
+        <title>analyze - polyscan</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#jscan-analyze" class="md-skip">
+        <a href="#polyscan-analyze" class="md-skip">
           Skip to content
         </a>
       
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -796,12 +826,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -948,6 +972,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#language-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Language coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#output-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1056,90 +1091,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1721,6 +1672,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#language-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Language coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#output-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1898,20 +1860,20 @@
   
 
 
-<h1 id="jscan-analyze">jscan analyze<a class="headerlink" href="#jscan-analyze" title="Permanent link">&para;</a></h1>
-<p>Runs the full analysis and produces a report. This is the command you reach for when you want to understand a codebase rather than gate a pull request.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span><span class="o">[</span>path...<span class="o">]</span>
+<h1 id="polyscan-analyze">polyscan analyze<a class="headerlink" href="#polyscan-analyze" title="Permanent link">&para;</a></h1>
+<p>Runs the full analysis and produces a report. This is the command you reach for when you want to understand a codebase.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span><span class="o">[</span>path...<span class="o">]</span>
 </span></code></pre></div>
-<p><code>analyze</code> always exits with code 0 when the analysis itself succeeds, no matter how poor the results are. Use <a href="../check/"><code>jscan check</code></a> when you need a command that fails.</p>
+<p><code>analyze</code> always exits with code 0 when the analysis itself succeeds, no matter how poor the results are. To fail a pipeline on the results, gate on the JSON output as shown on the <a href="../../integrations/ci-cd/">CI/CD page</a>.</p>
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>src/<span class="w">                                    </span><span class="c1"># All analyses, HTML report</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/<span class="w">       </span><span class="c1"># Two analyses only</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--json<span class="w"> </span>src/<span class="w">                             </span><span class="c1"># JSON to standard output</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--text<span class="w"> </span>src/<span class="w">                             </span><span class="c1"># Text to standard output</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--no-open<span class="w"> </span>src/<span class="w">                          </span><span class="c1"># HTML report, no browser</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>-o<span class="w"> </span>reports/quality.html<span class="w"> </span>src/<span class="w">            </span><span class="c1"># Custom output path</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>-c<span class="w"> </span>config/strict.json<span class="w"> </span>src/<span class="w">              </span><span class="c1"># Explicit config file</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>src/<span class="w"> </span>test/<span class="w"> </span>scripts/build.ts<span class="w">             </span><span class="c1"># Several paths at once</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>.<span class="w">                                       </span><span class="c1"># All analyses, HTML report</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/<span class="w">       </span><span class="c1"># Two analyses only</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>src/<span class="w">                      </span><span class="c1"># JSON to standard output</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>text<span class="w"> </span>src/<span class="w">                      </span><span class="c1"># Text to standard output</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--no-open<span class="w"> </span>src/<span class="w">                          </span><span class="c1"># HTML report, no browser</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>-o<span class="w"> </span>reports/quality.html<span class="w"> </span>src/<span class="w">            </span><span class="c1"># Custom output path</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--min-complexity<span class="w"> </span><span class="m">10</span><span class="w"> </span>.<span class="w">                   </span><span class="c1"># List only functions at or above 10</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>src/<span class="w"> </span>test/<span class="w"> </span>scripts/build.ts<span class="w">             </span><span class="c1"># Several paths at once</span>
 </span></code></pre></div>
 <h2 id="flags">Flags<a class="headerlink" href="#flags" title="Permanent link">&para;</a></h2>
 <table>
@@ -1928,31 +1890,13 @@
 <td><code>--select</code></td>
 <td><code>-s</code></td>
 <td><code>complexity,deadcode,clone,cbo,deps</code></td>
-<td>Comma-separated list of analyses to run</td>
+<td>Comma-separated list of analyses to run. <code>deadcode</code>, <code>cbo</code> and <code>deps</code> apply to JavaScript/TypeScript only</td>
 </tr>
 <tr>
 <td><code>--format</code></td>
 <td><code>-f</code></td>
 <td><code>html</code></td>
-<td>Output format. Accepts <code>html</code>, <code>json</code>, <code>text</code>, <code>yaml</code>, or <code>csv</code></td>
-</tr>
-<tr>
-<td><code>--json</code></td>
-<td></td>
-<td><code>false</code></td>
-<td>Shorthand for <code>--format json</code></td>
-</tr>
-<tr>
-<td><code>--text</code></td>
-<td></td>
-<td><code>false</code></td>
-<td>Shorthand for <code>--format text</code></td>
-</tr>
-<tr>
-<td><code>--html</code></td>
-<td></td>
-<td><code>false</code></td>
-<td>Shorthand for <code>--format html</code>, which is already the default</td>
+<td>Output format. Accepts <code>html</code>, <code>json</code>, or <code>text</code></td>
 </tr>
 <tr>
 <td><code>--no-open</code></td>
@@ -1963,33 +1907,30 @@
 <tr>
 <td><code>--output</code></td>
 <td><code>-o</code></td>
-<td><code>jscan-report.html</code></td>
+<td><code>polyscan-report.html</code></td>
 <td>Path for the HTML report file</td>
 </tr>
 <tr>
-<td><code>--config</code></td>
-<td><code>-c</code></td>
-<td>discovered</td>
-<td>Path to a configuration file</td>
+<td><code>--min-complexity</code></td>
+<td></td>
+<td><code>1</code></td>
+<td>List only functions with at least this complexity. Scores and summaries still cover every function</td>
 </tr>
 </tbody>
 </table>
-<p>If both <code>--json</code> and <code>--text</code> are given, JSON wins.</p>
+<p>The configuration file for the JavaScript/TypeScript analysis is discovered automatically; there is no <code>--config</code> flag. See <a href="../../configuration/#how-polyscan-finds-your-config-file">how polyscan finds your config file</a>.</p>
+<h2 id="language-coverage">Language coverage<a class="headerlink" href="#language-coverage" title="Permanent link">&para;</a></h2>
+<p>The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dead code, coupling (CBO) and dependency analysis exist for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.</p>
+<p>A file that cannot be read is skipped and listed under errors. A file with a syntax error is analyzed without the functions that contain it, counted as partial, and listed under warnings. C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.</p>
 <h2 id="output-behavior">Output behavior<a class="headerlink" href="#output-behavior" title="Permanent link">&para;</a></h2>
 <p>The format determines where results go and what else is printed.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">HTML (default)</label><label for="__tabbed_1_2">JSON</label><label for="__tabbed_1_3">YAML</label><label for="__tabbed_1_4">CSV</label><label for="__tabbed_1_5">Text</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">HTML (default)</label><label for="__tabbed_1_2">JSON</label><label for="__tabbed_1_3">Text</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>jscan writes the report to <code>jscan-report.html</code> in the current directory, prints the absolute path, and opens the file in your default browser. The browser step is skipped when <code>--no-open</code> is set and also when jscan detects that it is running inside an SSH session. A short score summary follows on standard output.</p>
+<p>polyscan writes the report to <code>polyscan-report.html</code> in the current directory, prints the absolute path, and opens the file in your default browser. The browser step is skipped when <code>--no-open</code> is set and also when polyscan detects that it is running inside an SSH session. A short score summary follows on standard output.</p>
 </div>
 <div class="tabbed-block">
 <p>The full result document goes to standard output. The score summary goes to standard error, so that redirecting standard output to a file keeps the JSON valid. Progress bars are suppressed. The <a href="../../output/json-schema/">JSON schema page</a> documents every field.</p>
-</div>
-<div class="tabbed-block">
-<p>The full result document goes to standard output formatted as YAML, matching the JSON response structure. The score summary goes to standard error. Progress bars are suppressed.</p>
-</div>
-<div class="tabbed-block">
-<p>Tabular results for complexity, dead code findings, clone pairs, and dependency edges go to standard output in comma-separated format. The score summary goes to standard error. Progress bars are suppressed.</p>
 </div>
 <div class="tabbed-block">
 <p>The full human-readable report goes to standard output, ending with the health score breakdown. No separate summary is printed to standard error, because the text report already contains one.</p>
@@ -1998,10 +1939,33 @@
 </div>
 <h2 id="the-five-analyses">The five analyses<a class="headerlink" href="#the-five-analyses" title="Permanent link">&para;</a></h2>
 <h3 id="complexity">Complexity<a class="headerlink" href="#complexity" title="Permanent link">&para;</a></h3>
-<p>Measures the cyclomatic complexity of every function, which counts the number of linearly independent paths through it. jscan builds a control flow graph for each function and derives the count from the graph, so the number reflects real branching rather than a text heuristic.</p>
-<p>Starting from a baseline of 1, each of the following adds 1: an <code>if</code> or <code>else if</code>, a loop, a <code>catch</code>, a <code>case</code> label, a ternary, and each <code>&amp;&amp;</code>, <code>||</code>, or <code>??</code> operator. A <code>default</code> clause adds nothing, the same as <code>else</code>, and neither does optional chaining with <code>?.</code>.</p>
-<p>Counting each <code>case</code> label means a <code>switch</code> scores the same as the equivalent chain of <code>if</code> statements: a four-case switch and four <code>if</code> statements both score 5. The number of case labels seen in a function is reported as <code>switch_cases</code> in the JSON output.</p>
-<p>Functions are assigned a risk level from two thresholds, both configurable:</p>
+<p>Measures the cyclomatic complexity of every function, which counts the number of linearly independent paths through it: one plus the number of decision points.</p>
+<p>For JavaScript and TypeScript, polyscan builds a control flow graph for each function and derives the count from the graph. Starting from a baseline of 1, each of the following adds 1: an <code>if</code> or <code>else if</code>, a loop, a <code>catch</code>, a <code>case</code> label, a ternary, and each <code>&amp;&amp;</code>, <code>||</code>, or <code>??</code> operator. A <code>default</code> clause adds nothing, the same as <code>else</code>, and neither does optional chaining with <code>?.</code>. Counting each <code>case</code> label means a <code>switch</code> scores the same as the equivalent chain of <code>if</code> statements.</p>
+<p>The other languages count decision points the same way on their own constructs:</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Counted as decision points</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Go</td>
+<td><code>if</code>/<code>else if</code>; every <code>for</code>; each <code>case</code> of a <code>switch</code>, type switch or <code>select</code> (<code>default</code> excluded); <code>&amp;&amp;</code> and <code>\|\|</code></td>
+</tr>
+<tr>
+<td>Rust</td>
+<td><code>if</code>/<code>else if</code>/<code>if let</code>; <code>for</code>, <code>while</code>, <code>while let</code>, <code>loop</code>; each <code>match</code> arm except the last, plus each arm guard; <code>let ... else</code>; <code>&amp;&amp;</code> and <code>\|\|</code>; <code>?</code></td>
+</tr>
+<tr>
+<td>C++</td>
+<td><code>if</code>/<code>else if</code>; <code>?:</code>; <code>for</code>, range <code>for</code>, <code>while</code>, <code>do</code>; each <code>case</code> (<code>default</code> excluded); <code>catch</code>; <code>&amp;&amp;</code> and <code>\|\|</code></td>
+</tr>
+</tbody>
+</table>
+<p>In Go, Rust and C++, function literals, closures and lambdas are not reported on their own: their decision points count toward the enclosing function, so the Go numbers match gocyclo.</p>
+<p>Functions are assigned a risk level from two thresholds, configurable for JavaScript/TypeScript and fixed at the defaults for the other languages:</p>
 <table>
 <thead>
 <tr>
@@ -2028,9 +1992,9 @@
 </tr>
 </tbody>
 </table>
-<p>Functions below <code>output.min_complexity</code> are dropped from the report entirely. The default is 1, which keeps everything.</p>
+<p>Functions below <code>--min-complexity</code> (or <code>output.min_complexity</code> in the config file, for JavaScript/TypeScript) are dropped from the listing; the summary and every score still cover the complete analyzed population.</p>
 <h3 id="dead-code">Dead code<a class="headerlink" href="#dead-code" title="Permanent link">&para;</a></h3>
-<p>Finds code that cannot run and code that nothing uses. jscan detects two distinct kinds of problem.</p>
+<p><em>JavaScript/TypeScript only.</em> Finds code that cannot run and code that nothing uses. polyscan detects two distinct kinds of problem.</p>
 <p>Unreachable statements come from the control flow graph. Any basic block that cannot be reached from the function entry is dead. This covers statements after <code>return</code>, <code>break</code>, <code>continue</code>, and <code>throw</code>, and branches whose condition can never hold.</p>
 <p>Unused declarations come from a cross-file pass that resolves imports and exports across every analyzed file. An exported function that no analyzed file imports is reported, as are unused imports and files that nothing references.</p>
 <p>Every finding carries a reason code and a severity. The full set is:</p>
@@ -2101,15 +2065,15 @@
 <p>The unused-export check can only see the files included in the run. Analyzing <code>src/components/</code> alone reports every export in it as unused, because the importers in the rest of <code>src/</code> were never read. Pass the whole source root when you care about this finding.</p>
 </div>
 <h3 id="clone">Duplicate code<a class="headerlink" href="#clone" title="Permanent link">&para;</a></h3>
-<p>Finds fragments that repeat. jscan compares abstract syntax trees rather than raw text, using the APTED tree edit distance algorithm, so it still matches code whose variables have been renamed or whose statements have moved. To keep the comparison affordable on large codebases, jscan first narrows the candidate set with MinHash fingerprints and locality-sensitive hashing, then runs the expensive tree comparison only on surviving pairs.</p>
-<p>Clones are graded into four types:</p>
+<p>Finds fragments that repeat, in every supported language. polyscan compares abstract syntax trees rather than raw text, using the APTED tree edit distance algorithm, so it still matches code whose variables have been renamed or whose statements have moved. To keep the comparison affordable on large codebases, polyscan first narrows the candidate set with MinHash fingerprints and locality-sensitive hashing, then runs the expensive tree comparison only on surviving pairs. Fragments of different languages are never compared with each other.</p>
+<p>Clones are graded by how much the copies differ:</p>
 <table>
 <thead>
 <tr>
 <th>Type</th>
 <th>Description</th>
 <th>Default threshold</th>
-<th>Enabled by default</th>
+<th>Enabled by default (JS/TS)</th>
 </tr>
 </thead>
 <tbody>
@@ -2129,23 +2093,23 @@
 <td>Type 3</td>
 <td>Copies with statements added, removed, or changed</td>
 <td>0.70</td>
-<td>No</td>
+<td>No (JS/TS); reported for Go, Rust and C++</td>
 </tr>
 <tr>
 <td>Type 4</td>
 <td>Different code that computes the same thing</td>
 <td>0.65</td>
-<td>Yes</td>
+<td>Yes (JS/TS only)</td>
 </tr>
 </tbody>
 </table>
-<p>Type 3 is off by default because near-miss matches produce a high false positive rate in day-to-day use.</p>
 <p>A fragment must be at least 10 lines and 20 syntax tree nodes to be considered, which keeps short boilerplate such as getters out of the results.</p>
+<p>In Go, Rust and C++, test code is analyzed for complexity but excluded from clone detection, because test functions share a skeleton by convention: for Go that is <code>*_test.go</code> files; for C++ it is <code>*_test.*</code>, <code>*_tests.*</code>, <code>test_*.*</code> and <code>*Test.*</code> source files and any <code>test</code> or <code>tests</code> directory; for Rust it is <code>#[test]</code> functions, items under <code>#[cfg(test)]</code>, <code>tests.rs</code> and <code>*_tests.rs</code> files and any <code>tests</code> directory.</p>
 <h3 id="cbo">Coupling between objects<a class="headerlink" href="#cbo" title="Permanent link">&para;</a></h3>
-<p>Counts how many other types each unit depends on, across four kinds of dependency: imports, <code>new</code> expressions, TypeScript type annotations, and method calls on other objects.</p>
+<p><em>JavaScript/TypeScript only.</em> Counts how many other types each unit depends on, across four kinds of dependency: imports, <code>new</code> expressions, TypeScript type annotations, and method calls on other objects.</p>
 <div class="admonition info">
-<p class="admonition-title">In jscan this metric is per file, not per class</p>
-<p>Despite the name, jscan produces one coupling entry per source file, named after the module. The terminal output and the JSON field names still say "classes", which they inherit from the shared metric definition. Read every count as a per-module count.</p>
+<p class="admonition-title">This metric is per file, not per class</p>
+<p>Despite the name, polyscan produces one coupling entry per source file, named after the module. The terminal output and the JSON field names still say "classes", which they inherit from the shared metric definition. Read every count as a per-module count.</p>
 </div>
 <table>
 <thead>
@@ -2170,21 +2134,21 @@
 </tbody>
 </table>
 <h3 id="deps">Dependencies<a class="headerlink" href="#deps" title="Permanent link">&para;</a></h3>
-<p>Builds the module import graph, resolving both ECMAScript modules and CommonJS <code>require</code> calls. From the graph jscan derives the circular imports, the maximum dependency depth, and the Martin coupling metrics for each module.</p>
+<p><em>JavaScript/TypeScript only.</em> Builds the module import graph, resolving both ECMAScript modules and CommonJS <code>require</code> calls. From the graph polyscan derives the circular imports, the maximum dependency depth, and the Martin coupling metrics for each module.</p>
 <p>Circular imports are found with Tarjan's strongly connected components algorithm. Dynamic imports are excluded from the cycle check, because a dynamic import does not create a load-time cycle.</p>
-<p>For a graph you can look at rather than a summary, use <a href="../deps/"><code>jscan deps</code></a>.</p>
+<p>The full graph — nodes, edges, per-module metrics, cycles — is in the <code>deps</code> section of the <a href="../../output/json-schema/#deps">JSON output</a>.</p>
 <h2 id="performance-notes">Performance notes<a class="headerlink" href="#performance-notes" title="Permanent link">&para;</a></h2>
-<p>The five analyses run concurrently in separate goroutines, so the wall clock time is set by the slowest one rather than by the sum. Clone detection is normally the slowest, followed by dead code detection.</p>
+<p>The analyses run concurrently, so the wall clock time is set by the slowest one rather than by the sum. Clone detection is normally the slowest, followed by dead code detection.</p>
 <p>Dropping the analyses you do not need is the most effective way to speed up a run:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Roughly half the work of a full run on most projects</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>jscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--select<span class="w"> </span>complexity,deadcode<span class="w"> </span>src/
 </span></code></pre></div>
 <p>The progress bar shown during an interactive run is driven by an elapsed-time estimate rather than by real progress, so it may sit near the end for a while on an unusually large repository. It is not stuck.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../check/"><code>jscan check</code></a> for a command that fails on threshold violations</li>
 <li><a href="../../output/">Output formats</a> for the shape of each report</li>
-<li><a href="../../configuration/reference/">Configuration reference</a> for the keys that change these thresholds</li>
+<li><a href="../../configuration/reference/">Configuration reference</a> for the keys that change the JavaScript/TypeScript thresholds</li>
+<li><a href="../../integrations/ci-cd/">CI/CD integration</a> for gating a pipeline on the results</li>
 </ul>
 
 
@@ -2255,7 +2219,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   

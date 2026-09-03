@@ -6,13 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A code quality analyzer for JavaScript and TypeScript">
+        <meta name="description" content="A multi-language code quality analyzer for JavaScript, TypeScript, Go, Rust and C++">
       
       
         <meta name="author" content="ludo-technologies">
       
       
-        <link rel="canonical" href="https://jscan.codescan.dev/guides/dependency-graph/">
+        <link rel="canonical" href="https://polyscan.codescan.dev/guides/dependency-graph/">
       
       
         <link rel="prev" href="../reduce-duplicate-code/">
@@ -29,7 +29,7 @@
     
     
       
-        <title>Read the Dependency Graph - jscan</title>
+        <title>Read the Dependency Graph - polyscan</title>
       
     
     
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="jscan" class="md-header__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-header__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
@@ -111,7 +111,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            jscan
+            polyscan
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -452,12 +452,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="jscan" class="md-nav__button md-logo" aria-label="jscan" data-md-component="logo">
+    <a href="../.." title="polyscan" class="md-nav__button md-logo" aria-label="polyscan" data-md-component="logo">
       
   <img src="../../assets/icon.svg" alt="logo">
 
     </a>
-    jscan
+    polyscan
   </label>
   
     <div class="md-nav__source">
@@ -509,6 +509,8 @@
   
     
     
+      
+        
       
         
       
@@ -604,6 +606,34 @@
     
   
     Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/migrating-from-jscan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating from jscan
   
 
     
@@ -867,10 +897,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reading-the-dot-output" class="md-nav__link">
+  <a href="#rendering-the-graph" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reading the DOT output
+        Rendering the graph
       
     </span>
   </a>
@@ -937,12 +967,6 @@
       
         
           
-        
-      
-        
-      
-        
-      
         
       
         
@@ -1020,90 +1044,6 @@
     
   
     analyze
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/deps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    deps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    init
   
 
     
@@ -1726,10 +1666,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reading-the-dot-output" class="md-nav__link">
+  <a href="#rendering-the-graph" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reading the DOT output
+        Rendering the graph
       
     </span>
   </a>
@@ -1843,15 +1783,16 @@
 
 
 <h1 id="read-the-dependency-graph">Read the Dependency Graph<a class="headerlink" href="#read-the-dependency-graph" title="Permanent link">&para;</a></h1>
-<p><code>jscan deps</code> builds the module import graph and reports metrics derived from it. The numbers come from Robert Martin's package metrics, which are widely used but easy to misread. This guide explains what each one means and what to do about a bad value.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--dot<span class="w"> </span><span class="p">|</span><span class="w"> </span>dot<span class="w"> </span>-Tsvg<span class="w"> </span>-o<span class="w"> </span>deps.svg
+<p><code>polyscan analyze --select deps</code> builds the module import graph for the JavaScript/TypeScript files and reports metrics derived from it. The numbers come from Robert Martin's package metrics, which are widely used but easy to misread. This guide explains what each one means and what to do about a bad value.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>text<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.deps.analysis'</span>
 </span></code></pre></div>
 <h2 id="the-vocabulary">The vocabulary<a class="headerlink" href="#the-vocabulary" title="Permanent link">&para;</a></h2>
 <p>Every metric is built from two counts. For a given module:</p>
 <p><strong>Afferent coupling, written <code>Ca</code>.</strong> The number of modules that import this one. High <code>Ca</code> means many things depend on you.</p>
 <p><strong>Efferent coupling, written <code>Ce</code>.</strong> The number of modules this one imports. High <code>Ce</code> means you depend on many things.</p>
 <p>The two describe opposite kinds of exposure. A module with high <code>Ca</code> is dangerous to change, because the change ripples outward. A module with high <code>Ce</code> is fragile, because it breaks when anything it uses changes.</p>
+<p>In the JSON output, both counts are per module in <code>.deps.analysis.ModuleMetrics</code>, as <code>AfferentCoupling</code> and <code>EfferentCoupling</code>, alongside <code>Instability</code>, <code>Abstractness</code>, <code>Distance</code>, and a <code>RiskLevel</code>.</p>
 <h2 id="instability">Instability<a class="headerlink" href="#instability" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>instability = Ce ÷ (Ca + Ce)
 </span></code></pre></div>
@@ -1866,60 +1807,57 @@
 <p>The two bad corners are:</p>
 <p><strong>Abstract and unstable</strong>, at the top right. The module is full of interfaces that nothing uses. This is usually over-engineering, or the remains of an abstraction whose implementations were deleted.</p>
 <p><strong>Concrete and stable</strong>, at the bottom left. Many modules import a module full of concrete implementation. This is the more common and more painful case, since every change to that implementation touches everything downstream. The fix is to extract an interface and let dependents import that instead.</p>
-<p>The deviation feeds the health score, contributing up to 3 penalty points. See <a href="../../output/health-score/#dependencies">the health score page</a>.</p>
+<p>The coupling analysis in the JSON output names the modules in each zone explicitly: <code>.deps.analysis.CouplingAnalysis.ZoneOfPain</code> lists the stable-but-concrete modules, and <code>MainSequence</code> the healthy ones. The deviation feeds the health score, contributing up to 3 penalty points. See <a href="../../output/health-score/#dependencies">the health score page</a>.</p>
 <h2 id="circular-dependencies">Circular dependencies<a class="headerlink" href="#circular-dependencies" title="Permanent link">&para;</a></h2>
-<p>A cycle is a group of modules that import each other, directly or through a chain. jscan finds them with Tarjan's strongly connected components algorithm, which finds every cycle in one pass.</p>
+<p>A cycle is a group of modules that import each other, directly or through a chain. polyscan finds them with Tarjan's strongly connected components algorithm, which finds every cycle in one pass.</p>
 <p>Cycles matter for practical reasons rather than aesthetic ones. Module initialization order becomes undefined, so one module in the cycle sees a partially initialized version of another, which shows up as <code>undefined</code> at runtime in a way that is hard to trace. Bundlers cannot tree-shake across a cycle, so dead code survives into your bundle. Neither module can be understood or tested alone.</p>
 <p>Dynamic imports written as <code>import("./module")</code> are excluded from cycle detection, because a dynamic import resolves at call time rather than at load time and therefore does not create a load-time cycle. This is often the cheapest way to break a cycle you cannot otherwise untangle.</p>
-<p>Find them with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.analysis.circular_dependencies.circular_dependencies[].description'</span>
+<p>Find them in the text report's dependency section, or from the JSON:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.deps.analysis.CircularDependencies'</span>
 </span></code></pre></div>
 <p>Or fail the build on them:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>jscan<span class="w"> </span>check<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-e<span class="w"> </span><span class="s1">'.summary.deps_modules_in_cycles == 0'</span>
 </span></code></pre></div>
 <p>The usual fix is to find the thing both modules need and move it into a third module that both import. A cycle between <code>user.ts</code> and <code>order.ts</code> usually means there is a shared type or helper wanting to live in its own file.</p>
 <h2 id="depth">Depth<a class="headerlink" href="#depth" title="Permanent link">&para;</a></h2>
-<p>Maximum depth is the length of the longest import chain. jscan compares it against what a healthy graph of your size would have:</p>
+<p>Maximum depth is the length of the longest import chain. polyscan compares it against what a healthy graph of your size would have:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>expected depth = max(3, ⌈log₂(module count + 1)⌉ + 1)
 </span></code></pre></div>
 <p>A graph of 100 modules is expected to be about 8 deep. Exceeding the expectation costs up to 3 points in the health score.</p>
-<p>Deep chains make change expensive, because a modification at the bottom must be understood at every level above it. They usually come from layering that has grown one wrapper at a time.</p>
-<h2 id="reading-the-dot-output">Reading the DOT output<a class="headerlink" href="#reading-the-dot-output" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--dot<span class="w"> </span><span class="p">|</span><span class="w"> </span>dot<span class="w"> </span>-Tsvg<span class="w"> </span>-o<span class="w"> </span>deps.svg
+<p>Deep chains make change expensive, because a modification at the bottom must be understood at every level above it. They usually come from layering that has grown one wrapper at a time. The chains themselves are listed in <code>.deps.analysis.LongestChains</code>.</p>
+<h2 id="rendering-the-graph">Rendering the graph<a class="headerlink" href="#rendering-the-graph" title="Permanent link">&para;</a></h2>
+<p>There is no built-in image export, but the nodes and edges are in the JSON output under <code>.deps.graph</code>, so a few lines of <code>jq</code> produce a Graphviz document:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'"digraph deps {",</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="s1">           (.deps.graph.edges[][] | "  \"\(.from)\" -&gt; \"\(.to)\";"),</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="s1">           "}"'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>dot<span class="w"> </span>-Tsvg<span class="w"> </span>-o<span class="w"> </span>deps.svg
 </span></code></pre></div>
-<p>Nodes are colored green for low risk, yellow for medium, and red for high. Each node's tooltip carries its role, its <code>Ca</code> and <code>Ce</code>, and its instability. Modules that form a cycle are drawn inside a shared cluster, which makes cycles visible at a glance.</p>
-<p>Large graphs are unreadable as a single image. Two flags help:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Keep only the hubs</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--dot<span class="w"> </span>--min-coupling<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>dot<span class="w"> </span>-Tsvg<span class="w"> </span>-o<span class="w"> </span>hubs.svg
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Wide graphs read better horizontally</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>jscan<span class="w"> </span>deps<span class="w"> </span>src/<span class="w"> </span>--dot<span class="w"> </span>--rank-dir<span class="w"> </span>LR<span class="w"> </span><span class="p">|</span><span class="w"> </span>dot<span class="w"> </span>-Tsvg<span class="w"> </span>-o<span class="w"> </span>deps.svg
-</span></code></pre></div>
-<p>Rendering needs Graphviz, which provides the <code>dot</code> program. Install it with <code>brew install graphviz</code>, <code>apt install graphviz</code>, or the equivalent for your system.</p>
+<p>Rendering needs Graphviz, which provides the <code>dot</code> program. Install it with <code>brew install graphviz</code>, <code>apt install graphviz</code>, or the equivalent for your system. The HTML report's Architecture tab covers most needs without any of this: it lists every module with its metrics, the cycles, and the longest chains.</p>
 <h2 id="a-caution-about-path-aliases">A caution about path aliases<a class="headerlink" href="#a-caution-about-path-aliases" title="Permanent link">&para;</a></h2>
-<p>jscan does not resolve TypeScript path aliases. An import written <code>@/lib/util</code> becomes a module node of its own rather than resolving to <code>src/lib/util.ts</code>, which inflates the module count and drops the real edge.</p>
+<p>polyscan does not resolve TypeScript path aliases. An import written <code>@/lib/util</code> becomes a module node of its own rather than resolving to <code>src/lib/util.ts</code>, which inflates the module count and drops the real edge.</p>
 <p>Every metric on this page is computed from the graph, so every one of them is affected. In a project that uses aliases throughout, treat the coupling numbers as a lower bound and the cycle list as incomplete. Projects using relative imports get accurate results. The <a href="../typescript-projects/#path-aliases-are-not-resolved">TypeScript guide</a> covers this in detail.</p>
 <h2 id="a-worked-reading">A worked reading<a class="headerlink" href="#a-worked-reading" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gp">$ </span>jscan<span class="w"> </span>deps<span class="w"> </span>src/
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="go">Summary:</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="go">  Total modules: 2</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="go">  Total dependencies: 1</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="go">  Root modules (entry points): 1</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="go">  Leaf modules (no dependencies): 1</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="go">  Max depth: 1</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="go">Coupling Analysis:</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="go">  Average coupling: 1.00</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="go">  Average instability: 0.50</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="go">  Highly coupled modules: 0</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="go">  Stable modules: 1</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gp">$ </span>polyscan<span class="w"> </span>analyze<span class="w"> </span>--format<span class="w"> </span>text<span class="w"> </span>--select<span class="w"> </span>deps<span class="w"> </span>src/
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="go">=== Dependency Analysis ===</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="go">Summary:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="go">  Total modules: 2</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="go">  Total dependencies: 1</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="go">  Entry points: 1</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="go">  Leaf modules: 1</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="go">  Max depth: 1</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="go">No circular dependencies detected.</span>
 </span></code></pre></div>
-<p>Two modules and one edge between them. One module imports nothing, so it is a leaf and a stable module with instability 0. The other imports it and nothing imports the other, so it is an entry point with instability 1. The average of 0 and 1 is the reported 0.50.</p>
+<p>Two modules and one edge between them. One module imports nothing, so it is a leaf and a stable module with instability 0. The other imports it and nothing imports the other, so it is an entry point with instability 1.</p>
 <p>There are no cycles and the depth of 1 is well under the expected 3, so the only dependency penalty comes from the main sequence deviation.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../cli/deps/"><code>jscan deps</code> reference</a> for every flag</li>
+<li><a href="../../cli/analyze/#deps"><code>polyscan analyze</code> reference</a> for the analysis itself</li>
+<li><a href="../../output/json-schema/#deps">JSON schema</a> for where these numbers live in the output</li>
 <li><a href="../../output/health-score/#dependencies">Health score</a> for how these metrics affect the score</li>
 </ul>
 
@@ -1991,7 +1929,7 @@
       
       
     
-    <a href="https://www.npmjs.com/package/jscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
+    <a href="https://www.npmjs.com/package/polyscan" target="_blank" rel="noopener" title="www.npmjs.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M288 288h-32v-64h32zm288-128v192H288v32H160v-32H0V160zm-416 32H32v128h64v-96h32v96h32zm160 0H192v160h64v-32h64zm224 0H352v128h64v-96h32v96h32v-96h32v96h32z"/></svg>
     </a>
   
