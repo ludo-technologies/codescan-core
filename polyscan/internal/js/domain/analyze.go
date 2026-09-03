@@ -298,9 +298,15 @@ func (s *AnalyzeSummary) calculateComplexityPenalty() int {
 
 	// Weighted ratio of problematic functions
 	weighted := float64(s.HighComplexityCount) + ComplexityMediumWeight*float64(s.MediumComplexityCount)
+	if weighted <= 0 {
+		return 0
+	}
 	ratio := weighted / float64(s.TotalFunctions)
 
-	return coredomain.LinearPenalty(ratio, 0, ComplexitySaturationRatio)
+	// LinearPenalty rounds to whole points, which would let a large codebase
+	// with a few risky functions round down to a clean 100. Any function
+	// above the medium threshold costs at least one point.
+	return max(1, coredomain.LinearPenalty(ratio, 0, ComplexitySaturationRatio))
 }
 
 // calculateDeadCodePenalty calculates the penalty for dead code (max 20)

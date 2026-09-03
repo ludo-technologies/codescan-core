@@ -78,10 +78,10 @@ Four of the dimensions use the same shape. A ratio is computed, and the penalty 
 
 ```text
 ratio   = (high risk functions + 0.5 × medium risk functions) ÷ total functions
-penalty = 20 × ratio ÷ 0.30, capped at 20
+penalty = 20 × ratio ÷ 0.30, capped at 20, at least 1 when ratio > 0
 ```
 
-The penalty reaches its maximum once the weighted ratio hits 30 percent. A codebase where one function in twenty is high risk loses about 3 of the 20 points, and one where every third function is high risk loses all of them. Medium risk functions count half as much as high risk ones. The population covers every analyzed function in every language.
+The penalty reaches its maximum once the weighted ratio hits 30 percent. It never rounds down to 0 while any function is above the medium threshold, so a complexity score of 100 means every function is low risk. A codebase where one function in twenty is high risk loses about 3 of the 20 points, and one where every third function is high risk loses all of them. Medium risk functions count half as much as high risk ones. The population covers every analyzed function in every language.
 
 Which functions count as high or medium risk depends on the thresholds, so for JavaScript/TypeScript raising `complexity.medium_threshold` raises the score without changing any code.
 

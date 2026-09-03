@@ -263,6 +263,10 @@ func TestCalculateHealthScore_ComplexityPenaltyCurve(t *testing.T) {
 		// ky: 128 functions, 5 high and 8 medium, a weighted ratio of 7%.
 		{name: "ky", total: 128, high: 5, medium: 8, wantComplexity: 75},
 		{name: "one high function in twenty", total: 20, high: 1, wantComplexity: 85},
+		// Below half a point the linear curve rounds to 0; one point is charged instead.
+		{name: "one high function in 134 costs a point", total: 134, high: 1, wantComplexity: 95},
+		{name: "one medium function in 1000 costs a point", total: 1000, medium: 1, wantComplexity: 95},
+		{name: "no risky functions is clean", total: 1000, wantComplexity: 100},
 		{name: "half of the functions medium", total: 100, medium: 50, wantComplexity: 15},
 		{name: "30% high saturates", total: 100, high: 30, wantComplexity: 0},
 		{name: "beyond saturation stays at the floor", total: 100, high: 80, medium: 20, wantComplexity: 0},
