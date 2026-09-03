@@ -95,22 +95,20 @@ Examples:
 			if generic == nil && javascript == nil {
 				return analysis.ErrNoFiles
 			}
-			responses, err := report.Combine(generic, javascript)
+			results, err := report.Combine(generic, javascript)
 			if err != nil {
 				return err
 			}
-			filterFunctions(responses.Complexity, minComplexity)
+			filterFunctions(results.Complexity, minComplexity)
 			duration := time.Since(start)
 
 			formatter := service.NewOutputFormatter()
 			write := func(w io.Writer, format jsdomain.OutputFormat) error {
-				return formatter.WriteAnalyze(responses.Complexity, responses.DeadCode,
-					responses.Clone, responses.CBO, responses.Deps, format, w, duration)
+				return formatter.WriteAnalyze(results, format, w, duration)
 			}
 			summarize := func(w io.Writer) {
-				summary := service.BuildAnalyzeSummary(responses.Complexity, responses.DeadCode,
-					responses.Clone, responses.CBO, responses.Deps)
-				fmt.Fprint(w, service.FormatCLISummary(summary, duration, unanalyzedFiles(responses.Complexity)))
+				summary := service.BuildAnalyzeSummary(results)
+				fmt.Fprint(w, service.FormatCLISummary(summary, duration, results.Files.Errors))
 			}
 
 			switch outputFormat {
@@ -221,17 +219,6 @@ func filterFunctions(complexity *jsdomain.ComplexityResponse, minComplexity int)
 		}
 	}
 	complexity.Functions = listed
-}
-
-// unanalyzedFiles returns the per-file failures the complexity analysis
-// collected: it is the only analysis that reports the files it dropped, and
-// it runs over the same file set as the others, so its list identifies what
-// every score is missing.
-func unanalyzedFiles(complexity *jsdomain.ComplexityResponse) []string {
-	if complexity == nil {
-		return nil
-	}
-	return complexity.Errors
 }
 
 // fileURL turns an absolute path into a file URL, escaping characters such

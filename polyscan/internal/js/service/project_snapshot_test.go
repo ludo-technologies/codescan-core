@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
@@ -213,5 +214,75 @@ func TestAnalyzeSnapshot_NilSnapshot(t *testing.T) {
 	}
 	if _, err := NewCloneServiceWithDefaults().DetectClonesInSnapshot(context.Background(), nil, domain.DefaultCloneRequest()); err == nil {
 		t.Error("nil snapshot should be rejected")
+	}
+}
+
+const brokenSnapshotFixture = `function broken( {`
+
+func TestNewProjectSnapshot_AccountsForFilesWhileReleasingThem(t *testing.T) {
+	valid := writeSnapshotFixture(t, "a.js", `function a() { return 1; }`)
+	broken := writeSnapshotFixture(t, "b.js", brokenSnapshotFixture)
+	missing := filepath.Join(t.TempDir(), "missing.js")
+	snapshot := NewProjectSnapshot([]string{valid, broken, missing})
+
+	response, err := NewComplexityService(complexityTestConfig()).AnalyzeSnapshot(context.Background(), snapshot, domain.ComplexityRequest{})
+	if err != nil {
+		t.Fatalf("analysis failed: %v", err)
+	}
+	if response.Summary.FilesAnalyzed != 1 || response.Summary.SkippedFiles != 2 {
+		t.Errorf("summary = %+v, want 1 analyzed and 2 skipped", response.Summary)
+	}
+
+	accounting := snapshot.Accounting()
+	if accounting.Total != 3 || accounting.Skipped != 2 || len(accounting.Errors) != 2 {
+		t.Fatalf("accounting = %+v, want 3 files with 2 skipped", accounting)
+	}
+	if !strings.HasPrefix(accounting.Errors[0], broken+": syntax error") {
+		t.Errorf("parse failure not reported per file: %q", accounting.Errors[0])
+	}
+	if !strings.HasPrefix(accounting.Errors[1], missing+": ") {
+		t.Errorf("read failure not reported per file: %q", accounting.Errors[1])
+	}
+	for _, file := range snapshot.Files {
+		if file.AST != nil || file.Content != nil {
+			t.Errorf("%s still holds its parse tree after its single analysis", file.Path)
+		}
+	}
+}
+
+func TestNewProjectSnapshot_RejectsASecondAnalysis(t *testing.T) {
+	path := writeSnapshotFixture(t, "a.js", `function a() { return 1; }`)
+	snapshot := NewProjectSnapshot([]string{path})
+	svc := NewComplexityService(complexityTestConfig())
+	if _, err := svc.AnalyzeSnapshot(context.Background(), snapshot, domain.ComplexityRequest{}); err != nil {
+		t.Fatalf("first analysis failed: %v", err)
+	}
+
+	if _, err := svc.AnalyzeSnapshot(context.Background(), snapshot, domain.ComplexityRequest{}); err == nil {
+		t.Error("a second analysis over a released snapshot must be rejected")
+	}
+	if _, err := NewDependencyGraphServiceWithDefaults().AnalyzeSnapshot(context.Background(), NewProjectSnapshot([]string{path}), domain.DependencyGraphRequest{}); err == nil {
+		t.Error("dependency analysis over a single-analysis snapshot must be rejected")
+	}
+}
+
+func TestProjectSnapshot_AccountingBeforeAnalysisPanics(t *testing.T) {
+	snapshot := NewProjectSnapshot([]string{"unloaded.js"})
+	defer func() {
+		if recover() == nil {
+			t.Error("accounting before the analysis loaded the files must panic")
+		}
+	}()
+	snapshot.Accounting()
+}
+
+func TestBuildProjectSnapshot_AccountingIsAvailableAfterBuild(t *testing.T) {
+	valid := writeSnapshotFixture(t, "a.js", `function a() { return 1; }`)
+	broken := writeSnapshotFixture(t, "b.js", brokenSnapshotFixture)
+
+	accounting := BuildProjectSnapshot(context.Background(), []string{valid, broken}).Accounting()
+
+	if accounting.Total != 2 || accounting.Skipped != 1 {
+		t.Errorf("accounting = %+v, want 2 files with 1 skipped", accounting)
 	}
 }

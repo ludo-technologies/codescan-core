@@ -100,7 +100,7 @@ func TestWriteAnalyzeJSONReportsModuleQualityAndDirectories(t *testing.T) {
 
 	var buf bytes.Buffer
 	formatter := NewOutputFormatter()
-	if err := formatter.WriteAnalyze(complexityResponse, deadCodeResponse, nil, nil, depsResponse, domain.OutputFormatJSON, &buf, time.Second); err != nil {
+	if err := formatter.WriteAnalyze(domain.AnalysisResults{Complexity: complexityResponse, DeadCode: deadCodeResponse, Deps: depsResponse}, domain.OutputFormatJSON, &buf, time.Second); err != nil {
 		t.Fatalf("WriteAnalyze failed: %v", err)
 	}
 
@@ -134,7 +134,7 @@ func TestWriteAnalyzeTextListsModuleHotspotsAndDirectories(t *testing.T) {
 
 	var buf bytes.Buffer
 	formatter := NewOutputFormatter()
-	if err := formatter.WriteAnalyze(complexityResponse, deadCodeResponse, nil, nil, depsResponse, domain.OutputFormatText, &buf, time.Second); err != nil {
+	if err := formatter.WriteAnalyze(domain.AnalysisResults{Complexity: complexityResponse, DeadCode: deadCodeResponse, Deps: depsResponse}, domain.OutputFormatText, &buf, time.Second); err != nil {
 		t.Fatalf("WriteAnalyze failed: %v", err)
 	}
 
@@ -177,7 +177,7 @@ func TestWriteAnalyzeCSVReportsRollupRows(t *testing.T) {
 
 	var buf bytes.Buffer
 	formatter := NewOutputFormatter()
-	if err := formatter.WriteAnalyze(complexityResponse, deadCodeResponse, nil, nil, depsResponse, domain.OutputFormatCSV, &buf, time.Second); err != nil {
+	if err := formatter.WriteAnalyze(domain.AnalysisResults{Complexity: complexityResponse, DeadCode: deadCodeResponse, Deps: depsResponse}, domain.OutputFormatCSV, &buf, time.Second); err != nil {
 		t.Fatalf("WriteAnalyze failed: %v", err)
 	}
 
@@ -200,7 +200,7 @@ func TestWriteHTMLRendersRollupTables(t *testing.T) {
 
 	var buf bytes.Buffer
 	formatter := NewOutputFormatter()
-	if err := formatter.WriteHTML(complexityResponse, deadCodeResponse, nil, nil, depsResponse, &buf, time.Second); err != nil {
+	if err := formatter.WriteHTML(domain.AnalysisResults{Complexity: complexityResponse, DeadCode: deadCodeResponse, Deps: depsResponse}, &buf, time.Second); err != nil {
 		t.Fatalf("WriteHTML failed: %v", err)
 	}
 

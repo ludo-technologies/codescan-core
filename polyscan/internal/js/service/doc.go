@@ -18,8 +18,10 @@
 //
 // Output is handled by OutputFormatterImpl for text, JSON, YAML, CSV, and HTML.
 //
-// BuildAnalyzeSummary combines the five responses into a domain.AnalyzeSummary
+// BuildAnalyzeSummary combines a run's results into a domain.AnalyzeSummary
 // and computes the health score. Because a nil response is treated as an
 // analysis that did not run, and a category that did not run contributes no
 // penalty, summaries built from different --select values are not comparable.
+// The file counts come from the run's ProjectSnapshot, not from any response,
+// so the parse-error penalty is charged whichever analyses ran.
 package service

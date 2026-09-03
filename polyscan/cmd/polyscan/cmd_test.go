@@ -47,6 +47,8 @@ type analyzeJSON struct {
 	Summary *struct {
 		HealthScore       int    `json:"health_score"`
 		Grade             string `json:"grade"`
+		TotalFiles        int    `json:"total_files"`
+		SkippedFiles      int    `json:"skipped_files"`
 		ComplexityEnabled bool   `json:"complexity_enabled"`
 		DeadCodeEnabled   bool   `json:"dead_code_enabled"`
 		CloneEnabled      bool   `json:"clone_enabled"`
@@ -263,6 +265,38 @@ func TestFileURL(t *testing.T) {
 	} {
 		if got := fileURL(path); got != want {
 			t.Errorf("fileURL(%q) = %q, want %q", path, got, want)
+		}
+	}
+}
+
+// TestAnalyzeChargesParseErrorsWithoutComplexity covers #92: a run that
+// leaves complexity out still reports and charges the files it could not
+// parse.
+func TestAnalyzeChargesParseErrorsWithoutComplexity(t *testing.T) {
+	dir := t.TempDir()
+	for name, content := range map[string]string{
+		"ok.js":     "export function ok(a) { return a; }\n",
+		"broken.js": "function broken( {\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	out, err := run(t, "analyze", "--format", "json", "--select", "deadcode", dir)
+	if err != nil {
+		t.Fatalf("analyze: %v\n%s", err, out)
+	}
+	doc := decodeAnalyzeJSON(t, out)
+	if doc.Summary == nil || doc.Summary.TotalFiles != 2 || doc.Summary.SkippedFiles != 1 {
+		t.Fatalf("summary = %+v, want 2 files with 1 skipped", doc.Summary)
+	}
+	if doc.Summary.HealthScore >= 100 {
+		t.Errorf("health score = %d, want the parse-error penalty applied", doc.Summary.HealthScore)
+	}
+	for _, want := range []string{"1 of 2 files skipped (parse errors)", "broken.js: syntax error"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output lacks %q:\n%s", want, out)
 		}
 	}
 }

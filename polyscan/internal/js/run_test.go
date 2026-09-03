@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/ludo-technologies/polyscan/polyscan/internal/js/config"
@@ -140,5 +141,36 @@ func TestRunComplexityAnalysisInternal_MinComplexityFromConfig(t *testing.T) {
 	if filtered.Summary.FunctionsParsed != len(baseline.Functions) {
 		t.Errorf("FunctionsParsed should stay at the analyzed population %d, got %d",
 			len(baseline.Functions), filtered.Summary.FunctionsParsed)
+	}
+}
+
+// TestRun_AccountsForSkippedFilesWhicheverAnalysesRan covers #92: the run's
+// file accounting is independent of the complexity analysis, so a single
+// non-complexity analysis and a shared-snapshot run report the same skipped
+// file.
+func TestRun_AccountsForSkippedFilesWhicheverAnalysesRan(t *testing.T) {
+	dir := t.TempDir()
+	valid := filepath.Join(dir, "ok.js")
+	broken := filepath.Join(dir, "broken.js")
+	if err := os.WriteFile(valid, []byte(complexityFixture), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(broken, []byte("function broken( {"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	files := []string{valid, broken}
+
+	for name, selected := range map[string]Selection{
+		"deadcode only":       {DeadCode: true},
+		"deps only":           {Deps: true},
+		"deadcode and clones": {DeadCode: true, Clones: true},
+	} {
+		result := Run(context.Background(), files, config.DefaultConfig(), selected)
+		if result.Files.Total != 2 || result.Files.Skipped != 1 {
+			t.Errorf("%s: files = %+v, want 2 files with 1 skipped", name, result.Files)
+		}
+		if len(result.Files.Errors) != 1 || !strings.HasPrefix(result.Files.Errors[0], broken+": syntax error") {
+			t.Errorf("%s: errors = %v, want the broken file named", name, result.Files.Errors)
+		}
 	}
 }

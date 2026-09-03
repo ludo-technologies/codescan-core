@@ -108,6 +108,40 @@ type AnalyzeResponse struct {
 	Version     string    `json:"version" yaml:"version"`
 }
 
+// FileAccounting counts the files a run covered, kept apart from any one
+// analysis: every analysis silently excludes the files it cannot parse, so the
+// health score charges them separately whichever dimensions ran.
+type FileAccounting struct {
+	// Total is the number of files the run covered.
+	Total int
+	// Skipped is the number of files no analysis could use because they could
+	// not be read or parsed.
+	Skipped int
+	// Errors says, per skipped file, why it was skipped.
+	Errors []string
+}
+
+// Add folds another run's accounting into this one, as when the generic
+// engine and the JavaScript pipeline each cover part of a tree.
+func (a *FileAccounting) Add(other FileAccounting) {
+	a.Total += other.Total
+	a.Skipped += other.Skipped
+	a.Errors = append(a.Errors, other.Errors...)
+}
+
+// AnalysisResults is one run's output: the file set it covered and the
+// response of each analysis that ran. An analysis that did not run, or found
+// nothing to analyze, leaves its response nil, and the health score leaves
+// that dimension out instead of scoring it as clean.
+type AnalysisResults struct {
+	Files      FileAccounting
+	Complexity *ComplexityResponse
+	DeadCode   *DeadCodeResponse
+	Clone      *CloneResponse
+	CBO        *CBOResponse
+	Deps       *DependencyGraphResponse
+}
+
 // AnalyzeSummary provides an overall summary of all analyses
 type AnalyzeSummary struct {
 	// File statistics
@@ -141,6 +175,11 @@ type AnalyzeSummary struct {
 	HighComplexityCount   int     `json:"high_complexity_count" yaml:"high_complexity_count"`
 	MediumComplexityCount int     `json:"medium_complexity_count" yaml:"medium_complexity_count"`
 
+	// DeadCodeFiles is the number of files the dead code analysis covered. It
+	// is the divisor of the dead code penalty rather than TotalFiles, which
+	// counts every language in the run while dead code detection covers
+	// JavaScript/TypeScript only.
+	DeadCodeFiles    int `json:"dead_code_files" yaml:"dead_code_files"`
 	DeadCodeCount    int `json:"dead_code_count" yaml:"dead_code_count"`
 	CriticalDeadCode int `json:"critical_dead_code" yaml:"critical_dead_code"`
 	WarningDeadCode  int `json:"warning_dead_code" yaml:"warning_dead_code"`
@@ -259,7 +298,7 @@ func (s *AnalyzeSummary) calculateComplexityPenalty() int {
 // calculateDeadCodePenalty calculates the penalty for dead code (max 20)
 // Uses per-file rate of weighted findings so that large repos are not unfairly penalized.
 // Weights: Critical=1.0, Warning=0.5, Info=0.2
-// The rate (weightedFindings / totalFiles) is mapped linearly to 0–20,
+// The rate (weightedFindings / DeadCodeFiles) is mapped linearly to 0–20,
 // reaching the maximum penalty at a rate of 3.0 findings per file.
 func (s *AnalyzeSummary) calculateDeadCodePenalty() int {
 	weightedDeadCode := float64(s.CriticalDeadCode)*1.0 +
@@ -270,7 +309,7 @@ func (s *AnalyzeSummary) calculateDeadCodePenalty() int {
 		return 0
 	}
 
-	files := s.TotalFiles
+	files := s.DeadCodeFiles
 	if files < 1 {
 		files = 1
 	}

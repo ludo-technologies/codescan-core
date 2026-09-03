@@ -17,40 +17,37 @@ import (
 	"github.com/ludo-technologies/polyscan/polyscan/internal/js/version"
 )
 
-// Responses is the unified analysis in the shape the output formatter
-// renders. An analysis that did not run, or found nothing to analyze,
-// leaves its response nil, and the health score leaves those dimensions
-// out instead of scoring them as clean.
-type Responses struct {
-	Complexity *domain.ComplexityResponse
-	DeadCode   *domain.DeadCodeResponse
-	Clone      *domain.CloneResponse
-	CBO        *domain.CBOResponse
-	Deps       *domain.DependencyGraphResponse
-}
-
 // Combine merges the generic-engine report with the JavaScript/TypeScript
-// result. Complexity and clone results merge across languages; dead code,
-// coupling and dependencies exist only for JavaScript/TypeScript and pass
-// through. Either input may be nil when its side found no files.
-func Combine(generic *analysis.Report, javascript *js.Result) (Responses, error) {
-	responses := Responses{}
+// result into the shape the output formatter renders. Complexity and clone
+// results merge across languages; dead code, coupling and dependencies exist
+// only for JavaScript/TypeScript and pass through. The file accounting adds
+// up across both sides, so the health score charges every unparsable file
+// whichever analyses ran. Either input may be nil when its side found no
+// files.
+func Combine(generic *analysis.Report, javascript *js.Result) (domain.AnalysisResults, error) {
+	results := domain.AnalysisResults{}
 	if javascript != nil {
-		responses.Complexity = javascript.Complexity
-		responses.DeadCode = javascript.DeadCode
-		responses.Clone = javascript.Clones
-		responses.CBO = javascript.CBO
-		responses.Deps = javascript.Deps
+		results.Files = javascript.Files
+		results.Complexity = javascript.Complexity
+		results.DeadCode = javascript.DeadCode
+		results.Clone = javascript.Clones
+		results.CBO = javascript.CBO
+		results.Deps = javascript.Deps
 	}
 	if generic != nil {
 		complexity, err := genericComplexity(generic)
 		if err != nil {
-			return Responses{}, err
+			return domain.AnalysisResults{}, err
 		}
-		responses.Complexity = mergeComplexity(complexity, responses.Complexity)
-		responses.Clone = mergeClones(genericClones(generic), responses.Clone)
+		results.Files.Add(domain.FileAccounting{
+			Total:   generic.Files.Total,
+			Skipped: generic.Files.Skipped,
+			Errors:  generic.Errors,
+		})
+		results.Complexity = mergeComplexity(complexity, results.Complexity)
+		results.Clone = mergeClones(genericClones(generic), results.Clone)
 	}
-	return responses, nil
+	return results, nil
 }
 
 // genericComplexity converts the generic engine's complexity analysis into
