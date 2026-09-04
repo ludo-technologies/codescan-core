@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-05
+
 ### Fixed
 
+- Nesting depth is computed for Go, Rust and C++. The generic engine had no notion of nesting, so the directory rows for those languages always printed an average of 0.00 and a maximum of 0. Each language now declares a nesting query and the engine measures a function's depth the way the JavaScript analyzer does: the body is depth 0, an else-if continues its chain, and code in a separately extracted function is that function's own (#94)
+- Parse errors are charged to the health score whichever analyses ran. Skipped files were counted only by the complexity analysis, so a run that left complexity out of `--select` scored unparsable files as clean. The dead-code rate is also divided by the files dead code analysis covered, so Go, Rust and C++ files in a mixed tree no longer dilute the JavaScript-only rate (#92)
+- The report header shows the real project directory. A relative target such as `polyscan/` printed the project name twice because the common directory was the relative path itself; the analyzed files are resolved to absolute paths first
 - The complexity penalty saturated once the weighted ratio of medium and high risk functions reached 5 percent, so a mostly clean codebase with a few complex functions scored 0/100 on complexity. It now saturates at 30 percent, matching the documented intent, and any function above the medium threshold costs at least one point so the score only reads 100 when no function is at risk (#96)
 
 ## [0.2.0] - 2026-09-03
