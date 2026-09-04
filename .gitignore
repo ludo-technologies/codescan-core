@@ -30,3 +30,6 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# polyscan audit workspace (fp-audit skill)
+.polyscan/
