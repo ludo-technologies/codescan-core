@@ -1,4 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <path d="M7 9C7 7.34315 8.34315 6 10 6H14C15.6569 6 17 7.34315 17 9V13C17 14.6569 15.6569 16 14 16H10C8.34315 16 7 17.3431 7 19V20" stroke="#3178c6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="17" cy="19" r="2" fill="#f7df1e"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <path d="M24.0 4.0L41.32 14.0" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M41.32 14.0L41.32 34.0" stroke="#0ea5e9" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M41.32 34.0L24.0 44.0" stroke="#14b8a6" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M24.0 44.0L6.68 34.0" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M6.68 34.0L6.68 14.0" stroke="#f97316" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M6.68 14.0L24.0 4.0" stroke="#8b5cf6" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="24.0" cy="4.0" r="2.6" fill="#ffffff"/>
+  <circle cx="41.32" cy="14.0" r="2.6" fill="#ffffff"/>
+  <circle cx="41.32" cy="34.0" r="2.6" fill="#ffffff"/>
+  <circle cx="24.0" cy="44.0" r="2.6" fill="#ffffff"/>
+  <circle cx="6.68" cy="34.0" r="2.6" fill="#ffffff"/>
+  <circle cx="6.68" cy="14.0" r="2.6" fill="#ffffff"/>
+  <path d="M14 24H29" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="34" cy="24" r="3" fill="#8b5cf6"/>
 </svg>
