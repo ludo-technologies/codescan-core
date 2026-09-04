@@ -1,6 +1,10 @@
 <div align="center">
 
-# polyscan
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.svg">
+  <img alt="polyscan" src="assets/logo-light.svg" width="400">
+</picture>
 
 **Code quality analyzers for AI agents**
 
