@@ -47,13 +47,27 @@ Every analyzer scores your codebase (0-100 with an A-F grade) and generates an H
 - 🏗️ **Dependencies** - circular imports and unstable module dependencies
 - 🧩 **Class design** - classes that do too much or depend on too much (CBO coupling, LCOM cohesion)
 
-Complexity and duplicate code cover every language; dead code, dependencies and class design run for JavaScript/TypeScript (and Python via pyscn) today. Dimensions a language does not have are left out of its score, not counted as clean.
+Complexity and duplicate code cover every language; the other three depend on the language backend, as the [table below](#language-support) shows.
 
 The HTML report opens on an overview of the score, the biggest sources of debt and the files to fix first. This is `polyscan analyze src` on [Day.js](https://github.com/iamkun/dayjs):
 
 ![polyscan HTML report for Day.js](docs/images/report.png)
 
 **Built with Go + tree-sitter** — fast enough to run on every commit.
+
+## Language Support
+
+| Language | Extensions | Complexity | Duplicate code | Dead code | Dependencies | Class design | Tool |
+|---|---|:-:|:-:|:-:|:-:|:-:|---|
+| JavaScript / TypeScript | `.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx` `.mts` `.cts` | ✅ | ✅ | ✅ | ✅ | ✅ CBO | `polyscan` |
+| Python | `.py` | ✅ | ✅ | ✅ | ✅ | ✅ CBO, LCOM | `pyscn` |
+| Go | `.go` | ✅ | ✅ | — | — | — | `polyscan` |
+| Rust | `.rs` | ✅ | ✅ | — | — | — | `polyscan` |
+| C++ | `.cpp` `.cc` `.cxx` `.hpp` `.hh` `.hxx` `.h` `.ipp` `.inl` | ✅ | ✅ | — | — | — | `polyscan` |
+
+Complexity and duplicate code cover every language. Dead code, dependencies and class design need the import graph and class model that only the JavaScript/TypeScript and Python backends build today. A dimension a language does not have is left out of its score rather than counted as clean, so scores stay comparable across languages.
+
+A few analysis details are worth knowing. Go function literals, Rust closures and C++ lambdas are not counted as functions of their own, and their decision points are charged to the enclosing function, the way `gocyclo` reports them. Rust macro bodies parse as token trees, so macro-heavy code contributes tokens but no structure and duplicate detection finds less of it. C++ files are parsed without the preprocessor, so every branch of a conditional inclusion is analyzed and a file whose syntax only works after macro expansion is reported as a parse error. Test files and test functions are recognized per language and excluded from duplicate detection.
 
 ## Polyscan for GitHub
 
