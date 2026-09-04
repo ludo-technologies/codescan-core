@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 80" fill="none">
+  <!-- polyscan mark: six languages as the six edges of one hexagon, the scan line and Ludo dot inside -->
+  <g transform="translate(4 4) scale(1.5)">
+    <path d="M24.0 4.0L41.32 14.0" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M41.32 14.0L41.32 34.0" stroke="#0ea5e9" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M41.32 34.0L24.0 44.0" stroke="#14b8a6" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M24.0 44.0L6.68 34.0" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M6.68 34.0L6.68 14.0" stroke="#f97316" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M6.68 14.0L24.0 4.0" stroke="#8b5cf6" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="24.0" cy="4.0" r="2.6" fill="#1c1c1e"/>
+    <circle cx="41.32" cy="14.0" r="2.6" fill="#1c1c1e"/>
+    <circle cx="41.32" cy="34.0" r="2.6" fill="#1c1c1e"/>
+    <circle cx="24.0" cy="44.0" r="2.6" fill="#1c1c1e"/>
+    <circle cx="6.68" cy="34.0" r="2.6" fill="#1c1c1e"/>
+    <circle cx="6.68" cy="14.0" r="2.6" fill="#1c1c1e"/>
+    <path d="M14 24H29" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="34" cy="24" r="3" fill="#8b5cf6"/>
+  </g>
+  <text x="92" y="56" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="44" font-weight="700" fill="#1c1c1e">polyscan</text>
+</svg>
