@@ -27,19 +27,9 @@ npx polyscan analyze .
 
 The language of each file is detected from its extension, and everything lands in one report with one health score.
 
-### Python
+### Demo Report
 
-Python has its own analyzer, [pyscn](https://github.com/ludo-technologies/pyscn), built on the same core:
-
-```
-uvx pyscn@latest analyze .
-```
-
-### Others
-
-We are also planning to support more languages.
-
-> Migrating from jscan? The [`jscan`](https://www.npmjs.com/package/jscan) npm package is deprecated and now runs polyscan for you — switch your scripts to `npx polyscan analyze .`.
+![polyscan HTML report for Day.js](docs/images/report.png)
 
 ## What You Get
 
@@ -50,12 +40,6 @@ Every analyzer scores your codebase (0-100 with an A-F grade) and generates an H
 - 🌀 **Complexity** - functions that are hard to read and test
 - 🏗️ **Dependencies** - circular imports and unstable module dependencies
 - 🧩 **Class design** - classes that do too much or depend on too much (CBO coupling, LCOM cohesion)
-
-Complexity and duplicate code cover every language; the other three depend on the language backend, as the [table below](#language-support) shows.
-
-The HTML report opens on an overview of the score, the biggest sources of debt and the files to fix first. This is `polyscan analyze src` on [Day.js](https://github.com/iamkun/dayjs):
-
-![polyscan HTML report for Day.js](docs/images/report.png)
 
 **Built with Go + tree-sitter** — fast enough to run on every commit.
 
@@ -71,18 +55,11 @@ The HTML report opens on an overview of the score, the biggest sources of debt a
 
 Complexity and duplicate code cover every language. Dead code, dependencies and class design need the import graph and class model that only the JavaScript/TypeScript and Python backends build today. A dimension a language does not have is left out of its score rather than counted as clean, so scores stay comparable across languages.
 
-A few analysis details are worth knowing. Go function literals, Rust closures and C++ lambdas are not counted as functions of their own, and their decision points are charged to the enclosing function, the way `gocyclo` reports them. Rust macro bodies parse as token trees, so macro-heavy code contributes tokens but no structure and duplicate detection finds less of it. C++ files are parsed without the preprocessor, so every branch of a conditional inclusion is analyzed and a file whose syntax only works after macro expansion is reported as a parse error. Test files and test functions are recognized per language and excluded from duplicate detection.
-
 ## Polyscan for GitHub
 
-Want this running continuously? The Polyscan App runs the same analyzers on your repositories automatically:
+[Polyscan App](https://codescan.dev/pyscn-bot) files a weekly audit report as a GitHub Issue. Free for every repository.
 
-- 📅 **Weekly code audit** — scores the entire codebase once a week and files the report as a GitHub Issue (free while in beta)
-- 🔍 **PR code review** — on every pull request, analyzes the changed files with the static analyzers and posts AI-generated improvement suggestions (Pro)
-
-Unlike diff-only review bots, reports are grounded in the quantitative metrics above — complexity, clones, dead code, dependencies. Configured with a single YAML file: report language (en / ja / zh / ko / es / fr / de / pt), target directories, and audit interval.
-
-**[Get started at codescan.dev →](https://codescan.dev/pyscn-bot)**
+**[Get start Polyscan App for free](https://codescan.dev/pyscn-bot)**
 
 ## AI Agent Integration
 
