@@ -27,11 +27,11 @@ func TestDuplicationPenalty(t *testing.T) {
 	if p := DuplicationPenalty(0.0); p != 0 {
 		t.Errorf("0%%: got %d, want 0", p)
 	}
-	if p := DuplicationPenalty(15.0); p != 10 {
-		t.Errorf("15%%: got %d, want 10", p)
+	if p := DuplicationPenalty(30.0); p != 10 {
+		t.Errorf("30%%: got %d, want 10", p)
 	}
-	if p := DuplicationPenalty(30.0); p != 20 {
-		t.Errorf("30%%: got %d, want 20", p)
+	if p := DuplicationPenalty(60.0); p != 20 {
+		t.Errorf("60%%: got %d, want 20", p)
 	}
 	if p := DuplicationPenalty(90.0); p != 20 {
 		t.Errorf("90%%: got %d, want 20 (capped)", p)
