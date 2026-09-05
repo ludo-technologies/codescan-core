@@ -1790,13 +1790,13 @@
 <tr>
 <td>Type 2</td>
 <td>Identical after renaming identifiers and literals</td>
-<td>0.75</td>
+<td>0.80 for Go, Rust and C++; 0.75 for JS/TS</td>
 <td>Every language</td>
 </tr>
 <tr>
 <td>Type 3</td>
 <td>A copy with statements added, removed, or changed</td>
-<td>0.70</td>
+<td>0.80</td>
 <td>Go, Rust and C++; off by default for JS/TS</td>
 </tr>
 <tr>
@@ -1861,7 +1861,7 @@
 <p>The duplication percentage in the health score is computed from fragments rather than pairs:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>duplication percentage = clone fragments ÷ total fragments × 100
 </span></code></pre></div>
-<p>It reaches the maximum penalty of 20 points at 30 percent. See <a href="../../output/health-score/#duplication">the health score page</a>.</p>
+<p>It reaches the maximum penalty of 20 points at 60 percent. The ratio counts every fragment with at least one partner, so it runs high on languages with conventional function shapes: well-kept Go libraries such as cobra and x/crypto sit near 20 percent, and wrapper-heavy ones such as testify and afero near 35 percent. See <a href="../../output/health-score/#duplication">the health score page</a>.</p>
 <h2 id="what-to-do-about-a-finding">What to do about a finding<a class="headerlink" href="#what-to-do-about-a-finding" title="Permanent link">&para;</a></h2>
 <p>Not every clone should be merged. Work through these questions in order.</p>
 <p><strong>Do the copies change for the same reason?</strong> This is the question that matters most. Two functions that look alike but serve different parts of the business will drift apart, and merging them creates a shared function full of conditional branches serving both callers badly. Duplication is cheaper than the wrong abstraction.</p>
