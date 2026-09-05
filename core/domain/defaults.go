@@ -1,6 +1,17 @@
 package domain
 
 // Clone type thresholds (similarity score 0.0-1.0).
+//
+// Type-2 and Type-3 share one threshold on purpose. The detector reports pairs
+// from the Type-3 threshold, so a lower Type-2 threshold would classify pairs
+// that are then never reported. What separates the two types is the syntactic
+// gate, not the similarity: a pair at or above 0.80 whose normalized trees
+// also match is Type-2, otherwise Type-3. Pairs between 0.70 and 0.80 were
+// mostly functions that share a shape rather than code, such as two output
+// formatters' switch statements, which is why the floor moved up from 0.70.
+// The JavaScript/TypeScript analyzer keeps its own thresholds in
+// polyscan/internal/js/constants; they were tuned separately and Type-3 is
+// off by default there.
 const (
 	DefaultType1CloneThreshold = 0.85
 	DefaultType2CloneThreshold = 0.80

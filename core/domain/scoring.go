@@ -20,9 +20,14 @@ const (
 	// The fragment ratio counts every function of ten or more lines that has any
 	// partner at or above the Type-3 threshold, so it runs high on languages with
 	// conventional function shapes: cobra, x/crypto and polyscan itself sit near
-	// 20%, and testify and afero near 35%.
+	// 20%, and testify and afero near 35%. Real duplication still saturates:
+	// pyscn's app/ directory of near-identical use cases sits at 54% and six
+	// renamed copies of one file at 100%.
+	// DuplicationThresholdMedium and the three penalty constants are unused by
+	// DuplicationPenalty, which is linear from Low to High; they are kept only
+	// because pyscn aliases them.
 	DuplicationThresholdHigh   = 60.0
-	DuplicationThresholdMedium = 30.0
+	DuplicationThresholdMedium = 15.0
 	DuplicationThresholdLow    = 0.0
 	DuplicationPenaltyHigh     = 20
 	DuplicationPenaltyMedium   = 12

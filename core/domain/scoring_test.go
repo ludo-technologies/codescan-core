@@ -36,6 +36,14 @@ func TestDuplicationPenalty(t *testing.T) {
 	if p := DuplicationPenalty(90.0); p != 20 {
 		t.Errorf("90%%: got %d, want 20 (capped)", p)
 	}
+	// Real duplication must still bottom out: a directory of near-identical
+	// use cases measures about 54% and renamed copies of one file 100%.
+	if p := DuplicationPenalty(54.0); p < 18 {
+		t.Errorf("54%%: got %d, want at least 18", p)
+	}
+	if p := DuplicationPenalty(100.0); p != 20 {
+		t.Errorf("100%%: got %d, want 20", p)
+	}
 }
 
 func TestParseErrorPenalty(t *testing.T) {
