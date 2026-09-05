@@ -78,10 +78,10 @@ Every function of at least 10 lines of code (blank lines and comments excluded) 
 | Type | Meaning | Reported when |
 | --- | --- | --- |
 | Type-1 | Exact copy apart from whitespace and comments | Similarity ≥ 0.85 and identical text |
-| Type-2 | Same structure with renamed identifiers or changed literals | Similarity ≥ 0.75 and matching normalized trees |
-| Type-3 | Near copy with statements added, removed or changed | Similarity ≥ 0.70 |
+| Type-2 | Same structure with renamed identifiers or changed literals | Similarity ≥ 0.80 and matching normalized trees |
+| Type-3 | Near copy with statements added, removed or changed | Similarity ≥ 0.80 |
 
-Pairs below 0.70 are not reported. Test code is analyzed for complexity but excluded from clone detection: test functions share a skeleton by convention, and on this repository they made up 92% of the pairs. For Go that is `*_test.go`; for C++ it is `*_test.*`, `*_tests.*`, `test_*.*` and `*Test.*` source files and any `test` or `tests` directory; for Rust it is `#[test]` functions, items under `#[cfg(test)]` or `#[cfg(all(test, ...))]`, `tests.rs` and `*_tests.rs` files and any `tests` directory, the conventional homes of a test module split into its own file and of Cargo's integration tests.
+Pairs below 0.80 are not reported. Test code is analyzed for complexity but excluded from clone detection: test functions share a skeleton by convention, and on this repository they made up 92% of the pairs. For Go that is `*_test.go`; for C++ it is `*_test.*`, `*_tests.*`, `test_*.*` and `*Test.*` source files and any `test` or `tests` directory; for Rust it is `#[test]` functions, items under `#[cfg(test)]` or `#[cfg(all(test, ...))]`, `tests.rs` and `*_tests.rs` files and any `tests` directory, the conventional homes of a test module split into its own file and of Cargo's integration tests.
 
 C++ files are parsed one at a time without the preprocessor. Every branch of an `#if` is analyzed, macros are not expanded, and code whose syntax only makes sense after expansion is a syntax error: the file is reported as partial and the functions containing the error are left out. Heavily templated code is parsed on a best-effort basis. Header files, `.h` included, are analyzed as C++.
 
