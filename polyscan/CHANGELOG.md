@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-09-05
+
 ### Changed
 
 - Clone pairs for Go, Rust and C++ are reported from similarity 0.80 instead of 0.70, and the duplication penalty saturates at a 60 percent fragment ratio instead of 30 percent. Pairs between 0.70 and 0.80 were mostly functions that share a shape rather than code, such as two output formatters' `switch` statements, and the 30 percent saturation scored cobra and polyscan at 25/100 and testify and afero at 0/100 on duplication. With the new settings those repositories score 70, 70, 50 and 30, and pyscn moves from 0 to 60 (#105)
