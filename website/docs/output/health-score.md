@@ -98,10 +98,10 @@ This is a per-file rate rather than a raw count, so a large codebase is not pena
 ### Duplication
 
 ```text
-penalty = 20 × duplication percentage ÷ 30, capped at 20
+penalty = 20 × duplication percentage ÷ 60, capped at 20
 ```
 
-The duplication percentage is the proportion of code fragments, across every language, that participate in at least one clone pair or group. It reaches the maximum penalty at 30 percent.
+The duplication percentage is the proportion of code fragments, across every language, that participate in at least one clone pair or group. It reaches the maximum penalty at 60 percent. Every fragment with a partner counts in full, so the ratio runs high on languages with conventional function shapes: well-kept Go libraries such as cobra and x/crypto sit near 20 percent, and wrapper-heavy ones such as testify and afero near 35 percent.
 
 ### Coupling
 

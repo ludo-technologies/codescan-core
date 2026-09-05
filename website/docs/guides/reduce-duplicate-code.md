@@ -23,8 +23,8 @@ Results are graded by how much the copies differ.
 | Type | Meaning | Similarity threshold | Reported for |
 | --- | --- | --- | --- |
 | Type 1 | Identical apart from whitespace and comments | 0.85 | Every language |
-| Type 2 | Identical after renaming identifiers and literals | 0.75 | Every language |
-| Type 3 | A copy with statements added, removed, or changed | 0.70 | Go, Rust and C++; off by default for JS/TS |
+| Type 2 | Identical after renaming identifiers and literals | 0.80 for Go, Rust and C++; 0.75 for JS/TS | Every language |
+| Type 3 | A copy with statements added, removed, or changed | 0.80 | Go, Rust and C++; off by default for JS/TS |
 | Type 4 | Different code computing the same result | 0.65 | JavaScript/TypeScript |
 
 For JavaScript/TypeScript, Type 3 is disabled by default: near-miss matching produces a high false positive rate there, and the findings it adds tend to be pairs that merely resemble each other rather than pairs worth merging.
@@ -100,7 +100,7 @@ The duplication percentage in the health score is computed from fragments rather
 duplication percentage = clone fragments ÷ total fragments × 100
 ```
 
-It reaches the maximum penalty of 20 points at 30 percent. See [the health score page](../output/health-score.md#duplication).
+It reaches the maximum penalty of 20 points at 60 percent. The ratio counts every fragment with at least one partner, so it runs high on languages with conventional function shapes: well-kept Go libraries such as cobra and x/crypto sit near 20 percent, and wrapper-heavy ones such as testify and afero near 35 percent. See [the health score page](../output/health-score.md#duplication).
 
 ## What to do about a finding
 

@@ -156,23 +156,23 @@ func TestCalculateHealthScore_DuplicationPenalty(t *testing.T) {
 		// is the duplication score: the missing dimensions are left out of
 		// the score rather than scored as clean.
 		{
-			// 0-30% scale: 1/30*20 = 0.67 -> 1 penalty
+			// 0-60% scale: 3/60*20 = 1 penalty
 			name:            "low duplication penalised from zero",
-			duplication:     1.0,
+			duplication:     3.0,
 			wantDuplication: 95,
 			wantHealth:      95,
 		},
 		{
-			// 5/30*20 = 3.33 -> 3 penalty
+			// 10/60*20 = 3.33 -> 3 penalty
 			name:            "medium duplication",
-			duplication:     5.0,
+			duplication:     10.0,
 			wantDuplication: 85,
 			wantHealth:      85,
 		},
 		{
-			// 30% reaches the max penalty (20)
+			// 60% reaches the max penalty (20)
 			name:            "max penalty at threshold high",
-			duplication:     30.0,
+			duplication:     60.0,
 			wantDuplication: 0,
 			wantHealth:      0,
 		},
@@ -236,8 +236,8 @@ func TestCalculateHealthScore_MissingDimensionsLeftOut(t *testing.T) {
 		// 20 high + 8*0.5 medium = 24% weighted ratio -> penalty 16 of 20
 		HighComplexityCount:   20,
 		MediumComplexityCount: 8,
-		// 15% duplication -> penalty 10 of 20
-		CodeDuplication: 15.0,
+		// 30% duplication -> penalty 10 of 20
+		CodeDuplication: 30.0,
 	}
 	if err := s.CalculateHealthScore(); err != nil {
 		t.Fatalf("CalculateHealthScore() error: %v", err)
