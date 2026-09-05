@@ -16,8 +16,17 @@ const (
 	ComplexityPenaltyLow      = 6
 
 	// Code duplication thresholds and penalties
-	// 0% = perfect, 30% = max penalty (using fragment ratio: clonedFragments/totalFragments)
-	DuplicationThresholdHigh   = 30.0
+	// 0% = perfect, 60% = max penalty (using fragment ratio: clonedFragments/totalFragments).
+	// The fragment ratio counts every function of ten or more lines that has any
+	// partner at or above the Type-3 threshold, so it runs high on languages with
+	// conventional function shapes: cobra, x/crypto and polyscan itself sit near
+	// 20%, and testify and afero near 35%. Real duplication still saturates:
+	// pyscn's app/ directory of near-identical use cases sits at 54% and six
+	// renamed copies of one file at 100%.
+	// DuplicationThresholdMedium and the three penalty constants are unused by
+	// DuplicationPenalty, which is linear from Low to High; they are kept only
+	// because pyscn aliases them.
+	DuplicationThresholdHigh   = 60.0
 	DuplicationThresholdMedium = 15.0
 	DuplicationThresholdLow    = 0.0
 	DuplicationPenaltyHigh     = 20
@@ -91,7 +100,7 @@ func LinearPenalty(value, start, saturation float64) int {
 }
 
 // DuplicationPenalty calculates the penalty for code duplication (max 20).
-// Linear: 0% duplication = 0 penalty, DuplicationThresholdHigh (30%) = max.
+// Linear: 0% duplication = 0 penalty, DuplicationThresholdHigh (60%) = max.
 // A NaN percentage is treated as missing data and yields no penalty.
 func DuplicationPenalty(duplicationPercent float64) int {
 	if math.IsNaN(duplicationPercent) || duplicationPercent <= DuplicationThresholdLow {
