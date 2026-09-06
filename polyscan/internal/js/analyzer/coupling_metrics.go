@@ -195,27 +195,14 @@ func (c *CouplingMetricsCalculator) CalculateCouplingAnalysis(graph *domain.Depe
 	}
 }
 
-// calculateAbstractness calculates A = abstractions / total declarations
-// Simplified: based on the ratio of exports to a baseline
-// In a more complete implementation, this would analyze actual abstractions (interfaces, abstract classes)
+// calculateAbstractness reads the abstractness the graph builder measured for
+// the node, which is language-specific; a node the graph does not know is
+// concrete.
 func (c *CouplingMetricsCalculator) calculateAbstractness(node *domain.ModuleNode) float64 {
 	if node == nil {
 		return 0.0
 	}
-
-	// Simplified abstractness calculation based on exports
-	// More exports generally indicate more abstraction
-	exports := len(node.Exports)
-	if exports == 0 {
-		return 0.0 // Concrete - no exports
-	}
-
-	// Cap at 1.0, with 10+ exports being fully abstract
-	abstractness := float64(exports) / 10.0
-	if abstractness > 1.0 {
-		abstractness = 1.0
-	}
-	return abstractness
+	return node.Abstractness
 }
 
 // classifyStabilityZone classifies a module into a stability zone.

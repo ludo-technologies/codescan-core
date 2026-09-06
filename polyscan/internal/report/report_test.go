@@ -263,3 +263,51 @@ func TestCombineJavaScriptSkippedFilesWithoutComplexity(t *testing.T) {
 		t.Errorf("files = %+v, want %+v", responses.Files, javascript.Files)
 	}
 }
+
+func depsResponse(ids ...string) *domain.DependencyGraphResponse {
+	graph := domain.NewDependencyGraph()
+	for _, id := range ids {
+		graph.AddNode(&domain.ModuleNode{ID: id, Name: id, FilePath: id})
+	}
+	for i := 1; i < len(ids); i++ {
+		graph.AddEdge(&domain.DependencyEdge{From: ids[i-1], To: ids[i], EdgeType: domain.EdgeTypeImport})
+	}
+	graph.UpdateNodeFlags()
+	return &domain.DependencyGraphResponse{
+		Graph:       graph,
+		Analysis:    &domain.DependencyAnalysisResult{TotalModules: len(ids), MaxDepth: len(ids) - 1},
+		Warnings:    []string{ids[0] + " warning"},
+		GeneratedAt: "now",
+		Version:     "test",
+	}
+}
+
+func TestCombineGoDependencies(t *testing.T) {
+	generic := &analysis.Report{Deps: depsResponse("example.com/m/app", "example.com/m/lib")}
+
+	results, err := Combine(generic, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if results.Deps != generic.Deps {
+		t.Error("a Go-only run should pass its dependency response through")
+	}
+
+	results, err = Combine(generic, &js.Result{Deps: depsResponse("src/a.js", "src/b.js", "src/c.js")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps := results.Deps
+	if deps.Graph.NodeCount() != 5 || deps.Graph.EdgeCount() != 3 {
+		t.Errorf("merged graph has %d nodes and %d edges, want 5 and 3", deps.Graph.NodeCount(), deps.Graph.EdgeCount())
+	}
+	if deps.Analysis.TotalModules != 5 || deps.Analysis.MaxDepth != 2 {
+		t.Errorf("merged analysis = modules %d depth %d, want 5 and 2 (re-analyzed over the union)", deps.Analysis.TotalModules, deps.Analysis.MaxDepth)
+	}
+	if want := []string{"example.com/m/app", "src/a.js"}; !reflect.DeepEqual(deps.Analysis.RootModules, want) {
+		t.Errorf("roots = %v, want %v", deps.Analysis.RootModules, want)
+	}
+	if want := []string{"example.com/m/app warning", "src/a.js warning"}; !reflect.DeepEqual(deps.Warnings, want) {
+		t.Errorf("warnings = %v, want %v", deps.Warnings, want)
+	}
+}

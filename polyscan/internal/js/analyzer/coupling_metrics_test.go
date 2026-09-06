@@ -372,9 +372,7 @@ func TestGetDependents(t *testing.T) {
 	}
 }
 
-func TestCalculateAbstractness(t *testing.T) {
-	calc := NewCouplingMetricsCalculator(nil)
-
+func TestExportAbstractness(t *testing.T) {
 	testCases := []struct {
 		exports  []string
 		expected float64
@@ -388,8 +386,7 @@ func TestCalculateAbstractness(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		node := &domain.ModuleNode{Exports: tc.exports}
-		result := calc.calculateAbstractness(node)
+		result := ExportAbstractness(tc.exports)
 		if math.Abs(result-tc.expected) > 0.001 {
 			t.Errorf("Abstractness(exports=%d) = %f, expected %f", len(tc.exports), result, tc.expected)
 		}

@@ -44,6 +44,12 @@ type ModuleNode struct {
 
 	// Exports lists the exported names from this module
 	Exports []string `json:"exports,omitempty"`
+
+	// Abstractness is Martin's A for the module, between 0 and 1. The
+	// builder that creates the node measures it, since what counts as an
+	// abstraction depends on the language: a JavaScript module is graded by
+	// its export count, a Go package by its exported interface ratio.
+	Abstractness float64 `json:"abstractness"`
 }
 
 // DependencyEdge represents a directed edge in the dependency graph

@@ -50,10 +50,11 @@ func analyzeCmd() *cobra.Command {
 The language of each file is detected from its extension. Supported: Go, Rust,
 C++ and JavaScript/TypeScript.
 
-Complexity and clone analysis cover every language; dead code, coupling (CBO)
-and dependency analysis exist for JavaScript/TypeScript only. The health score
-is computed over the dimensions that ran: a dimension a language does not have
-is left out, not scored as clean.
+Complexity and clone analysis cover every language; dependency analysis covers
+Go and JavaScript/TypeScript; dead code and coupling (CBO) exist for
+JavaScript/TypeScript only. The health score is computed over the dimensions
+that ran: a dimension a language does not have is left out, not scored as
+clean.
 
 By default, generates an HTML report and opens it in your browser.
 
@@ -82,7 +83,7 @@ Examples:
 
 			start := time.Now()
 			var generic *analysis.Report
-			if options.Complexity || options.Clones {
+			if options.Complexity || options.Clones || options.Deps {
 				generic, err = analysis.Analyze(args, options)
 				if err != nil && !errors.Is(err, analysis.ErrNoFiles) {
 					return err
@@ -149,7 +150,7 @@ Examples:
 
 	cmd.Flags().StringSliceVarP(&selected, "select", "s", allAnalyses,
 		"Analyses to run (comma-separated): complexity,deadcode,clone,cbo,deps\n"+
-			"deadcode, cbo and deps apply to JavaScript/TypeScript only")
+			"deps applies to Go and JavaScript/TypeScript; deadcode and cbo to JavaScript/TypeScript only")
 	cmd.Flags().StringVarP(&format, "format", "f", "html", "Output format: html, json, text")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "HTML report path (default: "+defaultReportPath+")")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Don't open the HTML report in the browser")
@@ -245,8 +246,8 @@ func writeReportFile(path string, write func(io.Writer, jsdomain.OutputFormat) e
 }
 
 // parseSelection maps the selected analysis names onto the generic engine's
-// options and the JavaScript/TypeScript selection. deadcode, cbo and deps
-// exist only for JavaScript/TypeScript.
+// options and the JavaScript/TypeScript selection. deadcode and cbo exist
+// only for JavaScript/TypeScript.
 func parseSelection(selected []string) (analysis.Options, js.Selection, error) {
 	var options analysis.Options
 	var selection js.Selection
@@ -263,6 +264,7 @@ func parseSelection(selected []string) (analysis.Options, js.Selection, error) {
 		case selectCBO:
 			selection.CBO = true
 		case selectDeps:
+			options.Deps = true
 			selection.Deps = true
 		default:
 			return options, selection, fmt.Errorf(

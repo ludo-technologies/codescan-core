@@ -95,14 +95,7 @@ func (s *DependencyGraphServiceImpl) AnalyzeSnapshot(ctx context.Context, snapsh
 		}, nil
 	}
 
-	// Detect cycles
-	var circularDeps *domain.CircularDependencyAnalysis
-	if req.DetectCycles == nil || *req.DetectCycles {
-		cycleDetector := analyzer.NewCircularDependencyDetector()
-		circularDeps = cycleDetector.DetectCycles(graph)
-	}
-
-	// Calculate coupling metrics
+	// Apply request thresholds to the coupling configuration
 	couplingConfig := *s.couplingConfig
 	if req.InstabilityHighThreshold > 0 {
 		couplingConfig.InstabilityHighThreshold = req.InstabilityHighThreshold
@@ -114,22 +107,10 @@ func (s *DependencyGraphServiceImpl) AnalyzeSnapshot(ctx context.Context, snapsh
 		couplingConfig.DistanceThreshold = req.DistanceThreshold
 	}
 
-	couplingCalc := analyzer.NewCouplingMetricsCalculator(&couplingConfig)
-	moduleMetrics := couplingCalc.CalculateMetrics(graph)
-	couplingAnalysis := couplingCalc.CalculateCouplingAnalysis(graph, moduleMetrics)
-
-	// The max depth and the reported chains are the same search over the same
-	// condensation, so build the finder once and let both read from it. It runs
-	// over the load-time graph, so a dynamic import() cannot add a layer that
-	// the cycle report has already ruled out.
-	chainFinder, err := coregraph.NewChainFinder(ctx, analyzer.LoadTimeGraph(graph))
+	analysis, err := AnalyzeDependencyGraph(ctx, graph, &couplingConfig, req.DetectCycles == nil || *req.DetectCycles)
 	if err != nil {
-		return nil, fmt.Errorf("dependency chain search cancelled: %w", err)
+		return nil, err
 	}
-	maxDepth := couplingCalc.CalculateMaxDepthFrom(chainFinder)
-
-	// Build analysis result
-	analysis := s.buildAnalysisResult(graph, circularDeps, couplingAnalysis, moduleMetrics, maxDepth, chainFinder)
 
 	return &domain.DependencyGraphResponse{
 		Graph:       graph,
@@ -168,8 +149,36 @@ func collectSnapshotASTs(ctx context.Context, snapshot *ProjectSnapshot) (map[st
 	return asts, warnings, errors
 }
 
+// AnalyzeDependencyGraph derives every structural result from a built graph:
+// the cycles, the Martin coupling metrics, the maximum depth and the ranked
+// chains. The graph builder is language-specific, this step is not, so a Go
+// package graph and a JavaScript module graph share it. Cycle detection can be
+// left out; it fails only when ctx is cancelled during the chain search.
+func AnalyzeDependencyGraph(ctx context.Context, graph *domain.DependencyGraph, couplingConfig *analyzer.CouplingMetricsConfig, detectCycles bool) (*domain.DependencyAnalysisResult, error) {
+	var circularDeps *domain.CircularDependencyAnalysis
+	if detectCycles {
+		circularDeps = analyzer.NewCircularDependencyDetector().DetectCycles(graph)
+	}
+
+	couplingCalc := analyzer.NewCouplingMetricsCalculator(couplingConfig)
+	moduleMetrics := couplingCalc.CalculateMetrics(graph)
+	couplingAnalysis := couplingCalc.CalculateCouplingAnalysis(graph, moduleMetrics)
+
+	// The max depth and the reported chains are the same search over the same
+	// condensation, so build the finder once and let both read from it. It runs
+	// over the load-time graph, so a dynamic import() cannot add a layer that
+	// the cycle report has already ruled out.
+	chainFinder, err := coregraph.NewChainFinder(ctx, analyzer.LoadTimeGraph(graph))
+	if err != nil {
+		return nil, fmt.Errorf("dependency chain search cancelled: %w", err)
+	}
+	maxDepth := couplingCalc.CalculateMaxDepthFrom(chainFinder)
+
+	return buildAnalysisResult(graph, circularDeps, couplingAnalysis, moduleMetrics, maxDepth, chainFinder), nil
+}
+
 // buildAnalysisResult builds a DependencyAnalysisResult from the analysis components
-func (s *DependencyGraphServiceImpl) buildAnalysisResult(
+func buildAnalysisResult(
 	graph *domain.DependencyGraph,
 	circularDeps *domain.CircularDependencyAnalysis,
 	couplingAnalysis *domain.CouplingAnalysis,
@@ -207,7 +216,7 @@ func (s *DependencyGraphServiceImpl) buildAnalysisResult(
 	}
 
 	// Find longest dependency chains
-	longestChains := s.findLongestChains(graph, chainFinder, maxDepth)
+	longestChains := findLongestChains(graph, chainFinder, maxDepth)
 
 	return &domain.DependencyAnalysisResult{
 		TotalModules:         graph.NodeCount(),
@@ -230,7 +239,7 @@ const maxReportedChains = 5
 // entry-point module. Chains come from the caller's condensation-based finder,
 // which is linear in the graph size — an exhaustive simple-path search would be
 // exponential on the cyclic import graphs real projects produce.
-func (s *DependencyGraphServiceImpl) findLongestChains(graph *domain.DependencyGraph, finder *coregraph.ChainFinder, maxDepth int) []domain.DependencyPath {
+func findLongestChains(graph *domain.DependencyGraph, finder *coregraph.ChainFinder, maxDepth int) []domain.DependencyPath {
 	if maxDepth == 0 || finder == nil {
 		return nil
 	}

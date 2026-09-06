@@ -25,7 +25,7 @@ polyscan analyze src/ test/ scripts/build.ts             # Several paths at once
 
 | Flag | Short | Default | Description |
 | --- | --- | --- | --- |
-| `--select` | `-s` | `complexity,deadcode,clone,cbo,deps` | Comma-separated list of analyses to run. `deadcode`, `cbo` and `deps` apply to JavaScript/TypeScript only |
+| `--select` | `-s` | `complexity,deadcode,clone,cbo,deps` | Comma-separated list of analyses to run. `deps` applies to Go and JavaScript/TypeScript; `deadcode` and `cbo` to JavaScript/TypeScript only |
 | `--format` | `-f` | `html` | Output format. Accepts `html`, `json`, or `text` |
 | `--no-open` | | `false` | Write the HTML report without opening a browser |
 | `--output` | `-o` | `polyscan-report.html` | Path for the HTML report file |
@@ -35,7 +35,7 @@ The configuration file for the JavaScript/TypeScript analysis is discovered auto
 
 ## Language coverage
 
-The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dead code, coupling (CBO) and dependency analysis exist for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.
+The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dependency analysis covers Go and JavaScript/TypeScript. Dead code and coupling (CBO) exist for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.
 
 A file that cannot be read is skipped and listed under errors. A file with a syntax error is analyzed without the functions that contain it, counted as partial, and listed under warnings. C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.
 
@@ -145,9 +145,11 @@ In Go, Rust and C++, test code is analyzed for complexity but excluded from clon
 
 ### Dependencies {#deps}
 
-*JavaScript/TypeScript only.* Builds the module import graph, resolving both ECMAScript modules and CommonJS `require` calls. From the graph polyscan derives the circular imports, the maximum dependency depth, and the Martin coupling metrics for each module.
+*Go and JavaScript/TypeScript.* Builds the import graph and derives from it the circular imports, the maximum dependency depth, and the Martin coupling metrics for each module.
 
-Circular imports are found with Tarjan's strongly connected components algorithm. Dynamic imports are excluded from the cycle check, because a dynamic import does not create a load-time cycle.
+For JavaScript/TypeScript a module is a file. The graph resolves both ECMAScript modules and CommonJS `require` calls. Circular imports are found with Tarjan's strongly connected components algorithm. Dynamic imports are excluded from the cycle check, because a dynamic import does not create a load-time cycle.
+
+For Go a module is a package. Each file's import paths resolve through the nearest `go.mod`: the package's import path is the module path plus its directory, so no path aliasing is involved. `_test.go` files are left out, because their imports describe the tests rather than the package, and so are the `vendor` and `testdata` directories the go tool ignores. An import of the standard library or of another module names no package in the tree and becomes no edge. The compiler forbids import cycles, so the cycle report is always empty for Go, and the value lies in the instability, the distance from the main sequence and the dependency depth. Abstractness is the share of a package's exported type declarations that are interfaces. A Go file outside any `go.mod` cannot be placed in a package; it is reported as a warning and, when no package resolves at all, the dependency dimension is left out of the score.
 
 The full graph — nodes, edges, per-module metrics, cycles — is in the `deps` section of the [JSON output](../output/json-schema.md#deps).
 

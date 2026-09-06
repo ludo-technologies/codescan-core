@@ -14,13 +14,19 @@ import (
 	"github.com/ludo-technologies/polyscan/core/source"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/clone"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/engine"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/godeps"
+	jsdomain "github.com/ludo-technologies/polyscan/polyscan/internal/js/domain"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/lang"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/lang/golang"
 )
 
 // Options selects the analyses to run.
 type Options struct {
 	Complexity bool
 	Clones     bool
+	// Deps builds the package dependency graph. Go is the only language of
+	// the generic engine with one so far.
+	Deps bool
 }
 
 // Function is the complexity result for one function.
@@ -78,6 +84,9 @@ type Report struct {
 	Files      Files         `json:"files"`
 	Complexity *Complexity   `json:"complexity,omitempty"`
 	Clones     *clone.Report `json:"clone,omitempty"`
+	// Deps is the Go package dependency graph, in the shape the unified
+	// report renders, or nil when no Go package could be placed in one.
+	Deps *jsdomain.DependencyGraphResponse `json:"deps,omitempty"`
 	// FileLines is the source line count of every analyzed file, keyed by
 	// its reported path. The unified report shows lines per hotspot file,
 	// and this run is the only place the contents are in hand.
@@ -97,7 +106,11 @@ var ErrNoFiles = errors.New("no supported source files found")
 // selected analyses on it. A file that cannot be read is skipped and
 // reported in Errors, a file with a syntax error is analyzed without the
 // functions that contain it and reported in Warnings, and finding no
-// supported file at all is ErrNoFiles.
+// supported file at all is ErrNoFiles. Every file is read and parsed
+// whichever analyses were selected, so the accounting, and with it the
+// parse-error penalty, is the same for every selection; the dependency
+// analysis reads its files again and reports the ones it leaves out in
+// Warnings.
 func Analyze(paths []string, options Options) (*Report, error) {
 	files, err := source.CollectFiles(paths, source.FileFilter{
 		IncludePatterns: lang.IncludePatterns(),
@@ -111,6 +124,11 @@ func Analyze(paths []string, options Options) (*Report, error) {
 	}
 
 	report := &Report{Files: Files{Total: len(files)}, FileLines: map[string]int{}}
+	if options.Deps {
+		if err := analyzeDeps(report, files); err != nil {
+			return nil, err
+		}
+	}
 	if options.Complexity {
 		report.Complexity = &Complexity{Functions: []Function{}}
 	}
@@ -169,6 +187,33 @@ func Analyze(paths []string, options Options) (*Report, error) {
 		report.Clones.Statistics.FilesAnalyzed = cloneFiles
 	}
 	return report, nil
+}
+
+// analyzeDeps builds the dependency graph of the Go files among files. Test
+// files stay out of it: their imports describe the tests, not the package.
+func analyzeDeps(report *Report, files []string) error {
+	var goFiles []string
+	for _, file := range files {
+		if language, ok := lang.ByPath(file); ok && language == golang.Language && !language.IsTestFile(file) {
+			goFiles = append(goFiles, file)
+		}
+	}
+	if len(goFiles) == 0 {
+		return nil
+	}
+	deps, warnings, err := godeps.Analyze(goFiles, displayPath)
+	if err != nil {
+		return err
+	}
+	if deps == nil {
+		// Without a graph there is no dependency section to carry the
+		// warnings, so they travel with the run's other warnings.
+		report.Warnings = append(report.Warnings, warnings...)
+		return nil
+	}
+	deps.Warnings = warnings
+	report.Deps = deps
+	return nil
 }
 
 func analyzeFile(language *engine.Language, path string) (result *engine.Result, lines int, err error) {

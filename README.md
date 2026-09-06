@@ -49,11 +49,11 @@ Every analyzer scores your codebase (0-100 with an A-F grade) and generates an H
 |---|---|:-:|:-:|:-:|:-:|:-:|---|
 | JavaScript / TypeScript | `.js` `.jsx` `.mjs` `.cjs` `.ts` `.tsx` `.mts` `.cts` | ✅ | ✅ | ✅ | ✅ | ✅ CBO | `polyscan` |
 | Python | `.py` | ✅ | ✅ | ✅ | ✅ | ✅ CBO, LCOM | `pyscn` |
-| Go | `.go` | ✅ | ✅ | — | — | — | `polyscan` |
+| Go | `.go` | ✅ | ✅ | — | ✅ | — | `polyscan` |
 | Rust | `.rs` | ✅ | ✅ | — | — | — | `polyscan` |
 | C++ | `.cpp` `.cc` `.cxx` `.hpp` `.hh` `.hxx` `.h` `.ipp` `.inl` | ✅ | ✅ | — | — | — | `polyscan` |
 
-Complexity and duplicate code cover every language. Dead code, dependencies and class design need the import graph and class model that only the JavaScript/TypeScript and Python backends build today. A dimension a language does not have is left out of its score rather than counted as clean, so scores stay comparable across languages.
+Complexity and duplicate code cover every language. Dependencies cover Go, JavaScript/TypeScript and Python: for Go the nodes are packages, resolved through `go.mod`. Dead code and class design need the class model and the file-level import graph that only the JavaScript/TypeScript and Python backends build today. A dimension a language does not have is left out of its score rather than counted as clean, so scores stay comparable across languages.
 
 ## Polyscan for GitHub
 
