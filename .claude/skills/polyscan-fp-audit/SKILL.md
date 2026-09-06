@@ -75,12 +75,12 @@ The single `analyze.json` holds every analysis under these top-level keys:
 | `clone` | all | `.clone.clone_pairs[]` → `clone1`/`clone2` (`language`, `location.{file_path,start_line,end_line}`, `content`, `line_count`), `similarity`, `type`; `.clone.clone_groups[]` |
 | `dead_code` | JS/TS only | `.dead_code.files[].functions[].findings[]` → `location`, `reason`, `severity`, `description` |
 | `cbo` | JS/TS only | `.cbo.classes[]` → `Name`, `FilePath`, `Metrics.CouplingCount`, `RiskLevel` |
-| `deps` | JS/TS only | `.deps.analysis`, `.deps.graph` |
+| `deps` | Go, JS/TS | `.deps.analysis`, `.deps.graph` (Go nodes are packages keyed by import path) |
 | `summary` | — | `health_score`, `grade`, `total_loc`, `total_files`, `skipped_files`, per-dimension scores |
 
 To narrow scope, add `--select complexity,deadcode,clone,cbo,deps`.
 
-**Known structural zeros — never report these as bugs.** For Go/Rust/C++ the generic engine fills only `metrics.complexity` and `metrics.nesting_depth`; `nodes`, `edges`, `if_statements`, `loop_statements`, `exception_handlers` and `switch_cases` are always `0`. Clone fragments always have `hash: ""`, `complexity: 0` and `start_col`/`end_col` `0`. `cbo.classes[]` for JS lists one pseudo-class per file (module-level coupling), so a `Name` equal to the file basename is expected.
+**Known structural zeros — never report these as bugs.** For Go/Rust/C++ the generic engine fills only `metrics.complexity` and `metrics.nesting_depth`; `nodes`, `edges`, `if_statements`, `loop_statements`, `exception_handlers` and `switch_cases` are always `0`. Clone fragments always have `hash: ""`, `complexity: 0` and `start_col`/`end_col` `0`. `cbo.classes[]` for JS lists one pseudo-class per file (module-level coupling), so a `Name` equal to the file basename is expected. For Go `deps.analysis.CircularDependencies` is always empty (the compiler forbids import cycles), Go edges carry no `location`, and Go files outside any `go.mod`, `_test.go` files, and `vendor`/`testdata` directories are absent from the graph by design.
 
 ### 4. Cluster findings
 

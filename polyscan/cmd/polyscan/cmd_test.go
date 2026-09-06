@@ -44,8 +44,17 @@ type analyzeJSON struct {
 			TotalClonePairs int `json:"total_clone_pairs"`
 		} `json:"statistics"`
 	} `json:"clone"`
+	Deps *struct {
+		Analysis struct {
+			TotalModules int `json:"TotalModules"`
+			MaxDepth     int `json:"MaxDepth"`
+		} `json:"analysis"`
+		Warnings []string `json:"warnings"`
+	} `json:"deps"`
 	Summary *struct {
 		HealthScore       int    `json:"health_score"`
+		DependencyScore   int    `json:"dependency_score"`
+		DepsEnabled       bool   `json:"deps_enabled"`
 		Grade             string `json:"grade"`
 		TotalFiles        int    `json:"total_files"`
 		SkippedFiles      int    `json:"skipped_files"`
@@ -298,5 +307,60 @@ func TestAnalyzeChargesParseErrorsWithoutComplexity(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
+	}
+}
+
+func TestAnalyzeGoDependencies(t *testing.T) {
+	out, err := run(t, "analyze", "--format", "json", "--select", "deps", "../../testdata/godeps")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := decodeAnalyzeJSON(t, out)
+	if doc.Deps == nil {
+		t.Fatal("expected a deps section for a Go module")
+	}
+	if doc.Deps.Analysis.TotalModules != 3 || doc.Deps.Analysis.MaxDepth != 2 {
+		t.Errorf("deps analysis = %+v, want 3 packages at depth 2", doc.Deps.Analysis)
+	}
+	if doc.Summary == nil || !doc.Summary.DepsEnabled {
+		t.Errorf("summary = %+v, want the dependency dimension enabled", doc.Summary)
+	}
+
+	out, err = run(t, "analyze", "--format", "text", "--select", "deps", "../../testdata/godeps")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Total modules: 3", "Max depth: 2", "Dependencies:"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("text output lacks %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestAnalyzeGoDependenciesWithoutModule(t *testing.T) {
+	// The fixture lies inside polyscan's own module, so it has to move out
+	// to lose its go.mod.
+	dir := t.TempDir()
+	content, err := os.ReadFile("../../testdata/go/sample.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "sample.go"), content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := run(t, "analyze", "--format", "json", "--select", "deps,complexity", dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := decodeAnalyzeJSON(t, out)
+	if doc.Deps != nil {
+		t.Errorf("deps = %+v, want none outside a module", doc.Deps)
+	}
+	if doc.Summary == nil || doc.Summary.DepsEnabled {
+		t.Errorf("summary = %+v, want the dependency dimension left out", doc.Summary)
+	}
+	if !strings.Contains(out, "no go.mod above it") {
+		t.Errorf("output lacks the go.mod warning:\n%s", out)
 	}
 }

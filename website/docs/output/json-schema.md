@@ -32,7 +32,7 @@ polyscan analyze --format json src/ > report.json
 | `dead_code` | object | Present only when dead code detection ran (JavaScript/TypeScript) |
 | `clone` | object | Present only when clone detection ran |
 | `cbo` | object | Present only when coupling analysis ran (JavaScript/TypeScript) |
-| `deps` | object | Present only when dependency analysis ran (JavaScript/TypeScript) |
+| `deps` | object | Present only when dependency analysis ran (Go, JavaScript/TypeScript) |
 | `module_quality` | array | Per-file rollups joined across the analyses that ran |
 | `summary` | object | Always present |
 
@@ -343,7 +343,7 @@ The `summary` object carries a `findings_by_reason` map, which is the most conve
 
 ## `deps`
 
-*JavaScript/TypeScript only.*
+*Go and JavaScript/TypeScript.*
 
 ```json
 {
@@ -354,7 +354,7 @@ The `summary` object carries a `findings_by_reason` map, which is the most conve
 }
 ```
 
-`graph` holds the nodes and edges of the module import graph. `analysis` holds the derived results, including the circular dependencies, the maximum depth, the per-module Martin metrics, and the coupling analysis with its Zone of Pain and main-sequence module lists.
+`graph` holds the nodes and edges of the import graph. A node is a JavaScript/TypeScript file, identified by its path, or a Go package, identified by its import path with `name` holding the package name and `file_path` its directory. Every node carries the `abstractness` the graph builder measured: the export count for a JavaScript module, the share of exported types that are interfaces for a Go package. A Go edge joins two packages once, with `weight` counting the files that import the target, and carries no `location`. `analysis` holds the derived results, including the circular dependencies, the maximum depth, the per-module Martin metrics, and the coupling analysis with its Zone of Pain and main-sequence module lists.
 
 ## `module_quality`
 
@@ -375,7 +375,7 @@ One entry per file, joining what each analysis measured about it, across every l
 }
 ```
 
-`module_name` comes from dependency analysis and is omitted when that analysis did not run or the file is not JavaScript/TypeScript. The complexity columns come from complexity analysis and the dead-code columns from dead code detection, so a run that skipped one of them leaves those columns at zero rather than dropping the file.
+`module_name` comes from dependency analysis and is omitted when that analysis did not run or the file is not JavaScript/TypeScript; Go dependency nodes are packages, not files, so they name no entry here. The complexity columns come from complexity analysis and the dead-code columns from dead code detection, so a run that skipped one of them leaves those columns at zero rather than dropping the file.
 
 Unlike the rest of the report, these counts are taken before the presentation filters: `--min-complexity` and `min_severity` change what `complexity.functions` and `dead_code.files` show without changing what a module is measured as carrying. The entries are ranked worst first: high-risk functions, then maximum complexity, then average complexity, then dead-code findings.
 

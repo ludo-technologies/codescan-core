@@ -155,13 +155,21 @@ func (b *DependencyGraphBuilder) createModuleNode(filePath string, info *domain.
 	}
 
 	return &domain.ModuleNode{
-		ID:         id,
-		Name:       name,
-		FilePath:   filePath,
-		ModuleType: domain.ModuleTypeRelative,
-		IsExternal: false,
-		Exports:    exports,
+		ID:           id,
+		Name:         name,
+		FilePath:     filePath,
+		ModuleType:   domain.ModuleTypeRelative,
+		IsExternal:   false,
+		Exports:      exports,
+		Abstractness: ExportAbstractness(exports),
 	}
+}
+
+// ExportAbstractness grades a JavaScript module's abstractness by its export
+// count: more exports generally indicate more abstraction, and ten or more
+// count as fully abstract. A module with no exports is concrete.
+func ExportAbstractness(exports []string) float64 {
+	return min(float64(len(exports))/10.0, 1.0)
 }
 
 // createExternalNode creates a ModuleNode for an external/unresolved module.

@@ -5,7 +5,7 @@ description: Analyze JavaScript/TypeScript module architecture using polyscan - 
 
 # Architecture Review with polyscan
 
-Run the polyscan CLI to understand module structure and coupling. Coupling (CBO) and dependency analysis exist for JavaScript/TypeScript; other languages get complexity and clone detection only. No install needed: `npx polyscan@latest analyze <path>`.
+Run the polyscan CLI to understand module structure and coupling. Dependency analysis exists for Go (package graph) and JavaScript/TypeScript (module graph); coupling (CBO) for JavaScript/TypeScript; Rust and C++ get complexity and clone detection only. No install needed: `npx polyscan@latest analyze <path>`.
 
 ## Commands
 

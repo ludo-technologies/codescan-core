@@ -297,7 +297,7 @@ func set(names []string) map[string]struct{} {
 
 func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function {
 	var functions []Function
-	forEachMatch(l.definitions, root, source, func(match *sitter.QueryMatch) {
+	ForEachMatch(l.definitions, root, source, func(match *sitter.QueryMatch) {
 		var fn Function
 		var node *sitter.Node
 		var receiver string
@@ -413,7 +413,7 @@ func countCodeLines(content string) int {
 }
 
 func (l *Language) countDecisions(root *sitter.Node, source []byte, functions []Function) {
-	forEachMatch(l.decisions, root, source, func(match *sitter.QueryMatch) {
+	ForEachMatch(l.decisions, root, source, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			fn := innermost(functions, capture.Node.StartByte(), capture.Node.EndByte())
 			if fn == nil {
@@ -438,7 +438,7 @@ func (l *Language) measureNesting(root *sitter.Node, source []byte, functions []
 	// levels maps each captured node to the levels it opens: one, or zero
 	// for a continuation.
 	levels := map[uintptr]int{}
-	forEachMatch(l.nesting, root, source, func(match *sitter.QueryMatch) {
+	ForEachMatch(l.nesting, root, source, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			id := capture.Node.ID()
 			if l.nesting.CaptureNameForId(capture.Index) == continuationCapture {
@@ -448,7 +448,7 @@ func (l *Language) measureNesting(root *sitter.Node, source []byte, functions []
 			}
 		}
 	})
-	forEachMatch(l.nesting, root, source, func(match *sitter.QueryMatch) {
+	ForEachMatch(l.nesting, root, source, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			node := capture.Node
 			fn := innermost(functions, node.StartByte(), node.EndByte())
@@ -478,7 +478,7 @@ func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Fun
 		return
 	}
 	var scopes []scope
-	forEachMatch(l.scopes, root, source, func(match *sitter.QueryMatch) {
+	ForEachMatch(l.scopes, root, source, func(match *sitter.QueryMatch) {
 		var s scope
 		for _, capture := range match.Captures {
 			switch l.scopes.CaptureNameForId(capture.Index) {
@@ -522,7 +522,7 @@ func (l *Language) markTests(root *sitter.Node, source []byte, functions []Funct
 	if l.testCode == nil {
 		return
 	}
-	forEachMatch(l.testCode, root, source, func(match *sitter.QueryMatch) {
+	ForEachMatch(l.testCode, root, source, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
 			start, end := capture.Node.StartByte(), capture.Node.EndByte()
 			for i := range functions {
@@ -552,7 +552,9 @@ func innermost(functions []Function, start, end uint32) *Function {
 	return found
 }
 
-func forEachMatch(query *sitter.Query, root *sitter.Node, source []byte, visit func(*sitter.QueryMatch)) {
+// ForEachMatch runs query over the tree under root and calls visit with each
+// match, its predicates already applied.
+func ForEachMatch(query *sitter.Query, root *sitter.Node, source []byte, visit func(*sitter.QueryMatch)) {
 	cursor := sitter.NewQueryCursor()
 	defer cursor.Close()
 	cursor.Exec(query, root)

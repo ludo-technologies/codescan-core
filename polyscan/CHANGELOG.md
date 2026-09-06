@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Dependency analysis for Go. `polyscan analyze` builds the package import graph of a Go tree, resolving each import through the nearest `go.mod`, and reports the same instability, abstractness, main-sequence distance, depth and longest chains it reports for JavaScript/TypeScript, scored in the Dependencies dimension. Abstractness is the share of a package's exported type declarations that are interfaces. Test files, `vendor` and `testdata` directories, and imports of other modules stay out of the graph, and a tree without a `go.mod` leaves the dimension out with a warning rather than scoring it clean
+
 ## [0.2.2] - 2026-09-05
 
 ### Changed
