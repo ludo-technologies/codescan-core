@@ -53,7 +53,9 @@ var Language = &engine.Language{
 	// A local declaration hides the receiver from its end to the end of
 	// the block, case clause, if, for or switch statement that holds it; a
 	// type switch alias from the end of the switched value; a function
-	// literal's parameters throughout the literal.
+	// literal's parameters throughout the literal. The var and const
+	// patterns also match package-level declarations, whose scope is the
+	// file; the engine drops those, as a receiver shadows them instead.
 	Bindings: `
 (_ (short_var_declaration left: (expression_list (identifier) @binding)) @declaration) @scope
 (for_statement (for_clause initializer: (short_var_declaration left: (expression_list (identifier) @binding)) @declaration)) @scope

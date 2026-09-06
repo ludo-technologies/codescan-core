@@ -299,6 +299,24 @@ func TestMembersIgnoreShadowedReceiver(t *testing.T) {
 
 type License struct{ TTL int; items []License; ch chan License }
 
+// Package-level names are the ones a receiver shadows.
+var x = newThing()
+
+const c = "x"
+
+func (c *License) Package() int {
+	c.Warm()
+	return c.TTL
+}
+
+func (x *License) Default(v int) {
+	switch v {
+	default:
+		var x = 1
+		_ = x.Def
+	}
+}
+
 // The right-hand side of the declaration still sees the receiver.
 func (x *License) GetText() string {
 	if x, ok := x.GetSource().(*Text); ok {
@@ -372,6 +390,8 @@ func (x *License) Closure() {
 		fields []string
 		calls  []string
 	}{
+		{"License.Package", []string{"TTL"}, []string{"Warm"}},
+		{"License.Default", []string{}, []string{}},
 		{"License.GetText", []string{}, []string{"GetSource"}},
 		{"License.Range", []string{"items"}, []string{}},
 		{"License.ForClause", []string{}, []string{}},

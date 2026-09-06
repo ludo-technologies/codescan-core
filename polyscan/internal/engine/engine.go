@@ -688,6 +688,7 @@ func (l *Language) collectBindings(root *sitter.Node, source []byte) bindings {
 	ForEachMatch(l.bindings, root, source, func(match *sitter.QueryMatch) {
 		var name string
 		var b binding
+		var scope *sitter.Node
 		for _, capture := range match.Captures {
 			switch l.bindings.CaptureNameForId(capture.Index) {
 			case bindingCapture:
@@ -695,10 +696,13 @@ func (l *Language) collectBindings(root *sitter.Node, source []byte) bindings {
 			case declarationCapture:
 				b.declarationEnd = capture.Node.EndByte()
 			case scopeCapture:
-				b.scopeStart, b.scopeEnd = capture.Node.StartByte(), capture.Node.EndByte()
+				scope = capture.Node
+				b.scopeStart, b.scopeEnd = scope.StartByte(), scope.EndByte()
 			}
 		}
-		if name != "" && b.scopeEnd > b.scopeStart {
+		// A declaration whose scope is the whole file is a package-level
+		// one, which a receiver shadows rather than the other way around.
+		if name != "" && scope != nil && scope.Parent() != nil {
 			result[name] = append(result[name], b)
 		}
 	})
