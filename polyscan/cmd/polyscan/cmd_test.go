@@ -364,3 +364,28 @@ func TestAnalyzeGoDependenciesWithoutModule(t *testing.T) {
 		t.Errorf("output lacks the go.mod warning:\n%s", out)
 	}
 }
+
+func TestAnalyzeGoDependenciesOnlyCountsSkippedFiles(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root can read an unreadable file")
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/skip\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "b.go"), []byte("package main\n"), 0o000); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := run(t, "analyze", "--format", "json", "--select", "deps", dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := decodeAnalyzeJSON(t, out)
+	if doc.Summary == nil || doc.Summary.TotalFiles != 2 || doc.Summary.SkippedFiles != 1 {
+		t.Errorf("summary = %+v, want 2 files with 1 skipped whichever analyses ran", doc.Summary)
+	}
+}

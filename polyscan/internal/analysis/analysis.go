@@ -106,9 +106,11 @@ var ErrNoFiles = errors.New("no supported source files found")
 // selected analyses on it. A file that cannot be read is skipped and
 // reported in Errors, a file with a syntax error is analyzed without the
 // functions that contain it and reported in Warnings, and finding no
-// supported file at all is ErrNoFiles. The dependency analysis reads the
-// files on its own and reports the ones it leaves out in Warnings; the file
-// accounting counts only the per-file analyses.
+// supported file at all is ErrNoFiles. Every file is read and parsed
+// whichever analyses were selected, so the accounting, and with it the
+// parse-error penalty, is the same for every selection; the dependency
+// analysis reads its files again and reports the ones it leaves out in
+// Warnings.
 func Analyze(paths []string, options Options) (*Report, error) {
 	files, err := source.CollectFiles(paths, source.FileFilter{
 		IncludePatterns: lang.IncludePatterns(),
@@ -126,9 +128,6 @@ func Analyze(paths []string, options Options) (*Report, error) {
 		if err := analyzeDeps(report, files); err != nil {
 			return nil, err
 		}
-	}
-	if !options.Complexity && !options.Clones {
-		return report, nil
 	}
 	if options.Complexity {
 		report.Complexity = &Complexity{Functions: []Function{}}
