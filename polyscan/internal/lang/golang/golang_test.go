@@ -293,3 +293,106 @@ func equalStrings(got, want []string) bool {
 	}
 	return true
 }
+
+func TestMembersIgnoreShadowedReceiver(t *testing.T) {
+	functions := analyze(t, `package p
+
+type License struct{ TTL int; items []License; ch chan License }
+
+// The right-hand side of the declaration still sees the receiver.
+func (x *License) GetText() string {
+	if x, ok := x.GetSource().(*Text); ok {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *License) Range() {
+	for _, x := range x.items {
+		x.Do()
+	}
+}
+
+func (x *License) ForClause() {
+	for x := 0; x < 3; x++ {
+		_ = x.Idx
+	}
+}
+
+func (x *License) Block() {
+	{
+		x := other()
+		x.Inner()
+	}
+	x.Outer()
+}
+
+func (x *License) Var() {
+	var x = 1
+	var (
+		y = x.Y
+	)
+	_ = y
+}
+
+func (x *License) TypeSwitch(v interface{}) {
+	switch x := x.Value().(type) {
+	case int:
+		_ = x.Int
+	}
+}
+
+func (x *License) Case(v int) {
+	switch v {
+	case 1:
+		x := 2
+		_ = x.One
+	case 2:
+		_ = x.Two
+	}
+}
+
+func (x *License) Select() {
+	select {
+	case x := <-x.ch:
+		x.Recv()
+	}
+}
+
+func (x *License) Closure() {
+	f := func(x int, rest ...int) (r int) { return x.Param + r.Result }
+	g := func() { x.Captured() }
+	f(1)
+	g()
+}
+`)
+
+	cases := []struct {
+		name   string
+		fields []string
+		calls  []string
+	}{
+		{"License.GetText", []string{}, []string{"GetSource"}},
+		{"License.Range", []string{"items"}, []string{}},
+		{"License.ForClause", []string{}, []string{}},
+		{"License.Block", []string{}, []string{"Outer"}},
+		{"License.Var", []string{}, []string{}},
+		{"License.TypeSwitch", []string{}, []string{"Value"}},
+		{"License.Case", []string{"Two"}, []string{}},
+		{"License.Select", []string{"ch"}, []string{}},
+		{"License.Closure", []string{}, []string{"Captured"}},
+	}
+	for _, tc := range cases {
+		fn, ok := functions[tc.name]
+		if !ok {
+			t.Errorf("missing function %q", tc.name)
+			continue
+		}
+		if got := slices.Sorted(maps.Keys(fn.Fields)); !equalStrings(got, tc.fields) {
+			t.Errorf("%s: fields = %v, want %v", tc.name, got, tc.fields)
+		}
+		if got := slices.Sorted(maps.Keys(fn.Calls)); !equalStrings(got, tc.calls) {
+			t.Errorf("%s: calls = %v, want %v", tc.name, got, tc.calls)
+		}
+	}
+}

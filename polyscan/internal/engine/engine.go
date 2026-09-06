@@ -61,6 +61,14 @@ type Language struct {
 	// state and is left out of cohesion. A language without a Members
 	// query has no cohesion analysis.
 	Members string
+	// Bindings is an optional tree-sitter query for the local declarations
+	// that can shadow the receiver a Members match goes through: @binding
+	// is the declared name, @declaration the node after whose end the name
+	// is in scope, as the right-hand side of a short variable declaration
+	// still sees the outer name, and @scope the node at whose end it goes
+	// out of scope. A Members match whose @object is shadowed at that point
+	// is not an access to the receiver.
+	Bindings string
 	// Nesting is a tree-sitter query whose captures are the constructs that
 	// open a nesting level: branches, loops, switches and try blocks. A
 	// capture named @continuation marks a construct that continues the
@@ -95,6 +103,7 @@ type Language struct {
 	nesting     *sitter.Query
 	scopes      *sitter.Query
 	members     *sitter.Query
+	bindings    *sitter.Query
 	testCode    *sitter.Query
 	identifiers map[string]struct{}
 	literals    map[string]struct{}
@@ -191,6 +200,8 @@ const (
 	fieldCapture        = "field"
 	callCapture         = "call"
 	objectCapture       = "object"
+	bindingCapture      = "binding"
+	declarationCapture  = "declaration"
 	continuationCapture = "continuation"
 	operatorField       = "operator"
 )
@@ -322,6 +333,14 @@ func (l *Language) compile() error {
 				return
 			}
 			l.members = members
+		}
+		if l.Bindings != "" {
+			bindings, err := sitter.NewQuery([]byte(l.Bindings), l.Grammar)
+			if err != nil {
+				l.compileErr = fmt.Errorf("%s bindings query: %w", l.Name, err)
+				return
+			}
+			l.bindings = bindings
 		}
 		if l.TestCode != "" {
 			testCode, err := sitter.NewQuery([]byte(l.TestCode), l.Grammar)
@@ -613,10 +632,11 @@ func (l *Language) collectMembers(root *sitter.Node, source []byte, functions []
 	}
 	fields := map[uintptr]member{}
 	calls := map[uintptr]struct{}{}
+	bindings := l.collectBindings(root, source)
 	ForEachMatch(l.members, root, source, func(match *sitter.QueryMatch) {
 		var fn *Function
-		var node *sitter.Node
-		var kind, object string
+		var node, object *sitter.Node
+		var kind string
 		for _, capture := range match.Captures {
 			switch l.members.CaptureNameForId(capture.Index) {
 			case fieldCapture, callCapture:
@@ -624,11 +644,17 @@ func (l *Language) collectMembers(root *sitter.Node, source []byte, functions []
 				node = capture.Node
 				fn = innermost(functions, node.StartByte(), node.EndByte())
 			case objectCapture:
-				object = capture.Node.Content(source)
+				object = capture.Node
 			}
 		}
-		if fn == nil || fn.Fields == nil || (object != "" && object != fn.self) {
+		if fn == nil || fn.Fields == nil {
 			return
+		}
+		if object != nil {
+			name := object.Content(source)
+			if name != fn.self || bindings.shadows(name, object.StartByte()) {
+				return
+			}
 		}
 		name := node.Content(source)
 		if kind == callCapture {
@@ -643,6 +669,51 @@ func (l *Language) collectMembers(root *sitter.Node, source []byte, functions []
 			field.fn.Fields[field.name] = true
 		}
 	}
+}
+
+// binding is one local declaration from the Bindings query: the name is in
+// scope from the end of its declaration to the end of its scope.
+type binding struct {
+	declarationEnd, scopeStart, scopeEnd uint32
+}
+
+type bindings map[string][]binding
+
+// collectBindings gathers the file's local declarations by name.
+func (l *Language) collectBindings(root *sitter.Node, source []byte) bindings {
+	result := bindings{}
+	if l.bindings == nil {
+		return result
+	}
+	ForEachMatch(l.bindings, root, source, func(match *sitter.QueryMatch) {
+		var name string
+		var b binding
+		for _, capture := range match.Captures {
+			switch l.bindings.CaptureNameForId(capture.Index) {
+			case bindingCapture:
+				name = capture.Node.Content(source)
+			case declarationCapture:
+				b.declarationEnd = capture.Node.EndByte()
+			case scopeCapture:
+				b.scopeStart, b.scopeEnd = capture.Node.StartByte(), capture.Node.EndByte()
+			}
+		}
+		if name != "" && b.scopeEnd > b.scopeStart {
+			result[name] = append(result[name], b)
+		}
+	})
+	return result
+}
+
+// shadows reports whether a local declaration of name is in scope at the
+// byte position.
+func (b bindings) shadows(name string, position uint32) bool {
+	for _, binding := range b[name] {
+		if position >= binding.declarationEnd && position >= binding.scopeStart && position < binding.scopeEnd {
+			return true
+		}
+	}
+	return false
 }
 
 // markTests flags every function inside a span the TestCode query captures.

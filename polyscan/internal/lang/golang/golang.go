@@ -50,6 +50,22 @@ var Language = &engine.Language{
 (selector_expression operand: (identifier) @object field: (field_identifier) @field)
 (call_expression function: (selector_expression operand: (identifier) @object field: (field_identifier) @call))
 `,
+	// A local declaration hides the receiver from its end to the end of
+	// the block, case clause, if, for or switch statement that holds it; a
+	// type switch alias from the end of the switched value; a function
+	// literal's parameters throughout the literal.
+	Bindings: `
+(_ (short_var_declaration left: (expression_list (identifier) @binding)) @declaration) @scope
+(for_statement (for_clause initializer: (short_var_declaration left: (expression_list (identifier) @binding)) @declaration)) @scope
+(_ (range_clause left: (expression_list (identifier) @binding)) @declaration) @scope
+(_ (var_declaration (var_spec name: (identifier) @binding)) @declaration) @scope
+(_ (var_declaration (var_spec_list (var_spec name: (identifier) @binding))) @declaration) @scope
+(_ (const_declaration (const_spec name: (identifier) @binding)) @declaration) @scope
+(type_switch_statement alias: (expression_list (identifier) @binding) value: (_) @declaration) @scope
+(_ (receive_statement left: (expression_list (identifier) @binding)) @declaration) @scope
+(func_literal parameters: (parameter_list [(parameter_declaration name: (identifier) @binding) (variadic_parameter_declaration name: (identifier) @binding)] @declaration)) @scope
+(func_literal result: (parameter_list (parameter_declaration name: (identifier) @binding) @declaration)) @scope
+`,
 	// Methods of one type may be spread over the files of its package.
 	TypeSpansDirectory: true,
 	// default_case is deliberately absent: the default arm is the no-match
