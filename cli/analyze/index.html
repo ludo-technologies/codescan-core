@@ -1890,7 +1890,7 @@
 <td><code>--select</code></td>
 <td><code>-s</code></td>
 <td><code>complexity,deadcode,clone,cbo,deps</code></td>
-<td>Comma-separated list of analyses to run. <code>deadcode</code>, <code>cbo</code> and <code>deps</code> apply to JavaScript/TypeScript only</td>
+<td>Comma-separated list of analyses to run. <code>deps</code> applies to Go and JavaScript/TypeScript; <code>deadcode</code> and <code>cbo</code> to JavaScript/TypeScript only</td>
 </tr>
 <tr>
 <td><code>--format</code></td>
@@ -1920,7 +1920,7 @@
 </table>
 <p>The configuration file for the JavaScript/TypeScript analysis is discovered automatically; there is no <code>--config</code> flag. See <a href="../../configuration/#how-polyscan-finds-your-config-file">how polyscan finds your config file</a>.</p>
 <h2 id="language-coverage">Language coverage<a class="headerlink" href="#language-coverage" title="Permanent link">&para;</a></h2>
-<p>The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dead code, coupling (CBO) and dependency analysis exist for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.</p>
+<p>The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dependency analysis covers Go and JavaScript/TypeScript. Dead code and coupling (CBO) exist for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.</p>
 <p>A file that cannot be read is skipped and listed under errors. A file with a syntax error is analyzed without the functions that contain it, counted as partial, and listed under warnings. C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.</p>
 <h2 id="output-behavior">Output behavior<a class="headerlink" href="#output-behavior" title="Permanent link">&para;</a></h2>
 <p>The format determines where results go and what else is printed.</p>
@@ -2134,8 +2134,9 @@
 </tbody>
 </table>
 <h3 id="deps">Dependencies<a class="headerlink" href="#deps" title="Permanent link">&para;</a></h3>
-<p><em>JavaScript/TypeScript only.</em> Builds the module import graph, resolving both ECMAScript modules and CommonJS <code>require</code> calls. From the graph polyscan derives the circular imports, the maximum dependency depth, and the Martin coupling metrics for each module.</p>
-<p>Circular imports are found with Tarjan's strongly connected components algorithm. Dynamic imports are excluded from the cycle check, because a dynamic import does not create a load-time cycle.</p>
+<p><em>Go and JavaScript/TypeScript.</em> Builds the import graph and derives from it the circular imports, the maximum dependency depth, and the Martin coupling metrics for each module.</p>
+<p>For JavaScript/TypeScript a module is a file. The graph resolves both ECMAScript modules and CommonJS <code>require</code> calls. Circular imports are found with Tarjan's strongly connected components algorithm. Dynamic imports are excluded from the cycle check, because a dynamic import does not create a load-time cycle.</p>
+<p>For Go a module is a package. Each file's import paths resolve through the nearest <code>go.mod</code>: the package's import path is the module path plus its directory, so no path aliasing is involved. <code>_test.go</code> files are left out, because their imports describe the tests rather than the package, and so are the <code>vendor</code> and <code>testdata</code> directories the go tool ignores. An import of the standard library or of another module names no package in the tree and becomes no edge. The compiler forbids import cycles, so the cycle report is always empty for Go, and the value lies in the instability, the distance from the main sequence and the dependency depth. Abstractness is the share of a package's exported type declarations that are interfaces. A Go file outside any <code>go.mod</code> cannot be placed in a package; it is reported as a warning and, when no package resolves at all, the dependency dimension is left out of the score.</p>
 <p>The full graph — nodes, edges, per-module metrics, cycles — is in the <code>deps</code> section of the <a href="../../output/json-schema/#deps">JSON output</a>.</p>
 <h2 id="performance-notes">Performance notes<a class="headerlink" href="#performance-notes" title="Permanent link">&para;</a></h2>
 <p>The analyses run concurrently, so the wall clock time is set by the slowest one rather than by the sum. Clone detection is normally the slowest, followed by dead code detection.</p>

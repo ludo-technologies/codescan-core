@@ -1869,7 +1869,7 @@
 <tr>
 <td><code>deps</code></td>
 <td>object</td>
-<td>Present only when dependency analysis ran (JavaScript/TypeScript)</td>
+<td>Present only when dependency analysis ran (Go, JavaScript/TypeScript)</td>
 </tr>
 <tr>
 <td><code>module_quality</code></td>
@@ -2132,7 +2132,7 @@
 </span></code></pre></div>
 <p><code>CouplingCount</code> is the CBO value. <code>DependentClasses</code> names what this module depends on, and the four <code>*Dependencies</code> counters break the total down by how the dependency was formed.</p>
 <h2 id="deps"><code>deps</code><a class="headerlink" href="#deps" title="Permanent link">&para;</a></h2>
-<p><em>JavaScript/TypeScript only.</em></p>
+<p><em>Go and JavaScript/TypeScript.</em></p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.1.0"</span><span class="p">,</span>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">"generated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-08-04T16:20:46+09:00"</span><span class="p">,</span>
@@ -2140,7 +2140,7 @@
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="nt">"analysis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
 </span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>graph</code> holds the nodes and edges of the module import graph. <code>analysis</code> holds the derived results, including the circular dependencies, the maximum depth, the per-module Martin metrics, and the coupling analysis with its Zone of Pain and main-sequence module lists.</p>
+<p><code>graph</code> holds the nodes and edges of the import graph. A node is a JavaScript/TypeScript file, identified by its path, or a Go package, identified by its import path with <code>name</code> holding the package name and <code>file_path</code> its directory. Every node carries the <code>abstractness</code> the graph builder measured: the export count for a JavaScript module, the share of exported types that are interfaces for a Go package. A Go edge joins two packages once, with <code>weight</code> counting the files that import the target, and carries no <code>location</code>. <code>analysis</code> holds the derived results, including the circular dependencies, the maximum depth, the per-module Martin metrics, and the coupling analysis with its Zone of Pain and main-sequence module lists.</p>
 <h2 id="module_quality"><code>module_quality</code><a class="headerlink" href="#module_quality" title="Permanent link">&para;</a></h2>
 <p>One entry per file, joining what each analysis measured about it, across every language:</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">{</span>
@@ -2156,7 +2156,7 @@
 </span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">  </span><span class="nt">"dead_code_block_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
 </span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>module_name</code> comes from dependency analysis and is omitted when that analysis did not run or the file is not JavaScript/TypeScript. The complexity columns come from complexity analysis and the dead-code columns from dead code detection, so a run that skipped one of them leaves those columns at zero rather than dropping the file.</p>
+<p><code>module_name</code> comes from dependency analysis and is omitted when that analysis did not run or the file is not JavaScript/TypeScript; Go dependency nodes are packages, not files, so they name no entry here. The complexity columns come from complexity analysis and the dead-code columns from dead code detection, so a run that skipped one of them leaves those columns at zero rather than dropping the file.</p>
 <p>Unlike the rest of the report, these counts are taken before the presentation filters: <code>--min-complexity</code> and <code>min_severity</code> change what <code>complexity.functions</code> and <code>dead_code.files</code> show without changing what a module is measured as carrying. The entries are ranked worst first: high-risk functions, then maximum complexity, then average complexity, then dead-code findings.</p>
 <h2 id="recipes">Recipes<a class="headerlink" href="#recipes" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Just the score, for a dashboard</span>
