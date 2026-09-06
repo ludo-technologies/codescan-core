@@ -51,8 +51,22 @@ type analyzeJSON struct {
 		} `json:"analysis"`
 		Warnings []string `json:"warnings"`
 	} `json:"deps"`
+	LCOM *struct {
+		Classes []struct {
+			Name     string `json:"name"`
+			Language string `json:"language"`
+			Metrics  struct {
+				LCOM4 int `json:"lcom4"`
+			} `json:"metrics"`
+		} `json:"classes"`
+		Summary struct {
+			TotalClasses int `json:"total_classes"`
+		} `json:"summary"`
+	} `json:"lcom"`
 	Summary *struct {
 		HealthScore       int    `json:"health_score"`
+		CohesionScore     int    `json:"cohesion_score"`
+		LCOMEnabled       bool   `json:"lcom_enabled"`
 		DependencyScore   int    `json:"dependency_score"`
 		DepsEnabled       bool   `json:"deps_enabled"`
 		Grade             string `json:"grade"`
@@ -387,5 +401,43 @@ func TestAnalyzeGoDependenciesOnlyCountsSkippedFiles(t *testing.T) {
 	doc := decodeAnalyzeJSON(t, out)
 	if doc.Summary == nil || doc.Summary.TotalFiles != 2 || doc.Summary.SkippedFiles != 1 {
 		t.Errorf("summary = %+v, want 2 files with 1 skipped whichever analyses ran", doc.Summary)
+	}
+}
+
+func TestAnalyzeCohesion(t *testing.T) {
+	dir := t.TempDir()
+	// A Go type next to a JavaScript file: lcom alone must not start the
+	// JavaScript pipeline with nothing selected.
+	if err := os.WriteFile(filepath.Join(dir, "a.go"), []byte("package p\n\ntype T struct{ a, b int }\n\nfunc (t *T) A() { t.a++ }\nfunc (t *T) B() { t.b++ }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "a.js"), []byte("export function f() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := run(t, "analyze", "--format", "json", "--select", "lcom", dir)
+	if err != nil {
+		t.Fatalf("analyze: %v\n%s", err, out)
+	}
+	doc := decodeAnalyzeJSON(t, out)
+	if doc.LCOM == nil || len(doc.LCOM.Classes) != 1 {
+		t.Fatalf("lcom = %+v, want one class", doc.LCOM)
+	}
+	class := doc.LCOM.Classes[0]
+	if class.Name != "T" || class.Language != "Go" || class.Metrics.LCOM4 != 2 {
+		t.Errorf("class = %+v, want T (Go) with LCOM4 2", class)
+	}
+	if doc.Summary == nil || !doc.Summary.LCOMEnabled || doc.Summary.CohesionScore != 100 {
+		t.Errorf("summary = %+v, want cohesion enabled at 100", doc.Summary)
+	}
+
+	out, err = run(t, "analyze", "--format", "text", "--select", "lcom", dir)
+	if err != nil {
+		t.Fatalf("analyze text: %v\n%s", err, out)
+	}
+	for _, want := range []string{"=== LCOM Analysis ===", "T: LCOM4=2 [low]", "Cohesion:         100/100"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("text output lacks %q:\n%s", want, out)
+		}
 	}
 }

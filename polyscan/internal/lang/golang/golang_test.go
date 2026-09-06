@@ -1,6 +1,8 @@
 package golang
 
 import (
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -209,6 +211,208 @@ func Closure(a, b bool) func() {
 	for name, depth := range want {
 		if got := functions[name].NestingDepth; got != depth {
 			t.Errorf("%s: nesting depth = %d, want %d", name, got, depth)
+		}
+	}
+}
+
+func TestMembers(t *testing.T) {
+	functions := analyze(t, `package p
+
+type Base struct{}
+
+func (Base) Promoted() {}
+
+type T struct {
+	Base
+	a, b int
+	cb   func()
+}
+
+func (t *T) Fields() {
+	t.a = 1
+	t.b.c = 2
+	other.x = 3
+	go func() { t.a++ }()
+}
+
+func (t *T) Calls() {
+	t.Fields()
+	t.cb()
+	t.Base.Promoted()
+	t.Promoted()
+	other.Fields()
+}
+
+func (T) Static() {}
+
+func (_ T) Blank() {}
+
+func Free() {}
+`)
+
+	cases := []struct {
+		name     string
+		receiver string
+		hasSelf  bool
+		fields   []string
+		calls    []string
+	}{
+		{"Base.Promoted", "Base", false, nil, nil},
+		{"T.Fields", "T", true, []string{"a", "b"}, []string{}},
+		{"T.Calls", "T", true, []string{"Base"}, []string{"Fields", "Promoted", "cb"}},
+		{"T.Static", "T", false, nil, nil},
+		{"T.Blank", "T", false, nil, nil},
+		{"Free", "", false, nil, nil},
+	}
+	for _, tc := range cases {
+		fn, ok := functions[tc.name]
+		if !ok {
+			t.Errorf("missing function %q", tc.name)
+			continue
+		}
+		if fn.Receiver != tc.receiver || fn.HasSelf != tc.hasSelf {
+			t.Errorf("%s: receiver %q hasSelf %v, want %q %v", tc.name, fn.Receiver, fn.HasSelf, tc.receiver, tc.hasSelf)
+		}
+		if got := slices.Sorted(maps.Keys(fn.Fields)); !equalStrings(got, tc.fields) {
+			t.Errorf("%s: fields = %v, want %v", tc.name, got, tc.fields)
+		}
+		if got := slices.Sorted(maps.Keys(fn.Calls)); !equalStrings(got, tc.calls) {
+			t.Errorf("%s: calls = %v, want %v", tc.name, got, tc.calls)
+		}
+	}
+}
+
+func equalStrings(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func TestMembersIgnoreShadowedReceiver(t *testing.T) {
+	functions := analyze(t, `package p
+
+type License struct{ TTL int; items []License; ch chan License }
+
+// Package-level names are the ones a receiver shadows.
+var x = newThing()
+
+const c = "x"
+
+func (c *License) Package() int {
+	c.Warm()
+	return c.TTL
+}
+
+func (x *License) Default(v int) {
+	switch v {
+	default:
+		var x = 1
+		_ = x.Def
+	}
+}
+
+// The right-hand side of the declaration still sees the receiver.
+func (x *License) GetText() string {
+	if x, ok := x.GetSource().(*Text); ok {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *License) Range() {
+	for _, x := range x.items {
+		x.Do()
+	}
+}
+
+func (x *License) ForClause() {
+	for x := 0; x < 3; x++ {
+		_ = x.Idx
+	}
+}
+
+func (x *License) Block() {
+	{
+		x := other()
+		x.Inner()
+	}
+	x.Outer()
+}
+
+func (x *License) Var() {
+	var x = 1
+	var (
+		y = x.Y
+	)
+	_ = y
+}
+
+func (x *License) TypeSwitch(v interface{}) {
+	switch x := x.Value().(type) {
+	case int:
+		_ = x.Int
+	}
+}
+
+func (x *License) Case(v int) {
+	switch v {
+	case 1:
+		x := 2
+		_ = x.One
+	case 2:
+		_ = x.Two
+	}
+}
+
+func (x *License) Select() {
+	select {
+	case x := <-x.ch:
+		x.Recv()
+	}
+}
+
+func (x *License) Closure() {
+	f := func(x int, rest ...int) (r int) { return x.Param + r.Result }
+	g := func() { x.Captured() }
+	f(1)
+	g()
+}
+`)
+
+	cases := []struct {
+		name   string
+		fields []string
+		calls  []string
+	}{
+		{"License.Package", []string{"TTL"}, []string{"Warm"}},
+		{"License.Default", []string{}, []string{}},
+		{"License.GetText", []string{}, []string{"GetSource"}},
+		{"License.Range", []string{"items"}, []string{}},
+		{"License.ForClause", []string{}, []string{}},
+		{"License.Block", []string{}, []string{"Outer"}},
+		{"License.Var", []string{}, []string{}},
+		{"License.TypeSwitch", []string{}, []string{"Value"}},
+		{"License.Case", []string{"Two"}, []string{}},
+		{"License.Select", []string{"ch"}, []string{}},
+		{"License.Closure", []string{}, []string{"Captured"}},
+	}
+	for _, tc := range cases {
+		fn, ok := functions[tc.name]
+		if !ok {
+			t.Errorf("missing function %q", tc.name)
+			continue
+		}
+		if got := slices.Sorted(maps.Keys(fn.Fields)); !equalStrings(got, tc.fields) {
+			t.Errorf("%s: fields = %v, want %v", tc.name, got, tc.fields)
+		}
+		if got := slices.Sorted(maps.Keys(fn.Calls)); !equalStrings(got, tc.calls) {
+			t.Errorf("%s: calls = %v, want %v", tc.name, got, tc.calls)
 		}
 	}
 }

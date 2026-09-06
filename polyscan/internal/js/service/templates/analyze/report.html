@@ -411,14 +411,17 @@
 {{end}}
 
 <!-- ================= CLASSES ================= -->
-{{if .Summary.CBOEnabled}}
+{{if or .Summary.CBOEnabled .Summary.LCOMEnabled}}
 <section id="classes" class="panel">
   <div class="panel-h">
     <h2>Classes</h2>
-    <div class="scores"><span class="score-pill {{scoreBand .Summary.CouplingScore}}">Coupling <b class="num">{{.Summary.CouplingScore}}</b>/100</span></div>
+    <div class="scores">
+      {{if .Summary.CBOEnabled}}<span class="score-pill {{scoreBand .Summary.CouplingScore}}">Coupling <b class="num">{{.Summary.CouplingScore}}</b>/100</span>{{end}}
+      {{if .Summary.LCOMEnabled}}<span class="score-pill {{scoreBand .Summary.CohesionScore}}">Cohesion <b class="num">{{.Summary.CohesionScore}}</b>/100</span>{{end}}
+    </div>
   </div>
 
-  {{if .CBO}}
+  {{if and .Summary.CBOEnabled .CBO}}
   <div class="card">
     <div class="card-h"><h2>Coupling</h2><span class="muted small">Coupling Between Objects (CBO)</span></div>
     <div class="strip">
@@ -449,6 +452,42 @@
     {{if gt (len .CBO.Classes) 20}}<p class="muted small note">Showing top 20 of {{len .CBO.Classes}} classes</p>{{end}}
     {{else}}
     <p class="muted note">No classes found for coupling analysis</p>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if and .Summary.LCOMEnabled .LCOM}}
+  <div class="card">
+    <div class="card-h"><h2>Cohesion</h2><span class="muted small">Lack of Cohesion of Methods (LCOM4)</span></div>
+    <div class="strip">
+      <div class="s"><div class="v num">{{.LCOM.Summary.TotalClasses}}</div><div class="l">classes</div></div>
+      <div class="s"><div class="v num{{if .LCOM.Summary.HighRiskClasses}} bad{{end}}">{{.LCOM.Summary.HighRiskClasses}}</div><div class="l">low cohesion</div></div>
+      <div class="s"><div class="v num{{if .LCOM.Summary.MediumRiskClasses}} warn{{end}}">{{.LCOM.Summary.MediumRiskClasses}}</div><div class="l">medium cohesion</div></div>
+      <div class="s"><div class="v num">{{printf "%.2f" .LCOM.Summary.AverageLCOM}}</div><div class="l">average LCOM4</div></div>
+      <div class="s"><div class="v num">{{.LCOM.Summary.MaxLCOM}}</div><div class="l">max LCOM4</div></div>
+    </div>
+    {{if .LCOM.Classes}}
+    <h3>Least cohesive classes</h3>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Class</th><th>File</th><th class="r">LCOM4</th><th>Risk</th><th class="r">Methods</th><th class="r">Fields</th></tr></thead>
+        <tbody>
+          {{range $i, $c := .LCOM.Classes}}{{if lt $i 20}}
+          <tr>
+            <td class="mono">{{$c.Name}}</td>
+            <td class="mono muted">{{$c.FilePath}}:{{$c.StartLine}}</td>
+            <td class="r num">{{$c.Metrics.LCOM4}}</td>
+            <td><span class="pill risk-{{$c.RiskLevel}}">{{$c.RiskLevel}}</span></td>
+            <td class="r num">{{sub $c.Metrics.TotalMethods $c.Metrics.ExcludedMethods}}</td>
+            <td class="r num">{{$c.Metrics.InstanceVariables}}</td>
+          </tr>
+          {{end}}{{end}}
+        </tbody>
+      </table>
+    </div>
+    {{if gt (len .LCOM.Classes) 20}}<p class="muted small note">Showing top 20 of {{len .LCOM.Classes}} classes</p>{{end}}
+    {{else}}
+    <p class="muted note">No types with methods found for cohesion analysis</p>
     {{end}}
   </div>
   {{end}}

@@ -108,6 +108,7 @@ type analyzeReportView struct {
 	DeadCode      *domain.DeadCodeResponse
 	Clone         *domain.CloneResponse
 	CBO           *domain.CBOResponse
+	LCOM          *domain.LCOMResponse
 	Deps          *domain.DependencyGraphResponse
 	ModuleQuality []domain.ModuleQualityMetrics
 	Summary       *domain.AnalyzeSummary
@@ -264,6 +265,7 @@ func buildAnalyzeReportView(
 		DeadCode:        results.DeadCode,
 		Clone:           results.Clone,
 		CBO:             results.CBO,
+		LCOM:            results.LCOM,
 		Deps:            results.Deps,
 		ModuleQuality:   moduleQuality,
 		Summary:         summary,
@@ -284,7 +286,7 @@ func buildAnalyzeReportView(
 	view.Hotspots = buildReportHotspots(moduleQuality, results.Clone, risk)
 	view.Histogram = buildReportHistogram(results.Complexity, risk)
 	view.Duplication = buildReportDuplication(summary, results.Clone)
-	view.Classes = buildReportClasses(summary, results.CBO)
+	view.Classes = buildReportClasses(summary, results.CBO, results.LCOM)
 	view.Structure = buildReportStructure(results.Deps)
 	return view
 }
@@ -402,8 +404,8 @@ func buildReportTabs(
 		}
 		tabs = append(tabs, tab)
 	}
-	if summary.CBOEnabled {
-		tab := reportTab{ID: "classes", Label: "Classes", Count: summary.HighCouplingClasses}
+	if summary.CBOEnabled || summary.LCOMEnabled {
+		tab := reportTab{ID: "classes", Label: "Classes", Count: summary.HighCouplingClasses + summary.HighLCOMClasses}
 		if tab.Count > 0 {
 			tab.CountBand = "bad"
 		}
@@ -465,6 +467,11 @@ func buildReportDimensions(summary *domain.AnalyzeSummary, tabs []reportTab) []r
 		add("Coupling", summary.CouplingScore,
 			fmt.Sprintf("avg CBO %.1f", summary.AverageCoupling),
 			fmt.Sprintf("%d of %d high", summary.HighCouplingClasses, summary.CBOClasses), "classes")
+	}
+	if summary.LCOMEnabled {
+		add("Cohesion", summary.CohesionScore,
+			fmt.Sprintf("avg LCOM4 %.1f", summary.AverageLCOM),
+			fmt.Sprintf("%d of %d low", summary.HighLCOMClasses, summary.LCOMClasses), "classes")
 	}
 	if summary.DepsEnabled {
 		cycles := "no cycles"
@@ -614,8 +621,9 @@ func buildReportFacts(summary *domain.AnalyzeSummary, moduleQuality []domain.Mod
 	if summary.ComplexityEnabled {
 		facts = append(facts, reportFact{Value: formatThousands(summary.TotalFunctions), Label: "functions"})
 	}
-	if summary.CBOEnabled {
-		facts = append(facts, reportFact{Value: formatThousands(summary.CBOClasses), Label: "classes"})
+	// CBO and LCOM cover disjoint languages, so their class counts add up.
+	if classes := summary.CBOClasses + summary.LCOMClasses; summary.CBOEnabled || summary.LCOMEnabled {
+		facts = append(facts, reportFact{Value: formatThousands(classes), Label: "classes"})
 	}
 	return facts
 }
@@ -1116,24 +1124,51 @@ func cloneContent(fragment *domain.Clone) string {
 	return strings.Join(lines[:maxLines], "\n") + "\n..."
 }
 
-func buildReportClasses(summary *domain.AnalyzeSummary, cbo *domain.CBOResponse) *reportClasses {
+// buildReportClasses summarizes the class analyses that ran: coupling for
+// JavaScript/TypeScript, cohesion for Go and Rust. The two cover disjoint
+// languages, so the class counts add up.
+func buildReportClasses(summary *domain.AnalyzeSummary, cbo *domain.CBOResponse, lcom *domain.LCOMResponse) *reportClasses {
 	if !summary.CBOEnabled || cbo == nil {
+		cbo = nil
+	}
+	if !summary.LCOMEnabled || lcom == nil {
+		lcom = nil
+	}
+	if cbo == nil && lcom == nil {
 		return nil
 	}
-	classes := &reportClasses{
-		Total: cbo.Summary.TotalClasses,
-		Facts: []reportKV{
-			{Key: "High coupling", Value: formatThousands(cbo.Summary.HighRiskClasses), Band: warnIfPositive(cbo.Summary.HighRiskClasses)},
-			{Key: "Medium coupling", Value: formatThousands(cbo.Summary.MediumRiskClasses)},
-			{Key: "Average CBO", Value: fmt.Sprintf("%.2f", cbo.Summary.AverageCBO)},
-		},
+	classes := &reportClasses{}
+	if cbo != nil {
+		classes.Total += cbo.Summary.TotalClasses
+		classes.Facts = append(classes.Facts,
+			reportKV{Key: "High coupling", Value: formatThousands(cbo.Summary.HighRiskClasses), Band: warnIfPositive(cbo.Summary.HighRiskClasses)},
+			reportKV{Key: "Medium coupling", Value: formatThousands(cbo.Summary.MediumRiskClasses)},
+			reportKV{Key: "Average CBO", Value: fmt.Sprintf("%.2f", cbo.Summary.AverageCBO)},
+		)
+		if top := mostCoupledClass(cbo.Classes); top != nil {
+			classes.Facts = append(classes.Facts, reportKV{
+				Key:   "Most coupled",
+				Value: fmt.Sprintf("%s (%d)", top.Name, top.Metrics.CouplingCount),
+				Mono:  true,
+			})
+		}
 	}
-	if top := mostCoupledClass(cbo.Classes); top != nil {
-		classes.Facts = append(classes.Facts, reportKV{
-			Key:   "Most coupled",
-			Value: fmt.Sprintf("%s (%d)", top.Name, top.Metrics.CouplingCount),
-			Mono:  true,
-		})
+	if lcom != nil {
+		classes.Total += lcom.Summary.TotalClasses
+		classes.Facts = append(classes.Facts,
+			reportKV{Key: "Low cohesion", Value: formatThousands(lcom.Summary.HighRiskClasses), Band: warnIfPositive(lcom.Summary.HighRiskClasses)},
+			reportKV{Key: "Medium cohesion", Value: formatThousands(lcom.Summary.MediumRiskClasses)},
+			reportKV{Key: "Average LCOM4", Value: fmt.Sprintf("%.2f", lcom.Summary.AverageLCOM)},
+		)
+		// Classes are sorted by descending LCOM4.
+		if len(lcom.Classes) > 0 {
+			top := lcom.Classes[0]
+			classes.Facts = append(classes.Facts, reportKV{
+				Key:   "Least cohesive",
+				Value: fmt.Sprintf("%s (%d)", top.Name, top.Metrics.LCOM4),
+				Mono:  true,
+			})
+		}
 	}
 	return classes
 }

@@ -88,6 +88,17 @@ type CBOResponseJSON struct {
 	Config      interface{}            `json:"config,omitempty"`
 }
 
+// LCOMResponseJSON wraps LCOMResponse with JSON metadata
+type LCOMResponseJSON struct {
+	Version     string                 `json:"version"`
+	GeneratedAt string                 `json:"generated_at"`
+	Classes     []domain.ClassCohesion `json:"classes"`
+	Summary     domain.LCOMSummary     `json:"summary"`
+	Warnings    []string               `json:"warnings,omitempty"`
+	Errors      []string               `json:"errors,omitempty"`
+	Config      interface{}            `json:"config,omitempty"`
+}
+
 // DepsResponseJSON wraps DependencyGraphResponse with JSON metadata
 type DepsResponseJSON struct {
 	Version     string                           `json:"version"`
@@ -107,6 +118,7 @@ type AnalyzeResponseJSON struct {
 	DeadCode      *DeadCodeResponseJSON         `json:"dead_code,omitempty"`
 	Clone         *CloneResponseJSON            `json:"clone,omitempty"`
 	CBO           *CBOResponseJSON              `json:"cbo,omitempty"`
+	LCOM          *LCOMResponseJSON             `json:"lcom,omitempty"`
 	Deps          *DepsResponseJSON             `json:"deps,omitempty"`
 	ModuleQuality []domain.ModuleQualityMetrics `json:"module_quality,omitempty"`
 	Summary       *domain.AnalyzeSummary        `json:"summary,omitempty"`
@@ -177,6 +189,17 @@ func newAnalyzeResponseJSON(
 			Warnings:    results.CBO.Warnings,
 			Errors:      results.CBO.Errors,
 			Config:      results.CBO.Config,
+		}
+	}
+	if results.LCOM != nil {
+		response.LCOM = &LCOMResponseJSON{
+			Version:     version.Version,
+			GeneratedAt: results.LCOM.GeneratedAt,
+			Classes:     results.LCOM.Classes,
+			Summary:     results.LCOM.Summary,
+			Warnings:    results.LCOM.Warnings,
+			Errors:      results.LCOM.Errors,
+			Config:      results.LCOM.Config,
 		}
 	}
 	if results.Deps != nil {
@@ -306,6 +329,14 @@ func BuildAnalyzeSummary(results domain.AnalysisResults) *domain.AnalyzeSummary 
 		summary.AverageCoupling = results.CBO.Summary.AverageCBO
 	}
 
+	if results.LCOM != nil {
+		summary.LCOMEnabled = true
+		summary.LCOMClasses = results.LCOM.Summary.TotalClasses
+		summary.HighLCOMClasses = results.LCOM.Summary.HighRiskClasses
+		summary.MediumLCOMClasses = results.LCOM.Summary.MediumRiskClasses
+		summary.AverageLCOM = results.LCOM.Summary.AverageLCOM
+	}
+
 	if results.Deps != nil {
 		summary.DepsEnabled = true
 		if results.Deps.Graph != nil {
@@ -377,6 +408,11 @@ func FormatCLISummary(summary *domain.AnalyzeSummary, duration time.Duration, sk
 		fmt.Fprintf(w, "  Coupling (CBO):  %3d/100 %s  (avg: %.1f, %d/%d high-coupling)\n",
 			summary.CouplingScore, scoreIndicator(summary.CouplingScore),
 			summary.AverageCoupling, summary.HighCouplingClasses, summary.CBOClasses)
+	}
+	if summary.LCOMEnabled {
+		fmt.Fprintf(w, "  Cohesion (LCOM): %3d/100 %s  (avg: %.1f, %d/%d low-cohesion)\n",
+			summary.CohesionScore, scoreIndicator(summary.CohesionScore),
+			summary.AverageLCOM, summary.HighLCOMClasses, summary.LCOMClasses)
 	}
 	if summary.DepsEnabled {
 		cycles := 0
@@ -634,6 +670,11 @@ func (f *OutputFormatterImpl) writeAnalyzeText(
 		}
 	}
 
+	// LCOM analysis results
+	if results.LCOM != nil {
+		writeLCOMText(results.LCOM, writer)
+	}
+
 	// Dependency analysis results
 	if results.Deps != nil {
 		if err := f.writeDepsText(results.Deps, writer); err != nil {
@@ -668,6 +709,9 @@ func (f *OutputFormatterImpl) writeAnalyzeText(
 	}
 	if summary.CBOEnabled {
 		fmt.Fprintf(writer, "  Coupling:         %3d/100\n", summary.CouplingScore)
+	}
+	if summary.LCOMEnabled {
+		fmt.Fprintf(writer, "  Cohesion:         %3d/100\n", summary.CohesionScore)
 	}
 	if summary.DepsEnabled {
 		fmt.Fprintf(writer, "  Dependencies:     %3d/100\n", summary.DependencyScore)
@@ -821,6 +865,36 @@ func (f *OutputFormatterImpl) writeCBOText(response *domain.CBOResponse, writer 
 	}
 
 	return nil
+}
+
+// writeLCOMText writes LCOM analysis results as plain text.
+func writeLCOMText(response *domain.LCOMResponse, writer io.Writer) {
+	fmt.Fprintf(writer, "\n=== LCOM Analysis ===\n\n")
+
+	fmt.Fprintf(writer, "Summary:\n")
+	fmt.Fprintf(writer, "  Total classes: %d\n", response.Summary.TotalClasses)
+	fmt.Fprintf(writer, "  Average LCOM4: %.2f\n", response.Summary.AverageLCOM)
+	fmt.Fprintf(writer, "  Max LCOM4: %d\n", response.Summary.MaxLCOM)
+	fmt.Fprintf(writer, "\n")
+
+	fmt.Fprintf(writer, "Risk Distribution:\n")
+	fmt.Fprintf(writer, "  High risk: %d\n", response.Summary.HighRiskClasses)
+	fmt.Fprintf(writer, "  Medium risk: %d\n", response.Summary.MediumRiskClasses)
+	fmt.Fprintf(writer, "  Low risk: %d\n", response.Summary.LowRiskClasses)
+	fmt.Fprintf(writer, "\n")
+
+	if len(response.Classes) == 0 {
+		fmt.Fprintf(writer, "No classes found for LCOM analysis.\n")
+		return
+	}
+	fmt.Fprintf(writer, "Least Cohesive Classes:\n")
+	for i, class := range response.Classes {
+		if i == 10 {
+			break
+		}
+		fmt.Fprintf(writer, "  %s: LCOM4=%d [%s] (%s:%d)\n",
+			class.Name, class.Metrics.LCOM4, class.RiskLevel, class.FilePath, class.StartLine)
+	}
 }
 
 // writeAnalyzeYAML writes unified analysis response as YAML
@@ -1021,6 +1095,34 @@ func (f *OutputFormatterImpl) writeAnalyzeCSV(
 				class.Name,
 				class.FilePath,
 				strconv.Itoa(class.Metrics.CouplingCount),
+				string(class.RiskLevel),
+			}
+			if err := csvWriter.Write(record); err != nil {
+				return err
+			}
+		}
+		needsSeparator = true
+	}
+
+	// Write LCOM results
+	if results.LCOM != nil && len(results.LCOM.Classes) > 0 {
+		if needsSeparator {
+			if err := csvWriter.Write([]string{}); err != nil {
+				return err
+			}
+		}
+		if err := csvWriter.Write([]string{
+			"type", "class", "file", "lcom4", "risk_level",
+		}); err != nil {
+			return err
+		}
+
+		for _, class := range results.LCOM.Classes {
+			record := []string{
+				"lcom",
+				class.Name,
+				class.FilePath,
+				strconv.Itoa(class.Metrics.LCOM4),
 				string(class.RiskLevel),
 			}
 			if err := csvWriter.Write(record); err != nil {

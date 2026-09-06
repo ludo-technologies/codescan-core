@@ -25,13 +25,14 @@ const (
 	selectDeadCode   = "deadcode"
 	selectClone      = "clone"
 	selectCBO        = "cbo"
+	selectLCOM       = "lcom"
 	selectDeps       = "deps"
 
 	defaultReportPath = "polyscan-report.html"
 )
 
 // allAnalyses is the default selection: every analysis a language supports.
-var allAnalyses = []string{selectComplexity, selectDeadCode, selectClone, selectCBO, selectDeps}
+var allAnalyses = []string{selectComplexity, selectDeadCode, selectClone, selectCBO, selectLCOM, selectDeps}
 
 func analyzeCmd() *cobra.Command {
 	var (
@@ -51,10 +52,10 @@ The language of each file is detected from its extension. Supported: Go, Rust,
 C++ and JavaScript/TypeScript.
 
 Complexity and clone analysis cover every language; dependency analysis covers
-Go and JavaScript/TypeScript; dead code and coupling (CBO) exist for
-JavaScript/TypeScript only. The health score is computed over the dimensions
-that ran: a dimension a language does not have is left out, not scored as
-clean.
+Go and JavaScript/TypeScript; cohesion (LCOM4) covers Go and Rust; dead code
+and coupling (CBO) exist for JavaScript/TypeScript only. The health score is
+computed over the dimensions that ran: a dimension a language does not have is
+left out, not scored as clean.
 
 By default, generates an HTML report and opens it in your browser.
 
@@ -83,15 +84,18 @@ Examples:
 
 			start := time.Now()
 			var generic *analysis.Report
-			if options.Complexity || options.Clones || options.Deps {
+			if options != (analysis.Options{}) {
 				generic, err = analysis.Analyze(args, options)
 				if err != nil && !errors.Is(err, analysis.ErrNoFiles) {
 					return err
 				}
 			}
-			javascript, err := analyzeJavaScript(args, selection, cmd.ErrOrStderr())
-			if err != nil {
-				return err
+			var javascript *js.Result
+			if selection != (js.Selection{}) {
+				javascript, err = analyzeJavaScript(args, selection, cmd.ErrOrStderr())
+				if err != nil {
+					return err
+				}
 			}
 			if generic == nil && javascript == nil {
 				return analysis.ErrNoFiles
@@ -149,8 +153,9 @@ Examples:
 	}
 
 	cmd.Flags().StringSliceVarP(&selected, "select", "s", allAnalyses,
-		"Analyses to run (comma-separated): complexity,deadcode,clone,cbo,deps\n"+
-			"deps applies to Go and JavaScript/TypeScript; deadcode and cbo to JavaScript/TypeScript only")
+		"Analyses to run (comma-separated): complexity,deadcode,clone,cbo,lcom,deps\n"+
+			"deps applies to Go and JavaScript/TypeScript; lcom to Go and Rust;\n"+
+			"deadcode and cbo to JavaScript/TypeScript only")
 	cmd.Flags().StringVarP(&format, "format", "f", "html", "Output format: html, json, text")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "HTML report path (default: "+defaultReportPath+")")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Don't open the HTML report in the browser")
@@ -247,7 +252,7 @@ func writeReportFile(path string, write func(io.Writer, jsdomain.OutputFormat) e
 
 // parseSelection maps the selected analysis names onto the generic engine's
 // options and the JavaScript/TypeScript selection. deadcode and cbo exist
-// only for JavaScript/TypeScript.
+// only for JavaScript/TypeScript, lcom only for the generic engine.
 func parseSelection(selected []string) (analysis.Options, js.Selection, error) {
 	var options analysis.Options
 	var selection js.Selection
@@ -263,6 +268,8 @@ func parseSelection(selected []string) (analysis.Options, js.Selection, error) {
 			selection.DeadCode = true
 		case selectCBO:
 			selection.CBO = true
+		case selectLCOM:
+			options.LCOM = true
 		case selectDeps:
 			options.Deps = true
 			selection.Deps = true
@@ -271,7 +278,7 @@ func parseSelection(selected []string) (analysis.Options, js.Selection, error) {
 				"invalid analysis %q, must be one of: %s", name, strings.Join(allAnalyses, ", "))
 		}
 	}
-	if selection == (js.Selection{}) {
+	if selection == (js.Selection{}) && options == (analysis.Options{}) {
 		return options, selection, fmt.Errorf("no analysis selected")
 	}
 	return options, selection, nil

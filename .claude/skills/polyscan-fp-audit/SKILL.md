@@ -75,12 +75,13 @@ The single `analyze.json` holds every analysis under these top-level keys:
 | `clone` | all | `.clone.clone_pairs[]` → `clone1`/`clone2` (`language`, `location.{file_path,start_line,end_line}`, `content`, `line_count`), `similarity`, `type`; `.clone.clone_groups[]` |
 | `dead_code` | JS/TS only | `.dead_code.files[].functions[].findings[]` → `location`, `reason`, `severity`, `description` |
 | `cbo` | JS/TS only | `.cbo.classes[]` → `Name`, `FilePath`, `Metrics.CouplingCount`, `RiskLevel` |
+| `lcom` | Go, Rust | `.lcom.classes[]` → `name`, `file_path`, `language`, `start_line`, `metrics.lcom4`, `metrics.method_groups`, `risk_level` |
 | `deps` | Go, JS/TS | `.deps.analysis`, `.deps.graph` (Go nodes are packages keyed by import path) |
 | `summary` | — | `health_score`, `grade`, `total_loc`, `total_files`, `skipped_files`, per-dimension scores |
 
-To narrow scope, add `--select complexity,deadcode,clone,cbo,deps`.
+To narrow scope, add `--select complexity,deadcode,clone,cbo,lcom,deps`.
 
-**Known structural zeros — never report these as bugs.** For Go/Rust/C++ the generic engine fills only `metrics.complexity` and `metrics.nesting_depth`; `nodes`, `edges`, `if_statements`, `loop_statements`, `exception_handlers` and `switch_cases` are always `0`. Clone fragments always have `hash: ""`, `complexity: 0` and `start_col`/`end_col` `0`. `cbo.classes[]` for JS lists one pseudo-class per file (module-level coupling), so a `Name` equal to the file basename is expected. For Go `deps.analysis.CircularDependencies` is always empty (the compiler forbids import cycles), Go edges carry no `location`, and Go files outside any `go.mod`, `_test.go` files, and `vendor`/`testdata` directories are absent from the graph by design.
+**Known structural zeros — never report these as bugs.** For Go/Rust/C++ the generic engine fills only `metrics.complexity` and `metrics.nesting_depth`; `nodes`, `edges`, `if_statements`, `loop_statements`, `exception_handlers` and `switch_cases` are always `0`. Clone fragments always have `hash: ""`, `complexity: 0` and `start_col`/`end_col` `0`. `cbo.classes[]` for JS lists one pseudo-class per file (module-level coupling), so a `Name` equal to the file basename is expected. For Go `deps.analysis.CircularDependencies` is always empty (the compiler forbids import cycles), Go edges carry no `location`, and Go files outside any `go.mod`, `_test.go` files, and `vendor`/`testdata` directories are absent from the graph by design. A Go type in `lcom.classes[]` is measured over the methods of its whole package and placed in the first file that declares one, so `file_path` need not be the file that declares the type; `excluded_methods` counts methods without a receiver parameter, which is expected for Rust `new`-style associated functions.
 
 ### 4. Cluster findings
 
@@ -91,6 +92,7 @@ Read the JSON output. Group findings by `(analysis, language, rule_or_pattern)`.
 - `clone / cpp / cross-file-header-impl`
 - `deadcode / ts / unreachable_after_return`
 - `cbo / ts / coupling >= 10`
+- `lcom / go / lcom4 >= 6`
 
 For each cluster, record the total count and pick **3–5 representative samples** (prefer variety: different files, different sizes, mix of risk levels). Also collect:
 

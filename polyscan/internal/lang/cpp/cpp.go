@@ -50,7 +50,7 @@ var Language = &engine.Language{
 (class_specifier name: (type_identifier) @receiver body: (field_declaration_list) @scope)
 (struct_specifier name: (type_identifier) @receiver body: (field_declaration_list) @scope)
 (union_specifier name: (type_identifier) @receiver body: (field_declaration_list) @scope)
-(namespace_definition name: (namespace_identifier) @receiver body: (declaration_list) @scope)
+(namespace_definition name: (namespace_identifier) @module body: (declaration_list) @scope)
 `,
 	// A case without a value is the default, the path the other cases
 	// branch away from. A catch clause is the exception edge core/cfg
