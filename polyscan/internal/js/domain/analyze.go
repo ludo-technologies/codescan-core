@@ -33,6 +33,12 @@ const (
 	CouplingMediumWeight    = coredomain.CouplingMediumWeight
 	CouplingSaturationRatio = coredomain.CouplingSaturationRatio
 
+	// LCOM cohesion scoring curve (used by calculateCohesionPenalty), the
+	// same curve pyscn applies. Penalty grows linearly with the weighted
+	// ratio of low-cohesion classes and saturates at CohesionSaturationRatio.
+	CohesionMediumWeight    = 0.3  // Medium-risk classes count 0.3 vs High = 1.0
+	CohesionSaturationRatio = 0.40 // weighted ratio at which the penalty maxes out
+
 	// Complexity scoring curve (used by calculateComplexityPenalty)
 	// Penalty grows linearly with the weighted ratio of high and medium risk
 	// functions and saturates at ComplexitySaturationRatio. The ratio is
@@ -105,6 +111,7 @@ type AnalyzeResponse struct {
 	DeadCode   *DeadCodeResponse       `json:"dead_code,omitempty" yaml:"dead_code,omitempty"`
 	Clone      *CloneResponse          `json:"clone,omitempty" yaml:"clone,omitempty"`
 	CBO        *CBOResponse            `json:"cbo,omitempty" yaml:"cbo,omitempty"`
+	LCOM       *LCOMResponse           `json:"lcom,omitempty" yaml:"lcom,omitempty"`
 	System     *SystemAnalysisResponse `json:"system,omitempty" yaml:"system,omitempty"`
 
 	// Overall summary
@@ -147,6 +154,7 @@ type AnalysisResults struct {
 	DeadCode   *DeadCodeResponse
 	Clone      *CloneResponse
 	CBO        *CBOResponse
+	LCOM       *LCOMResponse
 	Deps       *DependencyGraphResponse
 }
 
@@ -162,6 +170,7 @@ type AnalyzeSummary struct {
 	DeadCodeEnabled   bool `json:"dead_code_enabled" yaml:"dead_code_enabled"`
 	CloneEnabled      bool `json:"clone_enabled" yaml:"clone_enabled"`
 	CBOEnabled        bool `json:"cbo_enabled" yaml:"cbo_enabled"`
+	LCOMEnabled       bool `json:"lcom_enabled" yaml:"lcom_enabled"`
 
 	// System-level (module dependencies & architecture) summary used for scoring
 	DepsEnabled               bool    `json:"deps_enabled" yaml:"deps_enabled"`
@@ -203,6 +212,11 @@ type AnalyzeSummary struct {
 	MediumCouplingClasses int     `json:"medium_coupling_classes" yaml:"medium_coupling_classes"` // 3 < CBO ≤ 7 (Medium Risk)
 	AverageCoupling       float64 `json:"average_coupling" yaml:"average_coupling"`
 
+	LCOMClasses       int     `json:"lcom_classes" yaml:"lcom_classes"`
+	HighLCOMClasses   int     `json:"high_lcom_classes" yaml:"high_lcom_classes"`     // LCOM4 > 5 (High Risk)
+	MediumLCOMClasses int     `json:"medium_lcom_classes" yaml:"medium_lcom_classes"` // 2 < LCOM4 <= 5 (Medium Risk)
+	AverageLCOM       float64 `json:"average_lcom" yaml:"average_lcom"`
+
 	// Project scale
 	// TotalLOC is the number of lines the clone analysis read; it is 0 when
 	// clone analysis is disabled.
@@ -218,6 +232,7 @@ type AnalyzeSummary struct {
 	DeadCodeScore     int `json:"dead_code_score" yaml:"dead_code_score"`
 	DuplicationScore  int `json:"duplication_score" yaml:"duplication_score"`
 	CouplingScore     int `json:"coupling_score" yaml:"coupling_score"`
+	CohesionScore     int `json:"cohesion_score" yaml:"cohesion_score"`
 	DependencyScore   int `json:"dependency_score" yaml:"dependency_score"`
 	ArchitectureScore int `json:"architecture_score" yaml:"architecture_score"`
 }
@@ -276,6 +291,12 @@ func (s *AnalyzeSummary) Validate() error {
 			return fmt.Errorf("HighCouplingClasses + MediumCouplingClasses (%d) cannot exceed CBOClasses (%d)",
 				s.HighCouplingClasses+s.MediumCouplingClasses, s.CBOClasses)
 		}
+	}
+
+	// LCOM checks
+	if s.LCOMClasses > 0 && s.HighLCOMClasses+s.MediumLCOMClasses > s.LCOMClasses {
+		return fmt.Errorf("HighLCOMClasses + MediumLCOMClasses (%d) cannot exceed LCOMClasses (%d)",
+			s.HighLCOMClasses+s.MediumLCOMClasses, s.LCOMClasses)
 	}
 
 	return nil
@@ -346,6 +367,17 @@ func (s *AnalyzeSummary) calculateCouplingPenalty() int {
 	return coredomain.CouplingPenalty(s.HighCouplingClasses, s.MediumCouplingClasses, s.CBOClasses)
 }
 
+// calculateCohesionPenalty calculates the penalty for class cohesion (max 20)
+// from the weighted ratio of low-cohesion classes, with a medium-risk class
+// weighing CohesionMediumWeight of a high-risk one.
+func (s *AnalyzeSummary) calculateCohesionPenalty() int {
+	if s.LCOMClasses == 0 {
+		return 0
+	}
+	weighted := float64(s.HighLCOMClasses) + CohesionMediumWeight*float64(s.MediumLCOMClasses)
+	return coredomain.LinearPenalty(weighted/float64(s.LCOMClasses), 0, CohesionSaturationRatio)
+}
+
 // calculateDependencyPenalty calculates the penalty for module dependencies (max 16: cycles=10, depth=3, MSD=3)
 func (s *AnalyzeSummary) calculateDependencyPenalty() int {
 	if !s.DepsEnabled {
@@ -395,6 +427,7 @@ func (s *AnalyzeSummary) CalculateHealthScore() error {
 		s.DeadCodeScore = 0
 		s.DuplicationScore = 0
 		s.CouplingScore = 0
+		s.CohesionScore = 0
 		s.DependencyScore = 0
 		s.ArchitectureScore = 0
 		return fmt.Errorf("invalid summary data: %w", err)
@@ -413,6 +446,9 @@ func (s *AnalyzeSummary) CalculateHealthScore() error {
 
 	couplingPenalty := s.calculateCouplingPenalty()
 	s.CouplingScore = penaltyToScore(couplingPenalty, MaxScoreBase)
+
+	cohesionPenalty := s.calculateCohesionPenalty()
+	s.CohesionScore = penaltyToScore(cohesionPenalty, MaxScoreBase)
 
 	// Dependencies and Architecture need normalization since their max penalties differ from MaxScoreBase
 	dependencyPenalty := s.calculateDependencyPenalty()
@@ -444,6 +480,7 @@ func (s *AnalyzeSummary) CalculateHealthScore() error {
 	charge(s.DeadCodeEnabled, deadCodePenalty, MaxScoreBase)
 	charge(s.CloneEnabled, duplicationPenalty, MaxScoreBase)
 	charge(s.CBOEnabled, couplingPenalty, MaxScoreBase)
+	charge(s.LCOMEnabled, cohesionPenalty, MaxScoreBase)
 	charge(s.DepsEnabled, dependencyPenalty, MaxDependencyPenalty)
 	charge(s.ArchEnabled, architecturePenalty, MaxArchitecturePenalty)
 
@@ -543,5 +580,5 @@ func (s *AnalyzeSummary) IsHealthy() bool {
 
 // HasIssues returns true if any issues were found
 func (s *AnalyzeSummary) HasIssues() bool {
-	return s.HighComplexityCount > 0 || s.DeadCodeCount > 0 || s.ClonePairs > 0 || s.HighCouplingClasses > 0
+	return s.HighComplexityCount > 0 || s.DeadCodeCount > 0 || s.ClonePairs > 0 || s.HighCouplingClasses > 0 || s.HighLCOMClasses > 0
 }

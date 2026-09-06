@@ -1,6 +1,8 @@
 package rust
 
 import (
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -258,4 +260,77 @@ fn outer(a: bool) {
 			t.Errorf("%s: nesting depth = %d, want %d", name, fn.NestingDepth, depth)
 		}
 	}
+}
+
+func TestMembers(t *testing.T) {
+	functions := analyze(t, `
+pub struct S<T> { a: T, b: u32, cb: fn() }
+
+impl<T> S<T> {
+    pub fn new() -> Self { Self { a: 1, b: 2, cb: || {} } }
+    pub fn fields(&mut self) { self.a = 1; self.b.c = 2; other.x = 3; let f = || self.a; }
+    pub fn calls(&self) { self.fields(); (self.cb)(); Self::helper(self); Self::new(); other.fields() }
+    fn helper(this: &Self) {}
+    fn boxed(self: Box<Self>) { self.b; }
+}
+
+struct Pair(u32, u32);
+impl Pair { fn sum(&self) -> u32 { self.0 + self.1 } }
+
+trait Tr {
+    fn default_method(&self) { self.other() }
+}
+
+mod inner {
+    pub fn free(&self) {}
+    pub struct N;
+    impl N { pub fn m(&self) { self.x; } }
+}
+`)
+
+	cases := []struct {
+		name     string
+		receiver string
+		hasSelf  bool
+		fields   []string
+		calls    []string
+	}{
+		{"S<T>::new", "S<T>", false, nil, nil},
+		{"S<T>::fields", "S<T>", true, []string{"a", "b"}, []string{}},
+		{"S<T>::calls", "S<T>", true, []string{"cb"}, []string{"fields", "helper", "new"}},
+		{"S<T>::helper", "S<T>", false, nil, nil},
+		{"S<T>::boxed", "S<T>", true, []string{"b"}, []string{}},
+		{"Pair::sum", "Pair", true, []string{"0", "1"}, []string{}},
+		{"Tr::default_method", "", true, nil, nil},
+		{"inner::free", "", true, nil, nil},
+		{"inner::N::m", "inner::N", true, []string{"x"}, []string{}},
+	}
+	for _, tc := range cases {
+		fn, ok := functions[tc.name]
+		if !ok {
+			t.Errorf("missing function %q", tc.name)
+			continue
+		}
+		if fn.Receiver != tc.receiver || fn.HasSelf != tc.hasSelf {
+			t.Errorf("%s: receiver %q hasSelf %v, want %q %v", tc.name, fn.Receiver, fn.HasSelf, tc.receiver, tc.hasSelf)
+		}
+		if got := slices.Sorted(maps.Keys(fn.Fields)); !equalStrings(got, tc.fields) {
+			t.Errorf("%s: fields = %v, want %v", tc.name, got, tc.fields)
+		}
+		if got := slices.Sorted(maps.Keys(fn.Calls)); !equalStrings(got, tc.calls) {
+			t.Errorf("%s: calls = %v, want %v", tc.name, got, tc.calls)
+		}
+	}
+}
+
+func equalStrings(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
 }

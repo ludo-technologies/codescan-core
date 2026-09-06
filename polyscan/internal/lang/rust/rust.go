@@ -40,14 +40,30 @@ var Language = &engine.Language{
   [(function_item) (impl_item) (trait_item) (mod_item)] @test
   (#eq? @attr "cfg") (#eq? @combinator "all") (#eq? @flag "test"))
 `,
-	// The function pattern of tree-sitter-rust's queries/tags.scm. Impl
+	// The function pattern of tree-sitter-rust's queries/tags.scm, with the
+	// self parameter captured in both its shorthand and typed forms. Impl
 	// and trait bodies are scopes, so their functions read Type::method,
-	// and so are modules.
-	Definitions: `(function_item name: (identifier) @name) @definition.function`,
+	// and so are modules. Only an impl makes its functions methods: a trait
+	// has no fields for its default methods to share, and a function of a
+	// module is free.
+	Definitions: `
+(function_item
+  name: (identifier) @name
+  parameters: (parameters [(self_parameter) (parameter pattern: (self))]? @self)) @definition.function
+`,
 	Scopes: `
 (impl_item type: (_) @receiver body: (declaration_list) @scope)
-(trait_item name: (type_identifier) @receiver body: (declaration_list) @scope)
-(mod_item name: (identifier) @receiver body: (declaration_list) @scope)
+(trait_item name: (type_identifier) @module body: (declaration_list) @scope)
+(mod_item name: (identifier) @module body: (declaration_list) @scope)
+`,
+	// A field is anything reached from self, including a tuple struct's
+	// numbered fields; a sibling method is a method call on self or an
+	// associated function called through Self.
+	Members: `
+(field_expression value: (self) field: [(field_identifier) (integer_literal)] @field)
+(call_expression function: (field_expression value: (self) field: (field_identifier) @call))
+((call_expression function: (scoped_identifier path: (identifier) @path name: (identifier) @call))
+  (#eq? @path "Self"))
 `,
 	// A match is exhaustive, so its last arm is the path the other arms
 	// branch away from and only arms followed by another arm count; an

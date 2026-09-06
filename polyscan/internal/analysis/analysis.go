@@ -27,6 +27,9 @@ type Options struct {
 	// Deps builds the package dependency graph. Go is the only language of
 	// the generic engine with one so far.
 	Deps bool
+	// LCOM measures the cohesion of each type's methods, for the languages
+	// whose definition declares how a method reaches its fields.
+	LCOM bool
 }
 
 // Function is the complexity result for one function.
@@ -87,6 +90,9 @@ type Report struct {
 	// Deps is the Go package dependency graph, in the shape the unified
 	// report renders, or nil when no Go package could be placed in one.
 	Deps *jsdomain.DependencyGraphResponse `json:"deps,omitempty"`
+	// Cohesion is the LCOM4 analysis, or nil when no analyzed file belongs
+	// to a language that has one.
+	Cohesion *Cohesion `json:"cohesion,omitempty"`
 	// FileLines is the source line count of every analyzed file, keyed by
 	// its reported path. The unified report shows lines per hotspot file,
 	// and this run is the only place the contents are in hand.
@@ -134,6 +140,8 @@ func Analyze(paths []string, options Options) (*Report, error) {
 	}
 	detectors := map[*engine.Language]*clone.Detector{}
 	cloneLines, cloneFiles := 0, 0
+	cohesion := newCohesionBuilder()
+	cohesionFiles := 0
 
 	for _, file := range files {
 		language, ok := lang.ByPath(file)
@@ -175,6 +183,17 @@ func Analyze(paths []string, options Options) (*Report, error) {
 				}
 			}
 		}
+		// Test files stay out for the same reason as in clone detection: a
+		// test's types are fixtures, and a test may add helper methods to
+		// a type its package declares.
+		if options.LCOM && language.HasCohesion() && !language.IsTestFile(display) {
+			cohesionFiles++
+			for _, fn := range functions {
+				if !fn.IsTest {
+					cohesion.add(language, display, fn)
+				}
+			}
+		}
 	}
 
 	if options.Complexity {
@@ -185,6 +204,9 @@ func Analyze(paths []string, options Options) (*Report, error) {
 		report.Clones = detectClones(detectors)
 		report.Clones.Statistics.LinesAnalyzed = cloneLines
 		report.Clones.Statistics.FilesAnalyzed = cloneFiles
+	}
+	if cohesionFiles > 0 {
+		report.Cohesion = cohesion.build()
 	}
 	return report, nil
 }

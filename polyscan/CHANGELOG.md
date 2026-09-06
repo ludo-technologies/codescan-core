@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Class cohesion (LCOM4) for Go and Rust. `polyscan analyze` measures, for each type, how many groups its methods fall into when two methods are connected by a shared field or a call between them, and scores the result in a Cohesion dimension with the thresholds pyscn uses (low up to 2, medium up to 5). A Go type is measured over every method of its package, since they may be spread across files; a Rust type over the `impl` blocks in a file. Methods without a receiver parameter, such as Rust associated functions and Go methods with an unnamed receiver, cannot touch instance state and are listed as excluded. Test files and `#[cfg(test)]` code stay out. `--select lcom` runs it alone
 - Dependency analysis for Go. `polyscan analyze` builds the package import graph of a Go tree, resolving each import through the nearest `go.mod`, and reports the same instability, abstractness, main-sequence distance, depth and longest chains it reports for JavaScript/TypeScript, scored in the Dependencies dimension. Abstractness is the share of a package's exported type declarations that are interfaces. Test files, `vendor` and `testdata` directories, and imports of other modules stay out of the graph, and a tree without a `go.mod` leaves the dimension out with a warning rather than scoring it clean
 
 ## [0.2.2] - 2026-09-05

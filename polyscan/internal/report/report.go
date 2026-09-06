@@ -23,7 +23,8 @@ import (
 // Combine merges the generic-engine report with the JavaScript/TypeScript
 // result into the shape the output formatter renders. Complexity, clone and
 // dependency results merge across languages; dead code and coupling exist
-// only for JavaScript/TypeScript and pass through. The file accounting adds
+// only for JavaScript/TypeScript and pass through, and cohesion only for the
+// generic engine. The file accounting adds
 // up across both sides, so the health score charges every unparsable file
 // whichever analyses ran. Either input may be nil when its side found no
 // files.
@@ -49,6 +50,7 @@ func Combine(generic *analysis.Report, javascript *js.Result) (domain.AnalysisRe
 		})
 		results.Complexity = mergeComplexity(complexity, results.Complexity)
 		results.Clone = mergeClones(genericClones(generic), results.Clone)
+		results.LCOM = genericCohesion(generic)
 		results.Deps, err = mergeDeps(generic.Deps, results.Deps)
 		if err != nil {
 			return domain.AnalysisResults{}, err
@@ -250,6 +252,53 @@ func genericClones(report *analysis.Report) *domain.CloneResponse {
 			FilesAnalyzed:     src.Statistics.FilesAnalyzed,
 		},
 		Success: true,
+	}
+}
+
+// genericCohesion converts the generic engine's cohesion analysis into the
+// formatter's LCOM response.
+func genericCohesion(report *analysis.Report) *domain.LCOMResponse {
+	if report.Cohesion == nil {
+		return nil
+	}
+	src := report.Cohesion
+	classes := make([]domain.ClassCohesion, 0, len(src.Classes))
+	for _, class := range src.Classes {
+		classes = append(classes, domain.ClassCohesion{
+			Name:      class.Name,
+			FilePath:  class.FilePath,
+			Language:  class.Language,
+			StartLine: class.StartLine,
+			EndLine:   class.EndLine,
+			Metrics: domain.LCOMMetrics{
+				LCOM4:             class.LCOM4,
+				TotalMethods:      class.TotalMethods,
+				ExcludedMethods:   class.ExcludedMethods,
+				InstanceVariables: len(class.InstanceVariables),
+				MethodGroups:      class.MethodGroups,
+			},
+			RiskLevel: domain.RiskLevel(class.RiskLevel),
+		})
+	}
+	return &domain.LCOMResponse{
+		Classes: classes,
+		Summary: domain.LCOMSummary{
+			TotalClasses:      src.Summary.TotalClasses,
+			AverageLCOM:       src.Summary.AverageLCOM,
+			MaxLCOM:           src.Summary.MaxLCOM,
+			MinLCOM:           src.Summary.MinLCOM,
+			LowRiskClasses:    src.Summary.LowRiskClasses,
+			MediumRiskClasses: src.Summary.MediumRiskClasses,
+			HighRiskClasses:   src.Summary.HighRiskClasses,
+		},
+		Warnings:    []string{},
+		Errors:      []string{},
+		GeneratedAt: time.Now().Format(time.RFC3339),
+		Version:     version.Version,
+		Config: map[string]interface{}{
+			"low_threshold":    coredomain.DefaultLCOMLowThreshold,
+			"medium_threshold": coredomain.DefaultLCOMMediumThreshold,
+		},
 	}
 }
 

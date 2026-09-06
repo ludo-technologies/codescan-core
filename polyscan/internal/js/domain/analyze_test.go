@@ -353,3 +353,30 @@ func TestCalculateHealthScore_MSDPenalty(t *testing.T) {
 		})
 	}
 }
+
+func TestCalculateHealthScore_CohesionCalibration(t *testing.T) {
+	// 10 high and 20 medium of 100 classes weigh 16%, which is 40% of the
+	// way to the 0.40 saturation: an 8-point penalty on the 20-point scale.
+	s := &AnalyzeSummary{
+		LCOMEnabled:       true,
+		LCOMClasses:       100,
+		HighLCOMClasses:   10,
+		MediumLCOMClasses: 20,
+		AverageLCOM:       1.8,
+	}
+	if err := s.CalculateHealthScore(); err != nil {
+		t.Fatalf("CalculateHealthScore: %v", err)
+	}
+	if s.CohesionScore != 60 {
+		t.Errorf("CohesionScore = %d, want 60", s.CohesionScore)
+	}
+	// Cohesion is the only enabled dimension, so it is the health score.
+	if s.HealthScore != 60 {
+		t.Errorf("HealthScore = %d, want 60", s.HealthScore)
+	}
+
+	s = &AnalyzeSummary{LCOMEnabled: true, LCOMClasses: 3, HighLCOMClasses: 2, MediumLCOMClasses: 2}
+	if err := s.CalculateHealthScore(); err == nil {
+		t.Error("expected a validation error when risk counts exceed the class count")
+	}
+}

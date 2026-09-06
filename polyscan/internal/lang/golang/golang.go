@@ -15,10 +15,11 @@ var Language = &engine.Language{
 	Grammar:    tsgo.GetLanguage(),
 	TestFiles:  []string{"*_test.go"},
 	// The definition patterns of tree-sitter-go's queries/tags.scm, with the
-	// receiver captured so methods report as "Type.Method". The Go
-	// specification allows a receiver type of T or *T, where T may carry
-	// type parameters, and the whole type may be parenthesized, which gofmt
-	// removes but the compiler accepts.
+	// receiver captured so methods report as "Type.Method" and its name, when
+	// the receiver has one, as the variable the method reaches its fields
+	// through. The Go specification allows a receiver type of T or *T, where
+	// T may carry type parameters, and the whole type may be parenthesized,
+	// which gofmt removes but the compiler accepts.
 	Definitions: `
 (function_declaration
   name: (identifier) @name) @definition.function
@@ -26,6 +27,7 @@ var Language = &engine.Language{
 (method_declaration
   receiver: (parameter_list
     (parameter_declaration
+      name: (identifier)? @self
       type: [
         (type_identifier) @receiver
         (pointer_type (type_identifier) @receiver)
@@ -40,6 +42,16 @@ var Language = &engine.Language{
       ]))
   name: (field_identifier) @name) @definition.method
 `,
+	// A field is anything selected from the receiver variable, so a promoted
+	// method of an embedded type counts as the embedded field it comes
+	// through; a sibling method is a call through the receiver. The engine
+	// discards a match whose @object is not the method's receiver.
+	Members: `
+(selector_expression operand: (identifier) @object field: (field_identifier) @field)
+(call_expression function: (selector_expression operand: (identifier) @object field: (field_identifier) @call))
+`,
+	// Methods of one type may be spread over the files of its package.
+	TypeSpansDirectory: true,
 	// default_case is deliberately absent: the default arm is the no-match
 	// path that the other cases already branch away from.
 	Decisions: `

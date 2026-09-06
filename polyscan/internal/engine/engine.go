@@ -30,14 +30,16 @@ type Language struct {
 	// Its @definition.<kind> capture spans the whole function and @name its
 	// name. An optional @receiver capture holds a receiver type declared on
 	// the function itself, as Go methods do, and is prefixed to the name
-	// with the ScopeSeparator.
+	// with the ScopeSeparator. An optional @self capture holds the receiver
+	// parameter of a method that has one.
 	Definitions string
 	// Scopes is an optional tree-sitter query for the named scopes that
 	// enclose functions, such as classes, impl blocks and namespaces:
-	// @scope spans the scope and @receiver holds its name. A function is
-	// named after the scopes that contain it, outermost first, so a member
-	// defined inside its class and one defined outside it with a qualified
-	// name read the same.
+	// @scope spans the scope and @receiver or @module holds its name. A
+	// function is named after the scopes that contain it, outermost first,
+	// so a member defined inside its class and one defined outside it with a
+	// qualified name read the same. A @receiver scope is a type whose
+	// functions are its methods; a @module scope only qualifies names.
 	Scopes string
 	// ScopeSeparator joins scope and receiver names to function names;
 	// empty means ".".
@@ -47,6 +49,18 @@ type Language struct {
 	// that contains it and counted under the capture's name, so the capture
 	// names double as the breakdown reported next to the complexity.
 	Decisions string
+	// Members is an optional tree-sitter query for what a method does with
+	// its own type: @field captures the name of a field it reads or writes
+	// and @call the name of a sibling method it calls. A match may also
+	// capture @object, the variable the access goes through, and then only
+	// counts when that variable is the method's receiver, as Go's named
+	// receivers require; a language whose receiver is a keyword, as Rust's
+	// self is, leaves @object out. The Definitions query marks the receiver
+	// with @self: a function with a receiver type but no @self, such as a
+	// Rust associated function, is a method that cannot touch instance
+	// state and is left out of cohesion. A language without a Members
+	// query has no cohesion analysis.
+	Members string
 	// Nesting is a tree-sitter query whose captures are the constructs that
 	// open a nesting level: branches, loops, switches and try blocks. A
 	// capture named @continuation marks a construct that continues the
@@ -68,6 +82,11 @@ type Language struct {
 	// report.
 	TestFiles []string
 	TestCode  string
+	// TypeSpansDirectory reports that the methods of one type may be
+	// declared across the files of a directory, as Go's may be across the
+	// files of a package, so cohesion is computed per directory and type
+	// rather than per file and type.
+	TypeSpansDirectory bool
 
 	compileOnce sync.Once
 	compileErr  error
@@ -75,6 +94,7 @@ type Language struct {
 	decisions   *sitter.Query
 	nesting     *sitter.Query
 	scopes      *sitter.Query
+	members     *sitter.Query
 	testCode    *sitter.Query
 	identifiers map[string]struct{}
 	literals    map[string]struct{}
@@ -144,22 +164,45 @@ type Function struct {
 	// IsTest reports that the function lies in a span the language's
 	// TestCode query captured.
 	IsTest bool
+	// Receiver is the qualified name of the type the function is a method
+	// of, or empty for a free function.
+	Receiver string
+	// HasSelf reports that the method has a receiver parameter through
+	// which it can reach instance state. Fields and Calls are the names of
+	// the fields it accesses and the sibling methods it calls, per the
+	// language's Members query.
+	HasSelf bool
+	Fields  map[string]bool
+	Calls   map[string]bool
 
 	startByte uint32
 	endByte   uint32
 	hasError  bool
+	self      string
 }
 
 const (
 	definitionPrefix    = "definition."
 	nameCapture         = "name"
 	receiverCapture     = "receiver"
+	selfCapture         = "self"
 	scopeCapture        = "scope"
+	moduleCapture       = "module"
+	fieldCapture        = "field"
+	callCapture         = "call"
+	objectCapture       = "object"
 	continuationCapture = "continuation"
 	operatorField       = "operator"
 )
 
-func (l *Language) separator() string {
+// HasCohesion reports whether the language declares what a method does
+// with its type, which the cohesion (LCOM4) analysis needs.
+func (l *Language) HasCohesion() bool {
+	return l.Members != ""
+}
+
+// Separator is the ScopeSeparator, or "." when none is set.
+func (l *Language) Separator() string {
 	if l.ScopeSeparator == "" {
 		return "."
 	}
@@ -225,6 +268,7 @@ func (l *Language) Analyze(source []byte) (*Result, error) {
 	l.applyScopes(root, source, functions)
 	l.countDecisions(root, source, functions)
 	l.measureNesting(root, source, functions)
+	l.collectMembers(root, source, functions)
 	l.markTests(root, source, functions)
 	for i := range functions {
 		functions[i].Complexity = 1
@@ -271,6 +315,14 @@ func (l *Language) compile() error {
 			}
 			l.scopes = scopes
 		}
+		if l.Members != "" {
+			members, err := sitter.NewQuery([]byte(l.Members), l.Grammar)
+			if err != nil {
+				l.compileErr = fmt.Errorf("%s members query: %w", l.Name, err)
+				return
+			}
+			l.members = members
+		}
 		if l.TestCode != "" {
 			testCode, err := sitter.NewQuery([]byte(l.TestCode), l.Grammar)
 			if err != nil {
@@ -311,14 +363,20 @@ func (l *Language) extractFunctions(root *sitter.Node, source []byte) []Function
 				fn.Name = capture.Node.Content(source)
 			case name == receiverCapture:
 				receiver = capture.Node.Content(source)
+			case name == selfCapture:
+				fn.self = capture.Node.Content(source)
 			}
 		}
 		if node == nil || fn.Name == "" {
 			return
 		}
 		if receiver != "" {
-			fn.Name = receiver + l.separator() + fn.Name
+			fn.Name = receiver + l.Separator() + fn.Name
+			fn.Receiver = receiver
 		}
+		// A blank receiver name cannot be referred to, so the method has no
+		// way to reach instance state.
+		fn.HasSelf = fn.self != "" && fn.self != "_"
 		fn.StartLine = int(node.StartPoint().Row) + 1
 		fn.StartColumn = int(node.StartPoint().Column) + 1
 		fn.EndLine = int(node.EndPoint().Row) + 1
@@ -464,15 +522,19 @@ func (l *Language) measureNesting(root *sitter.Node, source []byte, functions []
 	})
 }
 
-// scope is a named span from the Scopes query.
+// scope is a named span from the Scopes query. isType marks a @receiver
+// scope, whose functions are methods.
 type scope struct {
 	start, end uint32
 	name       string
+	isType     bool
 }
 
 // applyScopes prefixes each function with the names of the scopes that
-// contain it, outermost first. Functions and scopes are both in start
-// order, so one sweep with a stack of the open scopes covers them.
+// contain it, outermost first, and makes a function whose innermost scope
+// is a type a method of that type, named with the same prefix. Functions
+// and scopes are both in start order, so one sweep with a stack of the open
+// scopes covers them.
 func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Function) {
 	if l.scopes == nil {
 		return
@@ -485,6 +547,9 @@ func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Fun
 			case scopeCapture:
 				s.start, s.end = capture.Node.StartByte(), capture.Node.EndByte()
 			case receiverCapture:
+				s.name = capture.Node.Content(source)
+				s.isType = true
+			case moduleCapture:
 				s.name = capture.Node.Content(source)
 			}
 		}
@@ -506,13 +571,76 @@ func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Fun
 			open = open[:len(open)-1]
 		}
 		var names []string
+		innermostIsType := false
 		for _, s := range open {
 			if s.end >= fn.endByte {
 				names = append(names, s.name)
+				innermostIsType = s.isType
 			}
 		}
-		if len(names) > 0 {
-			fn.Name = strings.Join(names, l.separator()) + l.separator() + fn.Name
+		if len(names) == 0 {
+			continue
+		}
+		prefix := strings.Join(names, l.Separator())
+		fn.Name = prefix + l.Separator() + fn.Name
+		switch {
+		case fn.Receiver != "":
+			fn.Receiver = prefix + l.Separator() + fn.Receiver
+		case innermostIsType:
+			fn.Receiver = prefix
+		}
+	}
+}
+
+// collectMembers records, for each method with a receiver parameter, the
+// fields it accesses and the sibling methods it calls; a free function or a
+// method without one keeps nil maps. A name captured as
+// both, as the callee of a method call is by a field pattern that also
+// matches it, is a call.
+func (l *Language) collectMembers(root *sitter.Node, source []byte, functions []Function) {
+	if l.members == nil {
+		return
+	}
+	for i := range functions {
+		if functions[i].Receiver != "" && functions[i].HasSelf {
+			functions[i].Fields = map[string]bool{}
+			functions[i].Calls = map[string]bool{}
+		}
+	}
+	type member struct {
+		fn   *Function
+		name string
+	}
+	fields := map[uintptr]member{}
+	calls := map[uintptr]struct{}{}
+	ForEachMatch(l.members, root, source, func(match *sitter.QueryMatch) {
+		var fn *Function
+		var node *sitter.Node
+		var kind, object string
+		for _, capture := range match.Captures {
+			switch l.members.CaptureNameForId(capture.Index) {
+			case fieldCapture, callCapture:
+				kind = l.members.CaptureNameForId(capture.Index)
+				node = capture.Node
+				fn = innermost(functions, node.StartByte(), node.EndByte())
+			case objectCapture:
+				object = capture.Node.Content(source)
+			}
+		}
+		if fn == nil || fn.Fields == nil || (object != "" && object != fn.self) {
+			return
+		}
+		name := node.Content(source)
+		if kind == callCapture {
+			fn.Calls[name] = true
+			calls[node.ID()] = struct{}{}
+			return
+		}
+		fields[node.ID()] = member{fn, name}
+	})
+	for id, field := range fields {
+		if _, isCall := calls[id]; !isCall {
+			field.fn.Fields[field.name] = true
 		}
 	}
 }
