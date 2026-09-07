@@ -121,8 +121,8 @@ Clones are graded by how much the copies differ:
 | Type | Description | Default threshold | Enabled by default (JS/TS) |
 | --- | --- | --- | --- |
 | Type 1 | Identical apart from whitespace and comments | 0.85 | Yes |
-| Type 2 | Identical after renaming identifiers and literals | 0.75 | Yes |
-| Type 3 | Copies with statements added, removed, or changed | 0.70 | No (JS/TS); reported for Go, Rust and C++ |
+| Type 2 | Identical after renaming identifiers and literals | 0.80 for Go, Rust and C++; 0.75 for JS/TS | Yes |
+| Type 3 | Copies with statements added, removed, or changed | 0.80 for Go, Rust and C++; 0.70 for JS/TS | No (JS/TS); reported for Go, Rust and C++ |
 | Type 4 | Different code that computes the same thing | 0.65 | Yes (JS/TS only) |
 
 A fragment must be at least 10 lines and 20 syntax tree nodes to be considered, which keeps short boilerplate such as getters out of the results.
