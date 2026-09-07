@@ -59,8 +59,12 @@ type CBOMetrics struct {
 // ClassCoupling represents CBO analysis result for a single class
 type ClassCoupling struct {
 	// Class identification
-	Name      string
-	FilePath  string
+	Name     string
+	FilePath string
+	// Language names the language of a type the generic engine measured;
+	// the JavaScript/TypeScript analysis, whose unit is the file, leaves it
+	// empty.
+	Language  string `json:"language,omitempty" yaml:"language,omitempty"`
 	StartLine int
 	EndLine   int
 

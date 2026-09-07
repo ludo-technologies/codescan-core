@@ -282,7 +282,7 @@ func buildAnalyzeReportView(
 	view.Tabs = buildReportTabs(summary, results.Complexity, moduleQuality, results.Deps)
 	view.Dimensions = buildReportDimensions(summary, view.Tabs)
 	view.Verdict = buildReportVerdict(summary, view.Dimensions)
-	view.Facts = buildReportFacts(summary, moduleQuality)
+	view.Facts = buildReportFacts(summary, moduleQuality, countClasses(results.CBO, results.LCOM))
 	view.Hotspots = buildReportHotspots(moduleQuality, results.Clone, risk)
 	view.Histogram = buildReportHistogram(results.Complexity, risk)
 	view.Duplication = buildReportDuplication(summary, results.Clone)
@@ -404,6 +404,8 @@ func buildReportTabs(
 		}
 		tabs = append(tabs, tab)
 	}
+	// A type may be both highly coupled and poorly cohesive; those are two
+	// findings on it.
 	if summary.CBOEnabled || summary.LCOMEnabled {
 		tab := reportTab{ID: "classes", Label: "Classes", Count: summary.HighCouplingClasses + summary.HighLCOMClasses}
 		if tab.Count > 0 {
@@ -605,7 +607,7 @@ func isAre(n int) string {
 	return "are"
 }
 
-func buildReportFacts(summary *domain.AnalyzeSummary, moduleQuality []domain.ModuleQualityMetrics) []reportFact {
+func buildReportFacts(summary *domain.AnalyzeSummary, moduleQuality []domain.ModuleQualityMetrics, classes int) []reportFact {
 	var facts []reportFact
 	lines := 0
 	for _, module := range moduleQuality {
@@ -621,11 +623,32 @@ func buildReportFacts(summary *domain.AnalyzeSummary, moduleQuality []domain.Mod
 	if summary.ComplexityEnabled {
 		facts = append(facts, reportFact{Value: formatThousands(summary.TotalFunctions), Label: "functions"})
 	}
-	// CBO and LCOM cover disjoint languages, so their class counts add up.
-	if classes := summary.CBOClasses + summary.LCOMClasses; summary.CBOEnabled || summary.LCOMEnabled {
+	if summary.CBOEnabled || summary.LCOMEnabled {
 		facts = append(facts, reportFact{Value: formatThousands(classes), Label: "classes"})
 	}
 	return facts
+}
+
+// countClasses counts the distinct types the coupling and cohesion analyses
+// report between them. A Go or Rust type can appear in both, under one name
+// in one package directory or file; a JavaScript module appears in coupling
+// only.
+func countClasses(cbo *domain.CBOResponse, lcom *domain.LCOMResponse) int {
+	seen := map[string]bool{}
+	key := func(language, path, name string) string {
+		return language + "\x00" + filepath.Dir(path) + "\x00" + name
+	}
+	if cbo != nil {
+		for _, class := range cbo.Classes {
+			seen[key(class.Language, class.FilePath, class.Name)] = true
+		}
+	}
+	if lcom != nil {
+		for _, class := range lcom.Classes {
+			seen[key(class.Language, class.FilePath, class.Name)] = true
+		}
+	}
+	return len(seen)
 }
 
 // formatPercent renders a 0-1 ratio as a percentage. Similarity is reported
@@ -1125,8 +1148,8 @@ func cloneContent(fragment *domain.Clone) string {
 }
 
 // buildReportClasses summarizes the class analyses that ran: coupling for
-// JavaScript/TypeScript, cohesion for Go and Rust. The two cover disjoint
-// languages, so the class counts add up.
+// Go, Rust and JavaScript/TypeScript, cohesion for Go and Rust. A type the
+// two share is counted once.
 func buildReportClasses(summary *domain.AnalyzeSummary, cbo *domain.CBOResponse, lcom *domain.LCOMResponse) *reportClasses {
 	if !summary.CBOEnabled || cbo == nil {
 		cbo = nil
@@ -1137,9 +1160,8 @@ func buildReportClasses(summary *domain.AnalyzeSummary, cbo *domain.CBOResponse,
 	if cbo == nil && lcom == nil {
 		return nil
 	}
-	classes := &reportClasses{}
+	classes := &reportClasses{Total: countClasses(cbo, lcom)}
 	if cbo != nil {
-		classes.Total += cbo.Summary.TotalClasses
 		classes.Facts = append(classes.Facts,
 			reportKV{Key: "High coupling", Value: formatThousands(cbo.Summary.HighRiskClasses), Band: warnIfPositive(cbo.Summary.HighRiskClasses)},
 			reportKV{Key: "Medium coupling", Value: formatThousands(cbo.Summary.MediumRiskClasses)},
@@ -1154,7 +1176,6 @@ func buildReportClasses(summary *domain.AnalyzeSummary, cbo *domain.CBOResponse,
 		}
 	}
 	if lcom != nil {
-		classes.Total += lcom.Summary.TotalClasses
 		classes.Facts = append(classes.Facts,
 			reportKV{Key: "Low cohesion", Value: formatThousands(lcom.Summary.HighRiskClasses), Band: warnIfPositive(lcom.Summary.HighRiskClasses)},
 			reportKV{Key: "Medium cohesion", Value: formatThousands(lcom.Summary.MediumRiskClasses)},

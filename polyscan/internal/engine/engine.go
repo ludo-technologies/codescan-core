@@ -69,6 +69,21 @@ type Language struct {
 	// out of scope. A Members match whose @object is shadowed at that point
 	// is not an access to the receiver.
 	Bindings string
+	// Types is an optional tree-sitter query for the named types a file
+	// declares, which the coupling (CBO) analysis measures: @name is the
+	// type's name and the capture that spans the match says what it is,
+	// @type a concrete declaration, @abstract an interface or trait, @impl a
+	// block that adds to a type without declaring it, as a Rust impl does. A
+	// language without a Types query has no coupling analysis.
+	Types string
+	// References is an optional tree-sitter query, paired with Types, for
+	// the places a type is referred to: @reference is the name node, and an
+	// optional @package the qualifier it is reached through, as in Go's
+	// pkg.T. A match may capture @embedded instead of @reference for an
+	// embedded field or interface or an implemented trait, which is
+	// inheritance rather than use. A reference belongs to the type whose
+	// method or declaration contains it.
+	References string
 	// Nesting is a tree-sitter query whose captures are the constructs that
 	// open a nesting level: branches, loops, switches and try blocks. A
 	// capture named @continuation marks a construct that continues the
@@ -104,6 +119,8 @@ type Language struct {
 	scopes      *sitter.Query
 	members     *sitter.Query
 	bindings    *sitter.Query
+	types       *sitter.Query
+	references  *sitter.Query
 	testCode    *sitter.Query
 	identifiers map[string]struct{}
 	literals    map[string]struct{}
@@ -190,6 +207,39 @@ type Function struct {
 	self      string
 }
 
+// Type is one named type of a source file, with every reference to another
+// type that its declaration and its methods in the file make.
+type Type struct {
+	// Name is the type name, prefixed with its enclosing scopes the way
+	// function names are.
+	Name string
+	// StartLine and EndLine span the declaration, or the first block that
+	// adds to the type when the file declares it elsewhere or not at all.
+	StartLine int
+	EndLine   int
+	// Declared reports that the file declares the type. A file may only add
+	// methods to a type, as Go files of one package and Rust impl blocks do;
+	// such a type is not Declared here.
+	Declared bool
+	// Abstract reports an interface or trait.
+	Abstract bool
+	// IsTest reports that every part of the type lies in test code.
+	IsTest bool
+	// References lists the types referred to, in source order without
+	// duplicates.
+	References []Reference
+}
+
+// Reference is one type named by another type's declaration or methods.
+type Reference struct {
+	// Name is the referenced type's name; Package the qualifier it is
+	// reached through, or empty for an unqualified name.
+	Name    string
+	Package string
+	// Embedded marks an embedded field or interface or an implemented trait.
+	Embedded bool
+}
+
 const (
 	definitionPrefix    = "definition."
 	nameCapture         = "name"
@@ -203,6 +253,12 @@ const (
 	bindingCapture      = "binding"
 	declarationCapture  = "declaration"
 	continuationCapture = "continuation"
+	typeCapture         = "type"
+	abstractCapture     = "abstract"
+	implCapture         = "impl"
+	referenceCapture    = "reference"
+	embeddedCapture     = "embedded"
+	packageCapture      = "package"
 	operatorField       = "operator"
 )
 
@@ -210,6 +266,12 @@ const (
 // with its type, which the cohesion (LCOM4) analysis needs.
 func (l *Language) HasCohesion() bool {
 	return l.Members != ""
+}
+
+// HasCoupling reports whether the language declares its types and their
+// references, which the coupling (CBO) analysis needs.
+func (l *Language) HasCoupling() bool {
+	return l.Types != ""
 }
 
 // Separator is the ScopeSeparator, or "." when none is set.
@@ -244,6 +306,10 @@ func (l *Language) IsTestFile(path string) bool {
 // Result is the analysis of one file.
 type Result struct {
 	Functions []Function
+	// Types lists the file's named types with their references, per the
+	// language's Types and References queries, in order of first appearance.
+	// It is nil for a language without a Types query.
+	Types []Type
 	// SyntaxError is the first syntax error in the file, or nil when the
 	// file parsed cleanly. A tree-sitter parse always yields a tree and
 	// recovers around what it cannot parse, so the functions that contain
@@ -276,11 +342,14 @@ func (l *Language) Analyze(source []byte) (*Result, error) {
 	result := &Result{SyntaxError: checkSyntax(root)}
 
 	functions := l.extractFunctions(root, source)
-	l.applyScopes(root, source, functions)
+	scopes := l.collectScopes(root, source)
+	applyScopes(scopes, functions, l.Separator())
 	l.countDecisions(root, source, functions)
 	l.measureNesting(root, source, functions)
 	l.collectMembers(root, source, functions)
-	l.markTests(root, source, functions)
+	tests := l.testSpans(root, source)
+	markTests(tests, functions)
+	result.Types = l.collectTypes(root, source, functions, scopes, tests)
 	for i := range functions {
 		functions[i].Complexity = 1
 		for _, count := range functions[i].Decisions {
@@ -341,6 +410,19 @@ func (l *Language) compile() error {
 				return
 			}
 			l.bindings = bindings
+		}
+		if l.Types != "" {
+			types, err := sitter.NewQuery([]byte(l.Types), l.Grammar)
+			if err != nil {
+				l.compileErr = fmt.Errorf("%s types query: %w", l.Name, err)
+				return
+			}
+			references, err := sitter.NewQuery([]byte(l.References), l.Grammar)
+			if err != nil {
+				l.compileErr = fmt.Errorf("%s references query: %w", l.Name, err)
+				return
+			}
+			l.types, l.references = types, references
 		}
 		if l.TestCode != "" {
 			testCode, err := sitter.NewQuery([]byte(l.TestCode), l.Grammar)
@@ -549,14 +631,11 @@ type scope struct {
 	isType     bool
 }
 
-// applyScopes prefixes each function with the names of the scopes that
-// contain it, outermost first, and makes a function whose innermost scope
-// is a type a method of that type, named with the same prefix. Functions
-// and scopes are both in start order, so one sweep with a stack of the open
-// scopes covers them.
-func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Function) {
+// collectScopes gathers the file's named scopes in start order, or nothing
+// for a language without a Scopes query.
+func (l *Language) collectScopes(root *sitter.Node, source []byte) []scope {
 	if l.scopes == nil {
-		return
+		return nil
 	}
 	var scopes []scope
 	ForEachMatch(l.scopes, root, source, func(match *sitter.QueryMatch) {
@@ -577,34 +656,39 @@ func (l *Language) applyScopes(root *sitter.Node, source []byte, functions []Fun
 		}
 	})
 	sort.Slice(scopes, func(i, j int) bool { return scopes[i].start < scopes[j].start })
+	return scopes
+}
 
-	var open []scope
-	next := 0
+// enclosing returns the names of the scopes that contain the byte range,
+// outermost first, and whether the innermost of them is a type.
+func enclosing(scopes []scope, start, end uint32) (names []string, innermostIsType bool) {
+	for _, s := range scopes {
+		if s.start > start {
+			break
+		}
+		if s.start <= start && s.end >= end {
+			names = append(names, s.name)
+			innermostIsType = s.isType
+		}
+	}
+	return names, innermostIsType
+}
+
+// applyScopes prefixes each function with the names of the scopes that
+// contain it, outermost first, and makes a function whose innermost scope
+// is a type a method of that type, named with the same prefix.
+func applyScopes(scopes []scope, functions []Function, separator string) {
 	for i := range functions {
 		fn := &functions[i]
-		for next < len(scopes) && scopes[next].start <= fn.startByte {
-			open = append(open, scopes[next])
-			next++
-		}
-		for len(open) > 0 && open[len(open)-1].end < fn.startByte {
-			open = open[:len(open)-1]
-		}
-		var names []string
-		innermostIsType := false
-		for _, s := range open {
-			if s.end >= fn.endByte {
-				names = append(names, s.name)
-				innermostIsType = s.isType
-			}
-		}
+		names, innermostIsType := enclosing(scopes, fn.startByte, fn.endByte)
 		if len(names) == 0 {
 			continue
 		}
-		prefix := strings.Join(names, l.Separator())
-		fn.Name = prefix + l.Separator() + fn.Name
+		prefix := strings.Join(names, separator)
+		fn.Name = prefix + separator + fn.Name
 		switch {
 		case fn.Receiver != "":
-			fn.Receiver = prefix + l.Separator() + fn.Receiver
+			fn.Receiver = prefix + separator + fn.Receiver
 		case innermostIsType:
 			fn.Receiver = prefix
 		}
@@ -720,21 +804,228 @@ func (b bindings) shadows(name string, position uint32) bool {
 	return false
 }
 
-// markTests flags every function inside a span the TestCode query captures.
-func (l *Language) markTests(root *sitter.Node, source []byte, functions []Function) {
+// span is a byte range of the source.
+type span struct {
+	start, end uint32
+}
+
+func (s span) contains(start, end uint32) bool {
+	return s.start <= start && s.end >= end
+}
+
+// testSpans returns the spans the TestCode query captures.
+func (l *Language) testSpans(root *sitter.Node, source []byte) []span {
 	if l.testCode == nil {
-		return
+		return nil
 	}
+	var spans []span
 	ForEachMatch(l.testCode, root, source, func(match *sitter.QueryMatch) {
 		for _, capture := range match.Captures {
-			start, end := capture.Node.StartByte(), capture.Node.EndByte()
-			for i := range functions {
-				if functions[i].startByte >= start && functions[i].endByte <= end {
-					functions[i].IsTest = true
-				}
-			}
+			spans = append(spans, span{capture.Node.StartByte(), capture.Node.EndByte()})
 		}
 	})
+	return spans
+}
+
+func inTest(tests []span, start, end uint32) bool {
+	for _, test := range tests {
+		if test.contains(start, end) {
+			return true
+		}
+	}
+	return false
+}
+
+// markTests flags every function inside a test span.
+func markTests(tests []span, functions []Function) {
+	for i := range functions {
+		if inTest(tests, functions[i].startByte, functions[i].endByte) {
+			functions[i].IsTest = true
+		}
+	}
+}
+
+// typeSpan is one match of the Types query: a declaration or a block that
+// adds to a type.
+type typeSpan struct {
+	span
+	startLine, endLine int
+	name               string
+	declared           bool
+	abstract           bool
+}
+
+// collectTypes gathers the file's types and attributes every reference to
+// the type whose declaration or method contains it. A reference inside a
+// method belongs to the method's receiver type; inside a function without a
+// receiver, such as a trait's default method, to the innermost type span
+// around that function; outside any function, to the innermost type span
+// around it; and a reference in none of these, as in a free function or a
+// package-level variable, belongs to no type. A type declared inside a
+// function is local to it and is not a type of the file. References in test
+// code are dropped, and a type is a test type when every span of it is.
+func (l *Language) collectTypes(root *sitter.Node, source []byte, functions []Function, scopes []scope, tests []span) []Type {
+	if l.types == nil {
+		return nil
+	}
+	separator := l.Separator()
+
+	// A declaration that two patterns match, as an interface does when one
+	// pattern matches every type and another only interfaces, is one span.
+	byNode := map[uintptr]int{}
+	names := map[uintptr]struct{}{}
+	var spans []typeSpan
+	ForEachMatch(l.types, root, source, func(match *sitter.QueryMatch) {
+		var node, name *sitter.Node
+		var kind string
+		for _, capture := range match.Captures {
+			switch captureName := l.types.CaptureNameForId(capture.Index); captureName {
+			case nameCapture:
+				name = capture.Node
+			case typeCapture, abstractCapture, implCapture:
+				node = capture.Node
+				kind = captureName
+			}
+		}
+		if node == nil || name == nil {
+			return
+		}
+		names[name.ID()] = struct{}{}
+		if i, ok := byNode[node.ID()]; ok {
+			spans[i].abstract = spans[i].abstract || kind == abstractCapture
+			return
+		}
+		if innermost(functions, node.StartByte(), node.EndByte()) != nil {
+			return
+		}
+		s := typeSpan{
+			span:      span{node.StartByte(), node.EndByte()},
+			startLine: int(node.StartPoint().Row) + 1,
+			endLine:   int(node.EndPoint().Row) + 1,
+			name:      name.Content(source),
+			declared:  kind != implCapture,
+			abstract:  kind == abstractCapture,
+		}
+		if prefix, _ := enclosing(scopes, s.start, s.end); len(prefix) > 0 {
+			s.name = strings.Join(prefix, separator) + separator + s.name
+		}
+		byNode[node.ID()] = len(spans)
+		spans = append(spans, s)
+	})
+	sort.SliceStable(spans, func(i, j int) bool { return spans[i].start < spans[j].start })
+
+	var types []Type
+	index := map[string]int{}
+	typeOf := func(name string) *Type {
+		if i, ok := index[name]; ok {
+			return &types[i]
+		}
+		index[name] = len(types)
+		types = append(types, Type{Name: name, IsTest: true})
+		return &types[len(types)-1]
+	}
+	for _, s := range spans {
+		t := typeOf(s.name)
+		t.IsTest = t.IsTest && inTest(tests, s.start, s.end)
+		if s.declared && !t.Declared || t.StartLine == 0 {
+			t.StartLine, t.EndLine = s.startLine, s.endLine
+		}
+		t.Declared = t.Declared || s.declared
+		t.Abstract = t.Abstract || s.abstract
+	}
+	for i := range functions {
+		if fn := &functions[i]; fn.Receiver != "" && !fn.IsTest {
+			t := typeOf(fn.Receiver)
+			t.IsTest = false
+			if t.StartLine == 0 {
+				t.StartLine, t.EndLine = fn.StartLine, fn.EndLine
+			}
+		}
+	}
+
+	// owner returns the type a reference at the byte range belongs to.
+	owner := func(start, end uint32) *Type {
+		if fn := innermost(functions, start, end); fn != nil {
+			if fn.IsTest {
+				return nil
+			}
+			if fn.Receiver != "" {
+				return typeOf(fn.Receiver)
+			}
+			start, end = fn.startByte, fn.endByte
+		}
+		var found *typeSpan
+		for i := range spans {
+			if spans[i].start > start {
+				break
+			}
+			if spans[i].contains(start, end) {
+				found = &spans[i]
+			}
+		}
+		if found == nil || inTest(tests, found.start, found.end) {
+			return nil
+		}
+		return typeOf(found.name)
+	}
+
+	type reference struct {
+		node     *sitter.Node
+		pkg      *sitter.Node
+		embedded bool
+	}
+	refs := map[uintptr]reference{}
+	var order []uintptr
+	ForEachMatch(l.references, root, source, func(match *sitter.QueryMatch) {
+		var ref reference
+		for _, capture := range match.Captures {
+			switch l.references.CaptureNameForId(capture.Index) {
+			case referenceCapture:
+				ref.node = capture.Node
+			case embeddedCapture:
+				ref.node = capture.Node
+				ref.embedded = true
+			case packageCapture:
+				ref.pkg = capture.Node
+			}
+		}
+		if ref.node == nil {
+			return
+		}
+		if _, isName := names[ref.node.ID()]; isName {
+			return
+		}
+		// The plain pattern also matches the name inside a qualified or
+		// embedded form; the more specific match wins.
+		if existing, ok := refs[ref.node.ID()]; ok {
+			if existing.embedded || (existing.pkg != nil && ref.pkg == nil) {
+				return
+			}
+		} else {
+			order = append(order, ref.node.ID())
+		}
+		refs[ref.node.ID()] = ref
+	})
+	seen := map[string]map[Reference]bool{}
+	for _, id := range order {
+		ref := refs[id]
+		t := owner(ref.node.StartByte(), ref.node.EndByte())
+		if t == nil {
+			continue
+		}
+		r := Reference{Name: ref.node.Content(source), Embedded: ref.embedded}
+		if ref.pkg != nil {
+			r.Package = ref.pkg.Content(source)
+		}
+		if seen[t.Name] == nil {
+			seen[t.Name] = map[Reference]bool{}
+		}
+		if !seen[t.Name][r] {
+			seen[t.Name][r] = true
+			t.References = append(t.References, r)
+		}
+	}
+	return types
 }
 
 // innermost returns the function whose span most tightly contains the byte

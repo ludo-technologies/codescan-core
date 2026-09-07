@@ -68,6 +68,33 @@ var Language = &engine.Language{
 (func_literal parameters: (parameter_list [(parameter_declaration name: (identifier) @binding) (variadic_parameter_declaration name: (identifier) @binding)] @declaration)) @scope
 (func_literal result: (parameter_list (parameter_declaration name: (identifier) @binding) @declaration)) @scope
 `,
+	// Every type_spec is a type; an alias (type_alias) only names another.
+	// The span is the spec rather than the whole declaration, since a
+	// grouped declaration holds several specs. An interface matches both
+	// patterns and the engine keeps one span, abstract.
+	Types: `
+(type_spec name: (type_identifier) @name) @type
+(type_spec name: (type_identifier) @name type: (interface_type)) @abstract
+`,
+	// Every type_identifier is a reference, including predeclared types and
+	// type parameters, which the analysis drops because nothing declares
+	// them; the qualified form adds the package. An embedded field is a
+	// field_declaration without a name, and the star of an embedded *T is a
+	// bare token, so the type is the identifier itself. An embedded
+	// interface is a type_elem of one term; a type set such as int | MyInt
+	// is a constraint, not embedding.
+	References: `
+(type_identifier) @reference
+(qualified_type package: (package_identifier) @package name: (type_identifier) @reference)
+(field_declaration !name type: [
+  (type_identifier) @embedded
+  (qualified_type package: (package_identifier) @package name: (type_identifier) @embedded)
+  (generic_type type: (type_identifier) @embedded)
+  (generic_type type: (qualified_type package: (package_identifier) @package name: (type_identifier) @embedded))
+])
+(interface_type (type_elem . (type_identifier) @embedded .))
+(interface_type (type_elem . (qualified_type package: (package_identifier) @package name: (type_identifier) @embedded) .))
+`,
 	// Methods of one type may be spread over the files of its package.
 	TypeSpansDirectory: true,
 	// default_case is deliberately absent: the default arm is the no-match

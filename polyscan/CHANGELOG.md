@@ -7,14 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Class coupling (CBO) for Go and Rust. `polyscan analyze` counts, for each type, the other types of the analyzed tree that its declaration and methods refer to, and scores the result in the Coupling dimension with the thresholds pyscn uses (low up to 3, medium up to 7). Only types the tree declares count: for Go an unqualified name is a type of the same package and `pkg.T` resolves through `go.mod` to a package of the tree, for Rust a bare name resolves to a declaration in the same file or elsewhere in the tree, so the standard library and other modules never count. An embedded field or interface and an implemented trait count as inheritance. Types coupled to nothing, test files and `#[cfg(test)]` code stay out. A Go tree without a `go.mod` keeps only its same-package references, with a warning. In the report a Go or Rust type can now have both a coupling and a cohesion row, and the class count in the overview counts it once
+- Class cohesion (LCOM4) for Go and Rust. `polyscan analyze` measures, for each type, how many groups its methods fall into when two methods are connected by a shared field or a call between them, and scores the result in a Cohesion dimension with the thresholds pyscn uses (low up to 2, medium up to 5). A Go type is measured over every method of its package, since they may be spread across files; a Rust type over the `impl` blocks in a file. Methods without a receiver parameter, such as Rust associated functions and Go methods with an unnamed receiver, cannot touch instance state and are listed as excluded. Test files and `#[cfg(test)]` code stay out. `--select lcom` runs it alone
+- Dependency analysis for Go. `polyscan analyze` builds the package import graph of a Go tree, resolving each import through the nearest `go.mod`, and reports the same instability, abstractness, main-sequence distance, depth and longest chains it reports for JavaScript/TypeScript, scored in the Dependencies dimension. Abstractness is the share of a package's exported type declarations that are interfaces. Test files, `vendor` and `testdata` directories, and imports of other modules stay out of the graph, and a tree without a `go.mod` leaves the dimension out with a warning rather than scoring it clean
+
+### Changed
+
+- A Rust `impl` names its type by the bare identifier, so the methods of `impl G<T>` read `G::m` instead of `G<T>::m`, and `impl G<i32>` and `impl G<String>` are blocks of one type in the cohesion and coupling analyses. An impl for a reference type such as `&Foo` is a block of `Foo`
+
 ### Fixed
 
 - Go, Rust and C++ analysis no longer walks into version control, dependency and build output directories. A directory whose name starts with a dot, such as `.git`, and `node_modules`, `vendor`, `target`, `build`, `dist` and `third_party` are skipped; a path named on the command line is still analyzed whatever it is called. Before, a Rust project's `target` directory and a Go project's `vendor` directory were analyzed as if they were the project's own code
-
-### Added
-
-- Class cohesion (LCOM4) for Go and Rust. `polyscan analyze` measures, for each type, how many groups its methods fall into when two methods are connected by a shared field or a call between them, and scores the result in a Cohesion dimension with the thresholds pyscn uses (low up to 2, medium up to 5). A Go type is measured over every method of its package, since they may be spread across files; a Rust type over the `impl` blocks in a file. Methods without a receiver parameter, such as Rust associated functions and Go methods with an unnamed receiver, cannot touch instance state and are listed as excluded. Test files and `#[cfg(test)]` code stay out. `--select lcom` runs it alone
-- Dependency analysis for Go. `polyscan analyze` builds the package import graph of a Go tree, resolving each import through the nearest `go.mod`, and reports the same instability, abstractness, main-sequence distance, depth and longest chains it reports for JavaScript/TypeScript, scored in the Dependencies dimension. Abstractness is the share of a package's exported type declarations that are interfaces. Test files, `vendor` and `testdata` directories, and imports of other modules stay out of the graph, and a tree without a `go.mod` leaves the dimension out with a warning rather than scoring it clean
 
 ## [0.2.2] - 2026-09-05
 

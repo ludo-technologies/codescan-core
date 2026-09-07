@@ -2,6 +2,7 @@ package rust
 
 import (
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -39,14 +40,14 @@ fn with_closure() { let f = |x| x; f(1); }
 `)
 
 	want := map[string]string{
-		"free":          "function",
-		"S::method":     "function",
-		"G<T>::generic": "function",
-		"S::fmt":        "function",
-		"Tr::provided":  "function",
-		"m::inner":      "function",
-		"m::nested":     "function",
-		"with_closure":  "function",
+		"free":         "function",
+		"S::method":    "function",
+		"G::generic":   "function",
+		"S::fmt":       "function",
+		"Tr::provided": "function",
+		"m::inner":     "function",
+		"m::nested":    "function",
+		"with_closure": "function",
 	}
 	if len(functions) != len(want) {
 		t.Fatalf("got %d functions, want %d: %v", len(functions), len(want), functions)
@@ -295,11 +296,11 @@ mod inner {
 		fields   []string
 		calls    []string
 	}{
-		{"S<T>::new", "S<T>", false, nil, nil},
-		{"S<T>::fields", "S<T>", true, []string{"a", "b"}, []string{}},
-		{"S<T>::calls", "S<T>", true, []string{"cb"}, []string{"fields", "helper", "new"}},
-		{"S<T>::helper", "S<T>", false, nil, nil},
-		{"S<T>::boxed", "S<T>", true, []string{"b"}, []string{}},
+		{"S::new", "S", false, nil, nil},
+		{"S::fields", "S", true, []string{"a", "b"}, []string{}},
+		{"S::calls", "S", true, []string{"cb"}, []string{"fields", "helper", "new"}},
+		{"S::helper", "S", false, nil, nil},
+		{"S::boxed", "S", true, []string{"b"}, []string{}},
 		{"Pair::sum", "Pair", true, []string{"0", "1"}, []string{}},
 		{"Tr::default_method", "", true, nil, nil},
 		{"inner::free", "", true, nil, nil},
@@ -333,4 +334,57 @@ func equalStrings(got, want []string) bool {
 		}
 	}
 	return true
+}
+
+func TestTypesAndReferences(t *testing.T) {
+	result, err := Language.Analyze([]byte(`
+use std::collections::HashMap;
+pub struct Foo { a: Bar, m: HashMap<String, Baz> }
+pub enum Color { Red, Green(Bar) }
+pub trait Tr { fn d(&self) -> Bar { Bar::new() } fn r(&self); }
+impl Tr for Foo { fn r(&self) {} }
+impl<T: Clone> G<T> { fn new() -> Self { Self::default() } }
+impl Iterator for &Foo { type Item = Baz; fn next(&mut self) -> Option<Baz> { None } }
+impl dyn Tr { fn x(&self) -> Qux { Qux } }
+mod m { pub struct Inner(super::Bar); impl Inner { fn f(&self) { let Inner(b) = self; match c { Color::Red => {} } } } }
+fn free() -> Bar { Foo::new() }
+#[cfg(test)]
+mod tests { struct Fixture; impl Fixture { fn f(&self) -> Bar {} } impl Foo { fn t(&self) -> Baz {} } }
+`))
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	want := []engine.Type{
+		// Foo's declaration, its two impls, the impl for &Foo; the impl in
+		// the test module is a test span of another scope.
+		{Name: "Foo", StartLine: 3, EndLine: 3, Declared: true, References: []engine.Reference{
+			{Name: "Bar"}, {Name: "HashMap"}, {Name: "String"}, {Name: "Baz"},
+			{Name: "Tr", Embedded: true}, {Name: "Iterator", Embedded: true}, {Name: "Item"}, {Name: "Option"},
+		}},
+		{Name: "Color", StartLine: 4, EndLine: 4, Declared: true, References: []engine.Reference{{Name: "Bar"}}},
+		// A default method's references belong to the trait.
+		{Name: "Tr", StartLine: 5, EndLine: 5, Declared: true, Abstract: true, References: []engine.Reference{{Name: "Bar"}}},
+		// An impl of an undeclared type is not declared here.
+		{Name: "G", StartLine: 7, EndLine: 7, References: []engine.Reference{{Name: "T"}, {Name: "Clone"}}},
+		{Name: "m::Inner", StartLine: 10, EndLine: 10, Declared: true, References: []engine.Reference{
+			{Name: "Bar"}, {Name: "Inner"}, {Name: "Color"},
+		}},
+		{Name: "tests::Fixture", StartLine: 13, EndLine: 13, Declared: true, IsTest: true},
+		{Name: "tests::Foo", StartLine: 13, EndLine: 13, IsTest: true},
+	}
+	if !reflect.DeepEqual(result.Types, want) {
+		t.Errorf("types = %+v\nwant   %+v", result.Types, want)
+	}
+	if fn := result.Functions[0]; fn.Name != "Tr::d" || fn.Receiver != "" {
+		t.Errorf("trait default method = %+v, want Tr::d without a receiver", fn)
+	}
+	for _, name := range []string{"Foo::r", "G::new", "Foo::next", "dyn Tr::x", "m::Inner::f"} {
+		found := false
+		for _, fn := range result.Functions {
+			found = found || fn.Name == name
+		}
+		if !found {
+			t.Errorf("missing function %q", name)
+		}
+	}
 }

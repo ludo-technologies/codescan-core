@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseFile(t *testing.T) {
-	info, err := parseFile([]byte(`package model
+	info, err := ParseFile([]byte(`package model
 
 import "fmt"
 
@@ -32,9 +32,12 @@ var _ = fmt.Sprint(strings.ToUpper(alias.X), Pi)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &fileInfo{
-		Package:            "model",
-		Imports:            []string{"fmt", "strings", "embed", "math", "example.com/x/y", "example.com/raw"},
+	want := &FileInfo{
+		Package: "model",
+		Imports: []Import{
+			{Path: "fmt"}, {Path: "strings"}, {Name: "_", Path: "embed"}, {Name: ".", Path: "math"},
+			{Name: "alias", Path: "example.com/x/y"}, {Path: "example.com/raw"},
+		},
 		ExportedTypes:      3,
 		ExportedInterfaces: 2,
 	}
@@ -44,7 +47,7 @@ var _ = fmt.Sprint(strings.ToUpper(alias.X), Pi)
 }
 
 func TestParseFileWithoutPackageClause(t *testing.T) {
-	if _, err := parseFile([]byte("func main() {}\n")); err == nil {
+	if _, err := ParseFile([]byte("func main() {}\n")); err == nil {
 		t.Error("expected an error for a file without a package clause")
 	}
 }

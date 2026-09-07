@@ -106,3 +106,34 @@ func (m *module) importPath(dir string) (path string, ignored bool, err error) {
 	}
 	return m.path + "/" + rel, false, nil
 }
+
+// Resolver maps directories to import paths and remembers every go.mod it
+// finds, so an analysis that asks about each directory of a tree reads each
+// go.mod once.
+type Resolver struct {
+	finder *moduleFinder
+}
+
+// NewResolver returns an empty Resolver.
+func NewResolver() *Resolver {
+	return &Resolver{finder: newModuleFinder()}
+}
+
+// ImportPath returns the import path of the package in dir. The path is
+// empty when the go tool would not build dir as part of a module: noModule
+// reports that no go.mod lies at or above it, and otherwise the directory is
+// one the tool ignores, such as vendor or testdata.
+func (r *Resolver) ImportPath(dir string) (path string, noModule bool, err error) {
+	m, err := r.finder.find(dir)
+	if err != nil {
+		return "", false, err
+	}
+	if m == nil {
+		return "", true, nil
+	}
+	path, ignored, err := m.importPath(dir)
+	if err != nil || ignored {
+		return "", false, err
+	}
+	return path, false, nil
+}

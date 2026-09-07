@@ -81,9 +81,7 @@ func TestCBOService_sortClasses_TiesOrderedBySourceLocation(t *testing.T) {
 // A tie at the top-10 cutoff must not let ranking membership depend on input
 // order: previously, whichever tied class the concurrent schedule happened to
 // place earlier won the last slot.
-func TestCBOService_generateSummary_MostCoupledClassesStableAtTiedCutoff(t *testing.T) {
-	service := NewCBOServiceWithDefaults()
-
+func TestSummarizeCoupling_MostCoupledClassesStableAtTiedCutoff(t *testing.T) {
 	classes := make([]domain.ClassCoupling, 0, mostCoupledClassesLimit+2)
 	for i := 0; i < mostCoupledClassesLimit-1; i++ {
 		classes = append(classes, couplingClass("Popular", "src/popular.js", 100+i))
@@ -95,8 +93,8 @@ func TestCBOService_generateSummary_MostCoupledClassesStableAtTiedCutoff(t *test
 		couplingClass("TieB", "src/tie_b.js", 13),
 	)
 
-	forward := service.generateSummary(classes, 1, domain.CBORequest{})
-	backward := service.generateSummary(reversed(classes), 1, domain.CBORequest{})
+	forward := SummarizeCoupling(classes, 1)
+	backward := SummarizeCoupling(reversed(classes), 1)
 
 	if len(forward.MostCoupledClasses) != mostCoupledClassesLimit {
 		t.Fatalf("expected %d most coupled classes, got %d", mostCoupledClassesLimit, len(forward.MostCoupledClasses))

@@ -25,7 +25,7 @@ polyscan analyze src/ test/ scripts/build.ts             # Several paths at once
 
 | Flag | Short | Default | Description |
 | --- | --- | --- | --- |
-| `--select` | `-s` | `complexity,deadcode,clone,cbo,deps` | Comma-separated list of analyses to run. `deps` applies to Go and JavaScript/TypeScript; `deadcode` and `cbo` to JavaScript/TypeScript only |
+| `--select` | `-s` | `complexity,deadcode,clone,cbo,lcom,deps` | Comma-separated list of analyses to run. `deps` applies to Go and JavaScript/TypeScript; `cbo` to Go, Rust and JavaScript/TypeScript; `lcom` to Go and Rust; `deadcode` to JavaScript/TypeScript only |
 | `--format` | `-f` | `html` | Output format. Accepts `html`, `json`, or `text` |
 | `--no-open` | | `false` | Write the HTML report without opening a browser |
 | `--output` | `-o` | `polyscan-report.html` | Path for the HTML report file |
@@ -35,7 +35,7 @@ The configuration file for the JavaScript/TypeScript analysis is discovered auto
 
 ## Language coverage
 
-The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dependency analysis covers Go and JavaScript/TypeScript. Dead code and coupling (CBO) exist for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.
+The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dependency analysis covers Go and JavaScript/TypeScript. Coupling (CBO) covers Go, Rust and JavaScript/TypeScript, and cohesion (LCOM4) Go and Rust. Dead code exists for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.
 
 For Go, Rust and C++, version control, dependency and build output directories are not walked: any directory whose name starts with a dot, and `node_modules`, `vendor`, `target`, `build`, `dist` and `third_party`. A path named on the command line is analyzed whatever it is called. JavaScript/TypeScript exclusions come from `jscan.config.json`. A file that cannot be read is skipped and listed under errors. A file with a syntax error is analyzed without the functions that contain it, counted as partial, and listed under warnings. C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.
 
@@ -131,11 +131,15 @@ In Go, Rust and C++, test code is analyzed for complexity but excluded from clon
 
 ### Coupling between objects {#cbo}
 
-*JavaScript/TypeScript only.* Counts how many other types each unit depends on, across four kinds of dependency: imports, `new` expressions, TypeScript type annotations, and method calls on other objects.
+*Go, Rust and JavaScript/TypeScript.* Counts how many other types each unit depends on.
 
-!!! info "This metric is per file, not per class"
+For Go and Rust the unit is a type: a Go struct, interface or other named type, a Rust struct, enum, union or trait. Its dependencies are the types named by its declaration (fields, embedded types, method signatures of an interface) and by the bodies of its methods, and only types declared somewhere in the analyzed tree count. A Go name `pkg.T` resolves through the nearest `go.mod` to a package of the tree; a tree without one resolves same-package names only and says so in a warning. A Rust name resolves to a declaration in the same file, or else anywhere in the tree. The standard library, third-party crates and other modules therefore never count. An embedded field or interface and an implemented trait count as inheritance. A type coupled to nothing is not listed, and test files and `#[cfg(test)]` code stay out.
 
-    Despite the name, polyscan produces one coupling entry per source file, named after the module. The terminal output and the JSON field names still say "classes", which they inherit from the shared metric definition. Read every count as a per-module count.
+For JavaScript/TypeScript the dependencies come in four kinds: imports, `new` expressions, TypeScript type annotations, and method calls on other objects.
+
+!!! info "For JavaScript/TypeScript this metric is per file, not per class"
+
+    polyscan produces one coupling entry per JavaScript/TypeScript source file, named after the module. The terminal output and the JSON field names still say "classes", which they inherit from the shared metric definition. For those languages, read every count as a per-module count.
 
 | Risk | Condition |
 | --- | --- |

@@ -24,7 +24,7 @@ polyscan analyze --min-complexity 10 .        # list only functions at or above 
 Key flags:
 
 - `--format html|json|text` (`-f`): output format; `json` and `text` write to stdout instead of an HTML report
-- `--select` (`-s`): `complexity,deadcode,clone,cbo,lcom,deps` (all run by default); `deps` applies to Go and JavaScript/TypeScript; `lcom` to Go and Rust; `deadcode` and `cbo` to JavaScript/TypeScript only
+- `--select` (`-s`): `complexity,deadcode,clone,cbo,lcom,deps` (all run by default); `deps` applies to Go and JavaScript/TypeScript; `cbo` to Go, Rust and JavaScript/TypeScript; `lcom` to Go and Rust; `deadcode` to JavaScript/TypeScript only
 - `--no-open`: don't auto-open the HTML report in a browser (use in scripts)
 - `-o <path>`: HTML report path (default: `polyscan-report.html` in the current directory)
 - `--min-complexity <n>`: hide functions below this complexity from the listing (scores still cover everything)
@@ -33,7 +33,7 @@ With `--format json`, the machine-readable results go to stdout and the health-s
 
 ## Language coverage
 
-Complexity and clone detection cover every supported language. Dependency analysis covers Go and JavaScript/TypeScript. Class cohesion (LCOM4) covers Go and Rust. Dead code and coupling (CBO) exist for JavaScript/TypeScript only. The health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.
+Complexity and clone detection cover every supported language. Dependency analysis covers Go and JavaScript/TypeScript. Class coupling (CBO) covers Go, Rust and JavaScript/TypeScript, and class cohesion (LCOM4) Go and Rust. Dead code exists for JavaScript/TypeScript only. The health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.
 
 ## CI usage
 
