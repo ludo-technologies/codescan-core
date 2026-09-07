@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Go, Rust and C++ analysis no longer walks into version control, dependency and build output directories. A directory whose name starts with a dot, such as `.git`, and `node_modules`, `vendor`, `target`, `build`, `dist` and `third_party` are skipped; a path named on the command line is still analyzed whatever it is called. Before, a Rust project's `target` directory and a Go project's `vendor` directory were analyzed as if they were the project's own code
+
 ### Added
 
 - Class cohesion (LCOM4) for Go and Rust. `polyscan analyze` measures, for each type, how many groups its methods fall into when two methods are connected by a shared field or a call between them, and scores the result in a Cohesion dimension with the thresholds pyscn uses (low up to 2, medium up to 5). A Go type is measured over every method of its package, since they may be spread across files; a Rust type over the `impl` blocks in a file. Methods without a receiver parameter, such as Rust associated functions and Go methods with an unnamed receiver, cannot touch instance state and are listed as excluded. Test files and `#[cfg(test)]` code stay out. `--select lcom` runs it alone
