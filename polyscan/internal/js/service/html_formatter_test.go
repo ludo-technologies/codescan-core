@@ -486,3 +486,34 @@ func TestReportProject_RelativePathsResolveToTheRealDirectory(t *testing.T) {
 		t.Fatalf("root = %q, want %q", root, want)
 	}
 }
+
+func TestCountClassesScopesTypesPerLanguage(t *testing.T) {
+	coupling := func(language, path, name string) domain.ClassCoupling {
+		return domain.ClassCoupling{Name: name, FilePath: path, Language: language}
+	}
+	cohesion := func(language, path, name string) domain.ClassCohesion {
+		return domain.ClassCohesion{Name: name, FilePath: path, Language: language}
+	}
+	cbo := &domain.CBOResponse{Classes: []domain.ClassCoupling{
+		// A Go type is one over its package: coupling places it in the
+		// declaring file, cohesion in the first file with a method.
+		coupling("Go", "pkg/server.go", "Server"),
+		// Two Rust types of one name in sibling files are two types.
+		coupling("Rust", "src/shapes/circle.rs", "Point"),
+		coupling("Rust", "src/shapes/vector.rs", "Point"),
+		// A JavaScript module has no cohesion row.
+		coupling("", "src/app.js", "app"),
+	}}
+	lcom := &domain.LCOMResponse{Classes: []domain.ClassCohesion{
+		cohesion("Go", "pkg/log.go", "Server"),
+		cohesion("Rust", "src/shapes/circle.rs", "Point"),
+		cohesion("Rust", "src/shapes/vector.rs", "Point"),
+		cohesion("Rust", "src/shapes/polygon.rs", "Polygon"),
+	}}
+	if got := countClasses(cbo, lcom); got != 5 {
+		t.Errorf("countClasses = %d, want 5 (Server, two Points, Polygon, app)", got)
+	}
+	if got := countClasses(cbo, nil); got != 4 {
+		t.Errorf("countClasses without cohesion = %d, want 4", got)
+	}
+}

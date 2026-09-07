@@ -14,6 +14,7 @@ import (
 
 	"github.com/ludo-technologies/polyscan/polyscan/internal/js/domain"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/js/version"
+	"github.com/ludo-technologies/polyscan/polyscan/internal/lang"
 )
 
 //go:embed templates/analyze/report.html templates/analyze/report.css templates/analyze/report.js
@@ -631,12 +632,14 @@ func buildReportFacts(summary *domain.AnalyzeSummary, moduleQuality []domain.Mod
 
 // countClasses counts the distinct types the coupling and cohesion analyses
 // report between them. A Go or Rust type can appear in both, under one name
-// in one package directory or file; a JavaScript module appears in coupling
-// only.
+// in the unit its language scopes a type to: the package directory when the
+// language lets a type's methods span one, as Go does, and the file
+// otherwise, so two Rust types of one name in sibling files stay two. A
+// JavaScript module appears in coupling only.
 func countClasses(cbo *domain.CBOResponse, lcom *domain.LCOMResponse) int {
 	seen := map[string]bool{}
 	key := func(language, path, name string) string {
-		return language + "\x00" + filepath.Dir(path) + "\x00" + name
+		return language + "\x00" + classUnit(language, path) + "\x00" + name
 	}
 	if cbo != nil {
 		for _, class := range cbo.Classes {
@@ -649,6 +652,18 @@ func countClasses(cbo *domain.CBOResponse, lcom *domain.LCOMResponse) int {
 		}
 	}
 	return len(seen)
+}
+
+// classUnit is the location that, with its name, identifies a type of the
+// given language: the directory for a language whose types span one, else
+// the file.
+func classUnit(language, path string) string {
+	for _, l := range lang.All {
+		if l.Name == language && l.TypeSpansDirectory {
+			return filepath.Dir(path)
+		}
+	}
+	return path
 }
 
 // formatPercent renders a 0-1 ratio as a percentage. Similarity is reported
