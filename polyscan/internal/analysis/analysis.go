@@ -11,7 +11,6 @@ import (
 	"sort"
 
 	"github.com/ludo-technologies/polyscan/core/domain"
-	"github.com/ludo-technologies/polyscan/core/source"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/clone"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/engine"
 	"github.com/ludo-technologies/polyscan/polyscan/internal/godeps"
@@ -118,10 +117,7 @@ var ErrNoFiles = errors.New("no supported source files found")
 // analysis reads its files again and reports the ones it leaves out in
 // Warnings.
 func Analyze(paths []string, options Options) (*Report, error) {
-	files, err := source.CollectFiles(paths, source.FileFilter{
-		IncludePatterns: lang.IncludePatterns(),
-		Recursive:       true,
-	})
+	files, err := collectFiles(paths)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +142,7 @@ func Analyze(paths []string, options Options) (*Report, error) {
 	for _, file := range files {
 		language, ok := lang.ByPath(file)
 		if !ok {
-			// CollectFiles only returns registered extensions.
+			// collectFiles only returns registered extensions.
 			panic(fmt.Sprintf("no language for %s", file))
 		}
 		display := displayPath(file)

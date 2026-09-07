@@ -3,6 +3,7 @@ package analysis
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -253,5 +254,40 @@ func TestAnalyzeCpp(t *testing.T) {
 	stats := report.Clones.Statistics
 	if stats.TotalFragments != 3 || stats.TotalClonePairs != 1 || stats.ClonesByType["Type-2"] != 1 {
 		t.Errorf("statistics = %+v, want one Type-2 pair among three fragments", stats)
+	}
+}
+
+func TestAnalyzeSkipsDependencyAndBuildDirectories(t *testing.T) {
+	dir := t.TempDir()
+	sample, err := os.ReadFile("../../testdata/go/sample.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sub := range []string{"", ".git/hooks", ".cache", "node_modules/dep", "vendor/dep", "target/debug", "build", "dist", "third_party/lib", "pkg"} {
+		path := filepath.Join(dir, sub)
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(path, "sample.go"), sample, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	files, err := collectFiles([]string{dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{filepath.Join(dir, "pkg", "sample.go"), filepath.Join(dir, "sample.go")}
+	if !reflect.DeepEqual(files, want) {
+		t.Errorf("collected %v, want %v", files, want)
+	}
+
+	// A skipped name given explicitly is analyzed.
+	files, err = collectFiles([]string{filepath.Join(dir, "vendor")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{filepath.Join(dir, "vendor", "dep", "sample.go")}; !reflect.DeepEqual(files, want) {
+		t.Errorf("collected %v, want %v", files, want)
 	}
 }

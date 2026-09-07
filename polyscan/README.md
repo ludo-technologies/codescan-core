@@ -36,7 +36,7 @@ polyscan analyze --min-complexity 10 .
 
 `--select` takes any of `complexity`, `deadcode`, `clone`, `cbo`, `lcom` and `deps` (default: all); `deps` exists for Go and JavaScript/TypeScript, `lcom` for Go and Rust, `deadcode` and `cbo` for JavaScript/TypeScript only, and a deselected or missing dimension is left out of the health score. JavaScript/TypeScript honors a `jscan.config.json` when the project has one. The JSON output is one document for every language, with `language` on every function and clone fragment.
 
-A file that cannot be read is skipped and listed under `Errors`. A file with a syntax error is analyzed without the functions that contain the error, counted as partial, and listed under `Warnings`; C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.
+Version control, dependency and build output directories are not walked: any directory whose name starts with a dot, and `node_modules`, `vendor`, `target`, `build`, `dist` and `third_party`. A path named on the command line is analyzed whatever it is called. A file that cannot be read is skipped and listed under `Errors`. A file with a syntax error is analyzed without the functions that contain the error, counted as partial, and listed under `Warnings`; C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.
 
 ## Complexity
 

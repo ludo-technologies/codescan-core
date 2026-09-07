@@ -26,15 +26,3 @@ func ByPath(path string) (*engine.Language, bool) {
 	}
 	return nil, false
 }
-
-// IncludePatterns returns one glob per supported extension, for file
-// collection.
-func IncludePatterns() []string {
-	var patterns []string
-	for _, language := range All {
-		for _, ext := range language.Extensions {
-			patterns = append(patterns, "*"+ext)
-		}
-	}
-	return patterns
-}
