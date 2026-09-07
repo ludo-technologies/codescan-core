@@ -68,7 +68,7 @@ func (c *PairClassifier) ClassifyPair(f1, f2 *CodeFragment, structuralSimilarity
 		return domain.Type1Clone, structuralSimilarity
 	}
 
-	capped := c.capNonTextualSimilarity(structuralSimilarity)
+	capped := c.CapNonTextualSimilarity(structuralSimilarity)
 	if c.config.EnableType2 && c.syntactic != nil && capped >= c.config.Type2Threshold {
 		syntacticSimilarity := c.syntactic.ComputeSimilarity(f1, f2)
 		if syntacticSimilarity >= c.config.Type2Threshold {
@@ -85,10 +85,12 @@ func (c *PairClassifier) ClassifyPair(f1, f2 *CodeFragment, structuralSimilarity
 	return 0, capped
 }
 
-// capNonTextualSimilarity caps structural similarity just below the Type-1
-// threshold so that pairs without an exact textual match never report a
-// Type-1-level similarity.
-func (c *PairClassifier) capNonTextualSimilarity(similarity float64) float64 {
+// CapNonTextualSimilarity caps similarity just below the Type-1 threshold so
+// that pairs without an exact textual match never report a Type-1-level
+// similarity. ClassifyPair applies it internally; callers that classify pairs
+// outside ClassifyPair (e.g. a semantic Type-4 path) should apply it to the
+// similarity they report so values stay comparable across clone types.
+func (c *PairClassifier) CapNonTextualSimilarity(similarity float64) float64 {
 	if similarity < c.config.Type1Threshold {
 		return similarity
 	}
