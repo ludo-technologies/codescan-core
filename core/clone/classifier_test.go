@@ -140,12 +140,12 @@ func TestCapNonTextualSimilarity(t *testing.T) {
 	c := newTestPairClassifier()
 
 	// Below the Type-1 threshold: unchanged.
-	if got := c.capNonTextualSimilarity(0.90); got != 0.90 {
+	if got := c.CapNonTextualSimilarity(0.90); got != 0.90 {
 		t.Errorf("below-threshold similarity must pass through, got %f", got)
 	}
 
 	// At or above the Type-1 threshold: capped just below it.
-	got := c.capNonTextualSimilarity(1.0)
+	got := c.CapNonTextualSimilarity(1.0)
 	if got >= c.config.Type1Threshold {
 		t.Errorf("capped similarity %f must be below Type-1 threshold %f", got, c.config.Type1Threshold)
 	}
