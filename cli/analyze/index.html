@@ -1889,8 +1889,8 @@
 <tr>
 <td><code>--select</code></td>
 <td><code>-s</code></td>
-<td><code>complexity,deadcode,clone,cbo,deps</code></td>
-<td>Comma-separated list of analyses to run. <code>deps</code> applies to Go and JavaScript/TypeScript; <code>deadcode</code> and <code>cbo</code> to JavaScript/TypeScript only</td>
+<td><code>complexity,deadcode,clone,cbo,lcom,deps</code></td>
+<td>Comma-separated list of analyses to run. <code>deps</code> applies to Go and JavaScript/TypeScript; <code>cbo</code> to Go, Rust and JavaScript/TypeScript; <code>lcom</code> to Go and Rust; <code>deadcode</code> to JavaScript/TypeScript only</td>
 </tr>
 <tr>
 <td><code>--format</code></td>
@@ -1920,7 +1920,7 @@
 </table>
 <p>The configuration file for the JavaScript/TypeScript analysis is discovered automatically; there is no <code>--config</code> flag. See <a href="../../configuration/#how-polyscan-finds-your-config-file">how polyscan finds your config file</a>.</p>
 <h2 id="language-coverage">Language coverage<a class="headerlink" href="#language-coverage" title="Permanent link">&para;</a></h2>
-<p>The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dependency analysis covers Go and JavaScript/TypeScript. Dead code and coupling (CBO) exist for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.</p>
+<p>The language of each file is detected from its extension. Complexity and clone detection cover every supported language. Dependency analysis covers Go and JavaScript/TypeScript. Coupling (CBO) covers Go, Rust and JavaScript/TypeScript, and cohesion (LCOM4) Go and Rust. Dead code exists for JavaScript/TypeScript only, and the health score is computed over the dimensions that ran: a dimension a language does not have is left out, not scored as clean.</p>
 <p>For Go, Rust and C++, version control, dependency and build output directories are not walked: any directory whose name starts with a dot, and <code>node_modules</code>, <code>vendor</code>, <code>target</code>, <code>build</code>, <code>dist</code> and <code>third_party</code>. A path named on the command line is analyzed whatever it is called. JavaScript/TypeScript exclusions come from <code>jscan.config.json</code>. A file that cannot be read is skipped and listed under errors. A file with a syntax error is analyzed without the functions that contain it, counted as partial, and listed under warnings. C++ libraries hit this routinely, because a macro that opens a namespace or declares an attribute is a syntax error without the preprocessor.</p>
 <h2 id="output-behavior">Output behavior<a class="headerlink" href="#output-behavior" title="Permanent link">&para;</a></h2>
 <p>The format determines where results go and what else is printed.</p>
@@ -2106,10 +2106,12 @@
 <p>A fragment must be at least 10 lines and 20 syntax tree nodes to be considered, which keeps short boilerplate such as getters out of the results.</p>
 <p>In Go, Rust and C++, test code is analyzed for complexity but excluded from clone detection, because test functions share a skeleton by convention: for Go that is <code>*_test.go</code> files; for C++ it is <code>*_test.*</code>, <code>*_tests.*</code>, <code>test_*.*</code> and <code>*Test.*</code> source files and any <code>test</code> or <code>tests</code> directory; for Rust it is <code>#[test]</code> functions, items under <code>#[cfg(test)]</code>, <code>tests.rs</code> and <code>*_tests.rs</code> files and any <code>tests</code> directory.</p>
 <h3 id="cbo">Coupling between objects<a class="headerlink" href="#cbo" title="Permanent link">&para;</a></h3>
-<p><em>JavaScript/TypeScript only.</em> Counts how many other types each unit depends on, across four kinds of dependency: imports, <code>new</code> expressions, TypeScript type annotations, and method calls on other objects.</p>
+<p><em>Go, Rust and JavaScript/TypeScript.</em> Counts how many other types each unit depends on.</p>
+<p>For Go and Rust the unit is a type: a Go struct, interface or other named type, a Rust struct, enum, union or trait. Its dependencies are the types named by its declaration (fields, embedded types, method signatures of an interface) and by the bodies of its methods, and only types declared somewhere in the analyzed tree count. A Go name <code>pkg.T</code> resolves through the nearest <code>go.mod</code> to a package of the tree; a tree without one resolves same-package names only and says so in a warning. A Rust name resolves to a declaration in the same file, or else anywhere in the tree. The standard library, third-party crates and other modules therefore never count. An embedded field or interface and an implemented trait count as inheritance. A type coupled to nothing is not listed, and test files and <code>#[cfg(test)]</code> code stay out.</p>
+<p>For JavaScript/TypeScript the dependencies come in four kinds: imports, <code>new</code> expressions, TypeScript type annotations, and method calls on other objects.</p>
 <div class="admonition info">
-<p class="admonition-title">This metric is per file, not per class</p>
-<p>Despite the name, polyscan produces one coupling entry per source file, named after the module. The terminal output and the JSON field names still say "classes", which they inherit from the shared metric definition. Read every count as a per-module count.</p>
+<p class="admonition-title">For JavaScript/TypeScript this metric is per file, not per class</p>
+<p>polyscan produces one coupling entry per JavaScript/TypeScript source file, named after the module. The terminal output and the JSON field names still say "classes", which they inherit from the shared metric definition. For those languages, read every count as a per-module count.</p>
 </div>
 <table>
 <thead>
