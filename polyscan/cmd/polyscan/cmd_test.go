@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -34,7 +35,20 @@ type analyzeJSON struct {
 		} `json:"summary"`
 	} `json:"complexity"`
 	DeadCode json.RawMessage `json:"dead_code"`
-	Clone    *struct {
+	CBO      *struct {
+		Classes []struct {
+			Name     string `json:"Name"`
+			Language string `json:"language"`
+			Metrics  struct {
+				CouplingCount    int      `json:"CouplingCount"`
+				DependentClasses []string `json:"DependentClasses"`
+			} `json:"Metrics"`
+		} `json:"classes"`
+		Summary struct {
+			TotalClasses int `json:"TotalClasses"`
+		} `json:"summary"`
+	} `json:"cbo"`
+	Clone *struct {
 		ClonePairs []struct {
 			Clone1 struct {
 				Language string `json:"language"`
@@ -67,6 +81,8 @@ type analyzeJSON struct {
 		HealthScore       int    `json:"health_score"`
 		CohesionScore     int    `json:"cohesion_score"`
 		LCOMEnabled       bool   `json:"lcom_enabled"`
+		CBOEnabled        bool   `json:"cbo_enabled"`
+		CBOClasses        int    `json:"cbo_classes"`
 		DependencyScore   int    `json:"dependency_score"`
 		DepsEnabled       bool   `json:"deps_enabled"`
 		Grade             string `json:"grade"`
@@ -436,6 +452,55 @@ func TestAnalyzeCohesion(t *testing.T) {
 		t.Fatalf("analyze text: %v\n%s", err, out)
 	}
 	for _, want := range []string{"=== LCOM Analysis ===", "T: LCOM4=2 [low]", "Cohesion:         100/100"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("text output lacks %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestAnalyzeCoupling(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"go.mod":        "module example.com/app\n",
+		"app.go":        "package app\n\nimport \"example.com/app/model\"\n\ntype Server struct {\n\tusers []model.User\n\tcfg   Config\n}\n\ntype Config struct{}\n",
+		"model/user.go": "package model\n\ntype User struct{}\n",
+		"a.js":          "import { z } from 'zod';\nexport function f() { return z; }\n",
+	}
+	for name, content := range files {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	out, err := run(t, "analyze", "--format", "json", "--select", "cbo", dir)
+	if err != nil {
+		t.Fatalf("analyze: %v\n%s", err, out)
+	}
+	doc := decodeAnalyzeJSON(t, out)
+	if doc.CBO == nil || len(doc.CBO.Classes) != 2 || doc.CBO.Summary.TotalClasses != 2 {
+		t.Fatalf("cbo = %+v, want the Go type and the JavaScript module", doc.CBO)
+	}
+	server := doc.CBO.Classes[0]
+	if server.Name != "Server" || server.Language != "Go" || server.Metrics.CouplingCount != 2 ||
+		!reflect.DeepEqual(server.Metrics.DependentClasses, []string{"Config", "model.User"}) {
+		t.Errorf("class = %+v, want Server (Go) coupled to Config and model.User", server)
+	}
+	if module := doc.CBO.Classes[1]; module.Name != "a" || module.Language != "" {
+		t.Errorf("class = %+v, want the JavaScript module a", module)
+	}
+	if doc.Summary == nil || !doc.Summary.CBOEnabled || doc.Summary.CBOClasses != 2 {
+		t.Errorf("summary = %+v, want coupling enabled over 2 classes", doc.Summary)
+	}
+
+	out, err = run(t, "analyze", "--format", "text", "--select", "cbo", dir)
+	if err != nil {
+		t.Fatalf("analyze text: %v\n%s", err, out)
+	}
+	for _, want := range []string{"=== CBO Analysis ===", "Server: CBO=2 [low]", "Coupling:         100/100"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("text output lacks %q:\n%s", want, out)
 		}

@@ -311,3 +311,67 @@ func TestCombineGoDependencies(t *testing.T) {
 		t.Errorf("warnings = %v, want %v", deps.Warnings, want)
 	}
 }
+
+func TestCombineCoupling(t *testing.T) {
+	generic := &analysis.Report{Coupling: &analysis.Coupling{
+		Classes: []analysis.CoupledClass{
+			{Name: "Server", FilePath: "a.go", Language: "Go", StartLine: 3, EndLine: 9, CBO: 4, DependentClasses: []string{"Base", "Config", "model.User", "st.Store"}, Inheritance: 1, TypeHint: 3, RiskLevel: coredomain.RiskLevelMedium},
+			{Name: "Config", FilePath: "b.go", Language: "Go", StartLine: 1, EndLine: 2, CBO: 1, DependentClasses: []string{"Base"}, TypeHint: 1, RiskLevel: coredomain.RiskLevelLow},
+		},
+		FilesAnalyzed: 2,
+		Warnings:      []string{"x: no go.mod above it"},
+	}}
+
+	results, err := Combine(generic, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cbo := results.CBO
+	if cbo == nil || len(cbo.Classes) != 2 {
+		t.Fatalf("cbo = %+v, want two classes", cbo)
+	}
+	server := cbo.Classes[0]
+	if server.Name != "Server" || server.Language != "Go" || server.Metrics.CouplingCount != 4 ||
+		server.Metrics.InheritanceDependencies != 1 || server.Metrics.TypeHintDependencies != 3 ||
+		server.RiskLevel != domain.RiskLevelMedium || !reflect.DeepEqual(server.Metrics.DependentClasses, []string{"Base", "Config", "model.User", "st.Store"}) {
+		t.Errorf("Server = %+v", server)
+	}
+	summary := cbo.Summary
+	if summary.TotalClasses != 2 || summary.FilesAnalyzed != 2 || summary.MaxCBO != 4 || summary.MinCBO != 1 ||
+		summary.AverageCBO != 2.5 || summary.MediumRiskClasses != 1 || summary.LowRiskClasses != 1 ||
+		len(summary.MostCoupledClasses) != 2 || summary.CBODistribution["4-7"] != 1 {
+		t.Errorf("summary = %+v", summary)
+	}
+	if !reflect.DeepEqual(cbo.Warnings, []string{"x: no go.mod above it"}) {
+		t.Errorf("warnings = %v", cbo.Warnings)
+	}
+
+	javascript := &js.Result{CBO: &domain.CBOResponse{
+		Classes: []domain.ClassCoupling{{Name: "app", FilePath: "src/app.js", StartLine: 1, EndLine: 40,
+			Metrics: domain.CBOMetrics{CouplingCount: 3, DependentClasses: []string{"react", "util", "zod"}}, RiskLevel: domain.RiskLevelLow}},
+		Summary:     domain.CBOSummary{TotalClasses: 1, FilesAnalyzed: 1},
+		Warnings:    []string{"js warning"},
+		GeneratedAt: "then",
+		Version:     "1",
+		Config:      map[string]any{"low_threshold": 7},
+	}}
+	results, err = Combine(generic, javascript)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cbo = results.CBO
+	names := []string{cbo.Classes[0].Name, cbo.Classes[1].Name, cbo.Classes[2].Name}
+	if !reflect.DeepEqual(names, []string{"Server", "app", "Config"}) {
+		t.Errorf("merged ranking = %v, want Server, app, Config", names)
+	}
+	if cbo.Classes[1].Language != "" {
+		t.Errorf("the JavaScript module carries no language, got %q", cbo.Classes[1].Language)
+	}
+	summary = cbo.Summary
+	if summary.TotalClasses != 3 || summary.FilesAnalyzed != 3 || summary.LowRiskClasses != 2 || summary.MediumRiskClasses != 1 {
+		t.Errorf("merged summary = %+v", summary)
+	}
+	if !reflect.DeepEqual(cbo.Warnings, []string{"x: no go.mod above it", "js warning"}) || cbo.GeneratedAt != "then" || cbo.Config.(map[string]any)["low_threshold"] != 7 {
+		t.Errorf("merged metadata = warnings %v at %q with %v; the JavaScript configuration wins", cbo.Warnings, cbo.GeneratedAt, cbo.Config)
+	}
+}

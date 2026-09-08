@@ -2,6 +2,7 @@ package golang
 
 import (
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -414,5 +415,90 @@ func (x *License) Closure() {
 		if got := slices.Sorted(maps.Keys(fn.Calls)); !equalStrings(got, tc.calls) {
 			t.Errorf("%s: calls = %v, want %v", tc.name, got, tc.calls)
 		}
+	}
+}
+
+func TestTypesAndReferences(t *testing.T) {
+	result, err := Language.Analyze([]byte(`package p
+
+import (
+	"context"
+	m "example.com/x/model"
+)
+
+type (
+	Base struct{}
+	ID   int
+)
+
+type Alias = Base
+
+type Server struct {
+	Base
+	*m.Embedded
+	Gen[ID]
+	users []m.User
+	ctx   context.Context
+	byID  map[ID]Item
+}
+
+type Repo interface {
+	Closer
+	m.Reader
+	Find(id ID) (Item, error)
+}
+
+type Number interface{ int | ID }
+
+func (s *Server) Handle(ctx context.Context, item Item) error {
+	type local struct{ n int }
+	_ = Other{}
+	_ = ID(3)
+	var l local
+	_ = l
+	return nil
+}
+
+func Free(x Item) {}
+`))
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	want := []engine.Type{
+		{Name: "Base", StartLine: 9, EndLine: 9, Declared: true},
+		{Name: "ID", StartLine: 10, EndLine: 10, Declared: true, References: []engine.Reference{{Name: "int"}}},
+		{Name: "Server", StartLine: 15, EndLine: 22, Declared: true, References: []engine.Reference{
+			{Name: "Base", Embedded: true}, {Name: "Embedded", Package: "m", Embedded: true}, {Name: "Gen", Embedded: true},
+			{Name: "ID"}, {Name: "User", Package: "m"}, {Name: "Context", Package: "context"}, {Name: "Item"},
+			// The method's receiver and body. The local type is not a type
+			// of the file, but a reference to it is still one.
+			{Name: "Server"}, {Name: "error"}, {Name: "int"}, {Name: "Other"}, {Name: "local"},
+		}},
+		{Name: "Repo", StartLine: 24, EndLine: 28, Declared: true, Abstract: true, References: []engine.Reference{
+			{Name: "Closer", Embedded: true}, {Name: "Reader", Package: "m", Embedded: true},
+			{Name: "ID"}, {Name: "Item"}, {Name: "error"},
+		}},
+		{Name: "Number", StartLine: 30, EndLine: 30, Declared: true, Abstract: true, References: []engine.Reference{
+			{Name: "int"}, {Name: "ID"},
+		}},
+	}
+	if !reflect.DeepEqual(result.Types, want) {
+		t.Errorf("types = %+v\nwant   %+v", result.Types, want)
+	}
+}
+
+func TestTypesInAnotherFileOfThePackage(t *testing.T) {
+	result, err := Language.Analyze([]byte(`package p
+
+func (s *Server) Log(msg Message) { s.sink.Write(msg) }
+
+func Helper(x Other) {}
+`))
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	want := []engine.Type{{Name: "Server", StartLine: 3, EndLine: 3, References: []engine.Reference{{Name: "Server"}, {Name: "Message"}}}}
+	if !reflect.DeepEqual(result.Types, want) {
+		t.Errorf("types = %+v\nwant   %+v", result.Types, want)
 	}
 }

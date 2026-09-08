@@ -51,10 +51,66 @@ var Language = &engine.Language{
   name: (identifier) @name
   parameters: (parameters [(self_parameter) (parameter pattern: (self))]? @self)) @definition.function
 `,
+	// An impl names its type by the bare identifier, so impl G<T> and
+	// impl G<i32> are blocks of one type G, a path keeps its last segment,
+	// and a reference such as &G is G, since its methods still touch self.
+	// An impl for any other form, a trait object, tuple, array or pointer,
+	// keeps its text as a module so its functions stay qualified without
+	// becoming methods of a type.
 	Scopes: `
-(impl_item type: (_) @receiver body: (declaration_list) @scope)
+(impl_item type: [
+  (type_identifier) @receiver
+  (generic_type type: (type_identifier) @receiver)
+  (scoped_type_identifier name: (type_identifier) @receiver)
+  (generic_type type: (scoped_type_identifier name: (type_identifier) @receiver))
+  (reference_type type: [
+    (type_identifier) @receiver
+    (generic_type type: (type_identifier) @receiver)
+    (scoped_type_identifier name: (type_identifier) @receiver)
+    (generic_type type: (scoped_type_identifier name: (type_identifier) @receiver))
+  ])
+  [(dynamic_type) (tuple_type) (array_type) (pointer_type) (abstract_type) (function_type) (unit_type)] @module
+] body: (declaration_list) @scope)
 (trait_item name: (type_identifier) @module body: (declaration_list) @scope)
 (mod_item name: (identifier) @module body: (declaration_list) @scope)
+`,
+	// Structs, enums and unions are types, a trait an abstract one, and an
+	// impl adds to the type it names without declaring it; an alias
+	// (type_item) only names another type.
+	Types: `
+(struct_item name: (type_identifier) @name) @type
+(enum_item name: (type_identifier) @name) @type
+(union_item name: (type_identifier) @name) @type
+(trait_item name: (type_identifier) @name) @abstract
+(impl_item type: [
+  (type_identifier) @name
+  (generic_type type: (type_identifier) @name)
+  (scoped_type_identifier name: (type_identifier) @name)
+  (generic_type type: (scoped_type_identifier name: (type_identifier) @name))
+  (reference_type type: [
+    (type_identifier) @name
+    (generic_type type: (type_identifier) @name)
+    (scoped_type_identifier name: (type_identifier) @name)
+    (generic_type type: (scoped_type_identifier name: (type_identifier) @name))
+  ])
+]) @impl
+`,
+	// Every type_identifier is a reference except Self; primitive types are
+	// their own node and never match. A path expression such as Foo::new()
+	// or Color::Red names its type in the path's identifiers, and a tuple
+	// struct pattern names it in the pattern; module segments and generic
+	// parameters caught this way are dropped by the analysis because
+	// nothing declares them. The trait an impl implements is inheritance.
+	References: `
+((type_identifier) @reference (#not-eq? @reference "Self"))
+((scoped_identifier path: [(identifier) @reference (scoped_identifier name: (identifier) @reference)])
+  (#not-eq? @reference "Self"))
+(tuple_struct_pattern type: (identifier) @reference)
+(impl_item trait: [
+  (type_identifier) @embedded
+  (generic_type type: (type_identifier) @embedded)
+  (scoped_type_identifier name: (type_identifier) @embedded)
+])
 `,
 	// A field is anything reached from self, including a tuple struct's
 	// numbered fields; a sibling method is a method call on self or an

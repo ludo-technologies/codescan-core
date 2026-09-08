@@ -13,12 +13,13 @@ import (
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
-// fileInfo is what the dependency graph needs from one Go file.
-type fileInfo struct {
+// FileInfo is what the dependency graph and the coupling analysis need from
+// one Go file.
+type FileInfo struct {
 	// Package is the name in the package clause.
 	Package string
-	// Imports are the import paths, in source order, with duplicates kept.
-	Imports []string
+	// Imports are the imports, in source order, with duplicates kept.
+	Imports []Import
 	// ExportedTypes counts the exported type declarations and
 	// ExportedInterfaces the ones among them that declare an interface.
 	// Type aliases are not declarations of their own and are not counted.
@@ -26,12 +27,21 @@ type fileInfo struct {
 	ExportedInterfaces int
 }
 
-// query captures the package clause, every import path and every declared
-// type. An interface type matches both type patterns, so the two captures are
+// Import is one import declaration of a file.
+type Import struct {
+	// Name is the explicit package name, or empty when the import uses the
+	// package's own name; "_" and "." are kept as written.
+	Name string
+	// Path is the import path without its quotes.
+	Path string
+}
+
+// query captures the package clause, every import with its optional name and
+// every declared type. An interface type matches both type patterns, so the two captures are
 // counted separately rather than the second subtracted from the first.
 const query = `
 (package_clause (package_identifier) @package)
-(import_spec path: [(interpreted_string_literal) (raw_string_literal)] @path)
+(import_spec name: (_)? @import.name path: [(interpreted_string_literal) (raw_string_literal)] @path)
 (type_declaration (type_spec name: (type_identifier) @type))
 (type_declaration (type_spec name: (type_identifier) @interface type: (interface_type)))
 `
@@ -52,10 +62,10 @@ func compile() (*sitter.Query, error) {
 	return compiled, compileErr
 }
 
-// parseFile extracts the package clause, imports and type declarations of one
+// ParseFile extracts the package clause, imports and type declarations of one
 // Go source. A file without a package clause, which a syntax error at the top
 // of the file can cause, is an error: nothing places it in a package.
-func parseFile(source []byte) (*fileInfo, error) {
+func ParseFile(source []byte) (*FileInfo, error) {
 	q, err := compile()
 	if err != nil {
 		return nil, err
@@ -69,8 +79,9 @@ func parseFile(source []byte) (*fileInfo, error) {
 	}
 	defer tree.Close()
 
-	info := &fileInfo{}
+	info := &FileInfo{}
 	engine.ForEachMatch(q, tree.RootNode(), source, func(match *sitter.QueryMatch) {
+		var imported Import
 		for _, capture := range match.Captures {
 			text := capture.Node.Content(source)
 			switch q.CaptureNameForId(capture.Index) {
@@ -78,8 +89,11 @@ func parseFile(source []byte) (*fileInfo, error) {
 				if info.Package == "" {
 					info.Package = text
 				}
+			case "import.name":
+				imported.Name = text
 			case "path":
-				info.Imports = append(info.Imports, strings.Trim(text, "\"`"))
+				imported.Path = strings.Trim(text, "\"`")
+				info.Imports = append(info.Imports, imported)
 			case "type":
 				if isExported(text) {
 					info.ExportedTypes++

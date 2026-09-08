@@ -29,6 +29,9 @@ type Options struct {
 	// LCOM measures the cohesion of each type's methods, for the languages
 	// whose definition declares how a method reaches its fields.
 	LCOM bool
+	// CBO counts, for each type, the other types of the tree it refers to,
+	// for the languages whose definition declares types and references.
+	CBO bool
 }
 
 // Function is the complexity result for one function.
@@ -92,6 +95,9 @@ type Report struct {
 	// Cohesion is the LCOM4 analysis, or nil when no analyzed file belongs
 	// to a language that has one.
 	Cohesion *Cohesion `json:"cohesion,omitempty"`
+	// Coupling is the CBO analysis, or nil when no analyzed file belongs to
+	// a language that has one.
+	Coupling *Coupling `json:"coupling,omitempty"`
 	// FileLines is the source line count of every analyzed file, keyed by
 	// its reported path. The unified report shows lines per hotspot file,
 	// and this run is the only place the contents are in hand.
@@ -138,6 +144,7 @@ func Analyze(paths []string, options Options) (*Report, error) {
 	cloneLines, cloneFiles := 0, 0
 	cohesion := newCohesionBuilder()
 	cohesionFiles := 0
+	coupling := newCouplingBuilder()
 
 	for _, file := range files {
 		language, ok := lang.ByPath(file)
@@ -146,12 +153,13 @@ func Analyze(paths []string, options Options) (*Report, error) {
 			panic(fmt.Sprintf("no language for %s", file))
 		}
 		display := displayPath(file)
-		result, lines, err := analyzeFile(language, file)
+		result, content, err := analyzeFile(language, file)
 		if err != nil {
 			report.Files.Skipped++
 			report.Errors = append(report.Errors, fmt.Sprintf("%s: %v", display, err))
 			continue
 		}
+		lines := countLines(content)
 		report.Files.Analyzed++
 		report.FileLines[display] = lines
 		if result.SyntaxError != nil {
@@ -190,6 +198,11 @@ func Analyze(paths []string, options Options) (*Report, error) {
 				}
 			}
 		}
+		if options.CBO && language.HasCoupling() && !language.IsTestFile(display) {
+			if err := coupling.add(language, display, file, content, result); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	if options.Complexity {
@@ -203,6 +216,9 @@ func Analyze(paths []string, options Options) (*Report, error) {
 	}
 	if cohesionFiles > 0 {
 		report.Cohesion = cohesion.build()
+	}
+	if len(coupling.files) > 0 {
+		report.Coupling = coupling.build()
 	}
 	return report, nil
 }
@@ -234,16 +250,18 @@ func analyzeDeps(report *Report, files []string) error {
 	return nil
 }
 
-func analyzeFile(language *engine.Language, path string) (result *engine.Result, lines int, err error) {
+// analyzeFile reads and analyzes one file, returning its contents as well
+// for the analyses that read more of it than the engine extracts.
+func analyzeFile(language *engine.Language, path string) (*engine.Result, []byte, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
-	result, err = language.Analyze(content)
+	result, err := language.Analyze(content)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
-	return result, countLines(content), nil
+	return result, content, nil
 }
 
 // countLines counts source lines the way the JavaScript analysis does, so

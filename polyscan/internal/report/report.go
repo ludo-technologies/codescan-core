@@ -21,13 +21,12 @@ import (
 )
 
 // Combine merges the generic-engine report with the JavaScript/TypeScript
-// result into the shape the output formatter renders. Complexity, clone and
-// dependency results merge across languages; dead code and coupling exist
-// only for JavaScript/TypeScript and pass through, and cohesion only for the
-// generic engine. The file accounting adds
-// up across both sides, so the health score charges every unparsable file
-// whichever analyses ran. Either input may be nil when its side found no
-// files.
+// result into the shape the output formatter renders. Complexity, clone,
+// coupling and dependency results merge across languages; dead code exists
+// only for JavaScript/TypeScript and passes through, and cohesion only for
+// the generic engine. The file accounting adds up across both sides, so the
+// health score charges every unparsable file whichever analyses ran. Either
+// input may be nil when its side found no files.
 func Combine(generic *analysis.Report, javascript *js.Result) (domain.AnalysisResults, error) {
 	results := domain.AnalysisResults{}
 	if javascript != nil {
@@ -51,6 +50,7 @@ func Combine(generic *analysis.Report, javascript *js.Result) (domain.AnalysisRe
 		results.Complexity = mergeComplexity(complexity, results.Complexity)
 		results.Clone = mergeClones(genericClones(generic), results.Clone)
 		results.LCOM = genericCohesion(generic)
+		results.CBO = mergeCoupling(genericCoupling(generic), results.CBO)
 		results.Deps, err = mergeDeps(generic.Deps, results.Deps)
 		if err != nil {
 			return domain.AnalysisResults{}, err
@@ -299,6 +299,79 @@ func genericCohesion(report *analysis.Report) *domain.LCOMResponse {
 			"low_threshold":    coredomain.DefaultLCOMLowThreshold,
 			"medium_threshold": coredomain.DefaultLCOMMediumThreshold,
 		},
+	}
+}
+
+// genericCoupling converts the generic engine's coupling analysis into the
+// formatter's CBO response.
+func genericCoupling(report *analysis.Report) *domain.CBOResponse {
+	if report.Coupling == nil {
+		return nil
+	}
+	src := report.Coupling
+	classes := make([]domain.ClassCoupling, 0, len(src.Classes))
+	for _, class := range src.Classes {
+		classes = append(classes, domain.ClassCoupling{
+			Name:      class.Name,
+			FilePath:  class.FilePath,
+			Language:  class.Language,
+			StartLine: class.StartLine,
+			EndLine:   class.EndLine,
+			Metrics: domain.CBOMetrics{
+				CouplingCount:           class.CBO,
+				InheritanceDependencies: class.Inheritance,
+				TypeHintDependencies:    class.TypeHint,
+				DependentClasses:        class.DependentClasses,
+			},
+			RiskLevel:  domain.RiskLevel(class.RiskLevel),
+			IsAbstract: class.IsAbstract,
+		})
+	}
+	return &domain.CBOResponse{
+		Classes:     classes,
+		Summary:     service.SummarizeCoupling(classes, src.FilesAnalyzed),
+		Warnings:    append([]string{}, src.Warnings...),
+		Errors:      []string{},
+		GeneratedAt: time.Now().Format(time.RFC3339),
+		Version:     version.Version,
+		Config: map[string]interface{}{
+			"low_threshold":    coredomain.DefaultCBOLowThreshold,
+			"medium_threshold": coredomain.DefaultCBOMediumThreshold,
+		},
+	}
+}
+
+// mergeCoupling merges the generic and JavaScript coupling responses into
+// one population, re-ranked and re-summarized. The JavaScript configuration
+// wins, as in mergeComplexity.
+func mergeCoupling(generic, javascript *domain.CBOResponse) *domain.CBOResponse {
+	if generic == nil {
+		return javascript
+	}
+	if javascript == nil {
+		return generic
+	}
+	classes := make([]domain.ClassCoupling, 0, len(generic.Classes)+len(javascript.Classes))
+	classes = append(classes, generic.Classes...)
+	classes = append(classes, javascript.Classes...)
+	sort.SliceStable(classes, func(i, j int) bool {
+		a, b := classes[i], classes[j]
+		if a.Metrics.CouplingCount != b.Metrics.CouplingCount {
+			return a.Metrics.CouplingCount > b.Metrics.CouplingCount
+		}
+		if a.FilePath != b.FilePath {
+			return a.FilePath < b.FilePath
+		}
+		return a.StartLine < b.StartLine
+	})
+	return &domain.CBOResponse{
+		Classes:     classes,
+		Summary:     service.SummarizeCoupling(classes, generic.Summary.FilesAnalyzed+javascript.Summary.FilesAnalyzed),
+		Warnings:    mergeStrings(generic.Warnings, javascript.Warnings),
+		Errors:      mergeStrings(generic.Errors, javascript.Errors),
+		GeneratedAt: javascript.GeneratedAt,
+		Version:     javascript.Version,
+		Config:      javascript.Config,
 	}
 }
 

@@ -26,7 +26,7 @@ For machine-readable detail use `--format json`: full results go to stdout and t
 ## Interpreting Results
 
 - Score 0-100 with letter grade; category scores cover complexity, dead code, code duplication, coupling (CBO), cohesion (LCOM4), and dependencies.
-- Complexity and duplication cover every language; dependencies run for Go and JavaScript/TypeScript; cohesion for Go and Rust; dead code and coupling for JavaScript/TypeScript only. A dimension a language does not have is left out of its score, not counted as clean.
+- Complexity and duplication cover every language; dependencies run for Go and JavaScript/TypeScript; coupling for Go, Rust and JavaScript/TypeScript; cohesion for Go and Rust; dead code for JavaScript/TypeScript only. A dimension a language does not have is left out of its score, not counted as clean.
 - Lead with the grade and the weakest categories, then name the top offenders (files/functions) driving them.
 - For deeper follow-up, hand off to the focused skills: refactoring targets → `refactoring`, module structure → `architecture-review`.
 

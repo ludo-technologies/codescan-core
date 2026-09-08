@@ -73,7 +73,7 @@ func Build(files []string, display func(string) string) (*domain.DependencyGraph
 			warn("%s: %v", display(file), err)
 			continue
 		}
-		info, err := parseFile(content)
+		info, err := ParseFile(content)
 		if err != nil {
 			warn("%s: %v; excluded from the dependency graph", display(file), err)
 			continue
@@ -87,9 +87,9 @@ func Build(files []string, display func(string) string) (*domain.DependencyGraph
 		}
 		seen := map[string]bool{}
 		for _, imported := range info.Imports {
-			if !seen[imported] {
-				seen[imported] = true
-				p.imports[imported]++
+			if !seen[imported.Path] {
+				seen[imported.Path] = true
+				p.imports[imported.Path]++
 			}
 		}
 		p.exportedTypes += info.ExportedTypes

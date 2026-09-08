@@ -112,8 +112,7 @@ func (s *CBOServiceImpl) buildResponse(ctx context.Context, results []fileAnalys
 	filteredClasses := s.filterClasses(allClasses, req)
 	sortedClasses := s.sortClasses(filteredClasses, req.SortBy)
 
-	// Generate summary
-	summary := s.generateSummary(sortedClasses, filesProcessed, req)
+	summary := SummarizeCoupling(sortedClasses, filesProcessed)
 
 	return &domain.CBOResponse{
 		Classes:     sortedClasses,
@@ -240,8 +239,10 @@ func classPrecedes(a, b domain.ClassCoupling) bool {
 	return a.Name < b.Name
 }
 
-// generateSummary generates a summary of the CBO analysis
-func (s *CBOServiceImpl) generateSummary(classes []domain.ClassCoupling, filesProcessed int, req domain.CBORequest) domain.CBOSummary {
+// SummarizeCoupling aggregates coupling results, in any order, into the
+// summary the report renders: totals, risk counts, the distribution and the
+// most coupled classes.
+func SummarizeCoupling(classes []domain.ClassCoupling, filesProcessed int) domain.CBOSummary {
 	summary := domain.CBOSummary{
 		TotalClasses:    len(classes),
 		ClassesAnalyzed: len(classes),
@@ -280,7 +281,7 @@ func (s *CBOServiceImpl) generateSummary(classes []domain.ClassCoupling, filesPr
 		}
 
 		// Build distribution
-		rangeKey := s.getCBORange(cbo)
+		rangeKey := cboRange(cbo)
 		summary.CBODistribution[rangeKey]++
 	}
 
@@ -302,8 +303,8 @@ func (s *CBOServiceImpl) generateSummary(classes []domain.ClassCoupling, filesPr
 	return summary
 }
 
-// getCBORange returns a string representing the CBO range for distribution
-func (s *CBOServiceImpl) getCBORange(cbo int) string {
+// cboRange returns a string representing the CBO range for distribution
+func cboRange(cbo int) string {
 	switch {
 	case cbo == 0:
 		return "0"

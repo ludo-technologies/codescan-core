@@ -5,7 +5,7 @@ description: Analyze module architecture using polyscan - class coupling (CBO), 
 
 # Architecture Review with polyscan
 
-Run the polyscan CLI to understand module structure and coupling. Dependency analysis exists for Go (package graph) and JavaScript/TypeScript (module graph); coupling (CBO) for JavaScript/TypeScript; class cohesion (LCOM4) for Go and Rust; C++ gets complexity and clone detection only. No install needed: `npx polyscan@latest analyze <path>`.
+Run the polyscan CLI to understand module structure and coupling. Dependency analysis exists for Go (package graph) and JavaScript/TypeScript (module graph); coupling (CBO) for Go, Rust and JavaScript/TypeScript; class cohesion (LCOM4) for Go and Rust; C++ gets complexity and clone detection only. No install needed: `npx polyscan@latest analyze <path>`.
 
 ## Commands
 
@@ -20,7 +20,7 @@ Text output shows per-class CBO and cycle membership, but only **aggregate** cou
 
 ## Interpreting Coupling Results
 
-- High CBO classes depend on many others; changes ripple widely. Suggest interface extraction or dependency inversion.
+- High CBO classes depend on many others; changes ripple widely. Suggest interface extraction or dependency inversion. For Go and Rust the count covers types declared in the analyzed tree only, so a type coupled only to the standard library reads as 0 and is not listed.
 - A high LCOM4 type has methods that fall into several groups sharing no field or call; each group is a candidate for its own type.
 - Martin metrics per module (from the JSON output above): instability I = Ce / (Ca + Ce) and distance from the main sequence. Modules in the Zone of Pain (stable but concrete) are risky to change; name them explicitly.
 - Dependency cycles are the highest-priority architectural issue; name the modules in each cycle and the weakest edge to break.

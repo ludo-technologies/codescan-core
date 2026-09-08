@@ -17,6 +17,7 @@ polyscan analyze --format json src/ > report.json
   "dead_code": { },
   "clone": { },
   "cbo": { },
+  "lcom": { },
   "deps": { },
   "module_quality": [ ],
   "summary": { }
@@ -31,12 +32,13 @@ polyscan analyze --format json src/ > report.json
 | `complexity` | object | Present only when complexity analysis ran |
 | `dead_code` | object | Present only when dead code detection ran (JavaScript/TypeScript) |
 | `clone` | object | Present only when clone detection ran |
-| `cbo` | object | Present only when coupling analysis ran (JavaScript/TypeScript) |
+| `cbo` | object | Present only when coupling analysis ran (Go, Rust, JavaScript/TypeScript) |
+| `lcom` | object | Present only when cohesion analysis ran (Go, Rust) |
 | `deps` | object | Present only when dependency analysis ran (Go, JavaScript/TypeScript) |
 | `module_quality` | array | Per-file rollups joined across the analyses that ran |
 | `summary` | object | Always present |
 
-The five analysis keys are omitted entirely when `--select` excludes them or when no analyzed language has them, so consumers should check for their presence rather than assume it.
+The six analysis keys are omitted entirely when `--select` excludes them or when no analyzed language has them, so consumers should check for their presence rather than assume it.
 
 ## `summary`
 
@@ -95,7 +97,7 @@ A few fields need explanation.
 
 The `*_enabled` flags say which dimensions actually ran and therefore which the health score was computed over. A dimension can be off because `--select` excluded it or because no analyzed language has it: a pure Go project reports `dead_code_enabled: false` even under the default selection. See [the health score page](health-score.md#the-formula).
 
-`cbo_classes`, `high_coupling_classes`, and `medium_coupling_classes` count modules rather than classes, despite the names. See [the analyze reference](../cli/analyze.md#cbo).
+`cbo_classes`, `high_coupling_classes`, and `medium_coupling_classes` count Go and Rust types and JavaScript/TypeScript modules together; for the latter the unit is the file despite the names. See [the analyze reference](../cli/analyze.md#cbo).
 
 `arch_enabled` is always `false` and `architecture_score` is always `0`, because architecture validation is not implemented in polyscan. Ignore both.
 
@@ -300,7 +302,7 @@ The `summary` object carries a `findings_by_reason` map, which is the most conve
 
 ## `cbo`
 
-*JavaScript/TypeScript only.*
+*Go, Rust and JavaScript/TypeScript.*
 
 ```json
 {
@@ -339,7 +341,43 @@ The `summary` object carries a `findings_by_reason` map, which is the most conve
 }
 ```
 
-`CouplingCount` is the CBO value. `DependentClasses` names what this module depends on, and the four `*Dependencies` counters break the total down by how the dependency was formed.
+`CouplingCount` is the CBO value. `DependentClasses` names what this class or module depends on, and the `*Dependencies` counters break the total down by how the dependency was formed. A Go or Rust entry is one type and carries a `language` field (`"Go"` or `"Rust"`), which a JavaScript/TypeScript entry, whose unit is the file, omits; its `DependentClasses` name only types declared in the analyzed tree, and it uses `InheritanceDependencies` for embedded types and implemented traits and `TypeHintDependencies` for every other reference.
+
+## `lcom`
+
+*Go and Rust.*
+
+```json
+{
+  "version": "0.1.0",
+  "generated_at": "2026-08-04T16:20:39+09:00",
+  "classes": [ ],
+  "summary": { },
+  "warnings": [ ],
+  "errors": [ ],
+  "config": { }
+}
+```
+
+```json
+{
+  "name": "Server",
+  "file_path": "internal/server.go",
+  "language": "Go",
+  "start_line": 12,
+  "end_line": 80,
+  "metrics": {
+    "lcom4": 2,
+    "total_methods": 6,
+    "excluded_methods": 1,
+    "instance_variables": 4,
+    "method_groups": [["Start", "Stop", "Log"], ["Version", "Name"]]
+  },
+  "risk_level": "low"
+}
+```
+
+`lcom4` is the number of groups the type's methods fall into when two methods are connected by a shared field or a call between them; `method_groups` lists them. `excluded_methods` counts methods without a receiver parameter, which cannot reach instance state. `summary` carries `total_classes`, `average_lcom`, `max_lcom`, `min_lcom` and the `low_risk_classes`, `medium_risk_classes` and `high_risk_classes` counts.
 
 ## `deps`
 

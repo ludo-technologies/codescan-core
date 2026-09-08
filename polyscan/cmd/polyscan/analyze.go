@@ -52,10 +52,11 @@ The language of each file is detected from its extension. Supported: Go, Rust,
 C++ and JavaScript/TypeScript.
 
 Complexity and clone analysis cover every language; dependency analysis covers
-Go and JavaScript/TypeScript; cohesion (LCOM4) covers Go and Rust; dead code
-and coupling (CBO) exist for JavaScript/TypeScript only. The health score is
-computed over the dimensions that ran: a dimension a language does not have is
-left out, not scored as clean.
+Go and JavaScript/TypeScript; coupling (CBO) covers Go, Rust and
+JavaScript/TypeScript; cohesion (LCOM4) covers Go and Rust; dead code exists
+for JavaScript/TypeScript only. The health score is computed over the
+dimensions that ran: a dimension a language does not have is left out, not
+scored as clean.
 
 By default, generates an HTML report and opens it in your browser.
 
@@ -154,8 +155,8 @@ Examples:
 
 	cmd.Flags().StringSliceVarP(&selected, "select", "s", allAnalyses,
 		"Analyses to run (comma-separated): complexity,deadcode,clone,cbo,lcom,deps\n"+
-			"deps applies to Go and JavaScript/TypeScript; lcom to Go and Rust;\n"+
-			"deadcode and cbo to JavaScript/TypeScript only")
+			"deps applies to Go and JavaScript/TypeScript; cbo to Go, Rust and\n"+
+			"JavaScript/TypeScript; lcom to Go and Rust; deadcode to JavaScript/TypeScript only")
 	cmd.Flags().StringVarP(&format, "format", "f", "html", "Output format: html, json, text")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "HTML report path (default: "+defaultReportPath+")")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Don't open the HTML report in the browser")
@@ -251,8 +252,8 @@ func writeReportFile(path string, write func(io.Writer, jsdomain.OutputFormat) e
 }
 
 // parseSelection maps the selected analysis names onto the generic engine's
-// options and the JavaScript/TypeScript selection. deadcode and cbo exist
-// only for JavaScript/TypeScript, lcom only for the generic engine.
+// options and the JavaScript/TypeScript selection. deadcode exists only for
+// JavaScript/TypeScript, lcom only for the generic engine.
 func parseSelection(selected []string) (analysis.Options, js.Selection, error) {
 	var options analysis.Options
 	var selection js.Selection
@@ -267,6 +268,7 @@ func parseSelection(selected []string) (analysis.Options, js.Selection, error) {
 		case selectDeadCode:
 			selection.DeadCode = true
 		case selectCBO:
+			options.CBO = true
 			selection.CBO = true
 		case selectLCOM:
 			options.LCOM = true
