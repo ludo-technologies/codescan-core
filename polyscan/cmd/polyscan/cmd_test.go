@@ -94,6 +94,27 @@ type analyzeJSON struct {
 	} `json:"summary"`
 }
 
+func TestRuntimeErrorDoesNotPrintUsage(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "missing")
+	out, err := run(t, "analyze", missing)
+	if err == nil {
+		t.Fatal("analyze returned nil error for a missing path")
+	}
+	if strings.Contains(out, "Usage:") {
+		t.Fatalf("runtime error printed usage:\n%s", out)
+	}
+}
+
+func TestInvalidAnalysisReturnsClearError(t *testing.T) {
+	_, err := run(t, "analyze", "--select", "foo", "../../testdata/go")
+	if err == nil {
+		t.Fatal("invalid analysis returned nil error")
+	}
+	if !strings.Contains(err.Error(), "foo") {
+		t.Fatalf("error %q does not identify the invalid analysis", err)
+	}
+}
+
 func TestAnalyzeText(t *testing.T) {
 	out, err := run(t, "analyze", "--format", "text", "../../testdata/go/sample.go")
 	if err != nil {
