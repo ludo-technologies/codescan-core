@@ -117,9 +117,15 @@ Examples:
 				fmt.Fprint(w, service.FormatCLISummary(summary, duration, results.Files.Errors))
 			}
 
+			writeOutput := func() error {
+				if outputPath != "" {
+					return writeReportFile(outputPath, outputFormat, write)
+				}
+				return write(cmd.OutOrStdout(), outputFormat)
+			}
 			switch outputFormat {
 			case jsdomain.OutputFormatJSON:
-				if err := write(cmd.OutOrStdout(), outputFormat); err != nil {
+				if err := writeOutput(); err != nil {
 					return err
 				}
 				// The summary goes to stderr so it cannot pollute the
@@ -128,13 +134,13 @@ Examples:
 				return nil
 			case jsdomain.OutputFormatText:
 				// The text report carries its own health score section.
-				return write(cmd.OutOrStdout(), outputFormat)
+				return writeOutput()
 			}
 
 			if outputPath == "" {
 				outputPath = defaultReportPath
 			}
-			if err := writeReportFile(outputPath, write); err != nil {
+			if err := writeReportFile(outputPath, outputFormat, write); err != nil {
 				return err
 			}
 			absPath, err := filepath.Abs(outputPath)
@@ -158,7 +164,7 @@ Examples:
 			"deps applies to Go and JavaScript/TypeScript; cbo to Go, Rust and\n"+
 			"JavaScript/TypeScript; lcom to Go and Rust; deadcode to JavaScript/TypeScript only")
 	cmd.Flags().StringVarP(&format, "format", "f", "html", "Output format: html, json, text")
-	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "HTML report path (default: "+defaultReportPath+")")
+	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Report path (HTML default: "+defaultReportPath+"; JSON/text default: stdout)")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "Don't open the HTML report in the browser")
 	cmd.Flags().IntVar(&minComplexity, "min-complexity", 1, "List only functions with at least this complexity")
 	return cmd
@@ -239,12 +245,12 @@ func fileURL(absPath string) string {
 	return (&url.URL{Scheme: "file", Path: path}).String()
 }
 
-func writeReportFile(path string, write func(io.Writer, jsdomain.OutputFormat) error) error {
+func writeReportFile(path string, format jsdomain.OutputFormat, write func(io.Writer, jsdomain.OutputFormat) error) error {
 	file, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("create HTML report: %w", err)
+		return fmt.Errorf("create %s report: %w", format, err)
 	}
-	if err := write(file, jsdomain.OutputFormatHTML); err != nil {
+	if err := write(file, format); err != nil {
 		file.Close()
 		return err
 	}
