@@ -45,9 +45,13 @@ var Language = &engine.Language{
 	// A field is anything selected from the receiver variable, so a promoted
 	// method of an embedded type counts as the embedded field it comes
 	// through; a sibling method is a call through the receiver. The engine
-	// discards a match whose @object is not the method's receiver.
+	// discards a match whose @object is not the method's receiver. A chained
+	// index such as t.m[k][k] is ambiguous with a generic instantiation, and
+	// tree-sitter-go parses it as one, so the receiver and field arrive as a
+	// qualified type.
 	Members: `
 (selector_expression operand: (identifier) @object field: (field_identifier) @field)
+(qualified_type package: (package_identifier) @object name: (type_identifier) @field)
 (call_expression function: (selector_expression operand: (identifier) @object field: (field_identifier) @call))
 `,
 	// A local declaration hides the receiver from its end to the end of

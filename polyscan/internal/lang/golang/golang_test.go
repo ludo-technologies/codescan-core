@@ -227,6 +227,7 @@ type T struct {
 	Base
 	a, b int
 	cb   func()
+	m    map[int]map[int]int
 }
 
 func (t *T) Fields() {
@@ -234,6 +235,8 @@ func (t *T) Fields() {
 	t.b.c = 2
 	other.x = 3
 	go func() { t.a++ }()
+	t.m[i][j] = t.m[j][i][i]
+	other.m[i][j] = 3
 }
 
 func (t *T) Calls() {
@@ -259,7 +262,7 @@ func Free() {}
 		calls    []string
 	}{
 		{"Base.Promoted", "Base", false, nil, nil},
-		{"T.Fields", "T", true, []string{"a", "b"}, []string{}},
+		{"T.Fields", "T", true, []string{"a", "b", "m"}, []string{}},
 		{"T.Calls", "T", true, []string{"Base"}, []string{"Fields", "Promoted", "cb"}},
 		{"T.Static", "T", false, nil, nil},
 		{"T.Blank", "T", false, nil, nil},
