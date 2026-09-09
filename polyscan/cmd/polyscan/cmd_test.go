@@ -527,3 +527,60 @@ func TestAnalyzeCoupling(t *testing.T) {
 		}
 	}
 }
+
+func TestAnalyzeOutputPath(t *testing.T) {
+	for _, format := range []string{"json", "text"} {
+		t.Run(format, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "report."+format)
+			if err := os.WriteFile(path, bytes.Repeat([]byte("stale"), 10000), 0600); err != nil {
+				t.Fatal(err)
+			}
+			cmd := rootCmd()
+			var stdout, stderr bytes.Buffer
+			cmd.SetOut(&stdout)
+			cmd.SetErr(&stderr)
+			cmd.SetArgs([]string{"analyze", "--select", "complexity", "--format", format, "--output", path, "../../testdata/go/sample.go"})
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if stdout.Len() != 0 {
+				t.Errorf("report leaked to stdout: %s", stdout.String())
+			}
+			if bytes.Contains(data, []byte("stale")) {
+				t.Fatal("output retained stale file contents")
+			}
+			if format == "json" {
+				var doc analyzeJSON
+				if err := json.Unmarshal(data, &doc); err != nil {
+					t.Fatal(err)
+				}
+				if doc.Complexity == nil || doc.Summary == nil {
+					t.Fatal("missing analysis or summary")
+				}
+				if !strings.Contains(stderr.String(), "Health Score:") {
+					t.Error("missing stderr summary")
+				}
+			} else if !bytes.Contains(data, []byte("polyscan Analysis Report")) || !bytes.Contains(data, []byte("Server.Handle: 8")) {
+				t.Errorf("missing text report: %s", data)
+			}
+		})
+	}
+}
+
+func TestAnalyzeOutputPathError(t *testing.T) {
+	for _, format := range []string{"json", "text", "html"} {
+		t.Run(format, func(t *testing.T) {
+			out, err := run(t, "analyze", "--select", "complexity", "--format", format, "--no-open", "--output", t.TempDir(), "../../testdata/go/sample.go")
+			if err == nil {
+				t.Fatal("directory output path returned no error")
+			}
+			if strings.Contains(out, "Health Score:") {
+				t.Errorf("reported success after write failure: %s", out)
+			}
+		})
+	}
+}
