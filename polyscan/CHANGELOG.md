@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-09
+
 ### Added
 
 - Class coupling (CBO) for Go and Rust. `polyscan analyze` counts, for each type, the other types of the analyzed tree that its declaration and methods refer to, and scores the result in the Coupling dimension with the thresholds pyscn uses (low up to 3, medium up to 7). Only types the tree declares count: for Go an unqualified name is a type of the same package and `pkg.T` resolves through `go.mod` to a package of the tree, for Rust a bare name resolves to a declaration in the same file or elsewhere in the tree, so the standard library and other modules never count. An embedded field or interface and an implemented trait count as inheritance. Types coupled to nothing, test files and `#[cfg(test)]` code stay out. A Go tree without a `go.mod` keeps only its same-package references, with a warning. In the report a Go or Rust type can now have both a coupling and a cohesion row, and the class count in the overview counts it once
@@ -20,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Go, Rust and C++ analysis no longer walks into version control, dependency and build output directories. A directory whose name starts with a dot, such as `.git`, and `node_modules`, `vendor`, `target`, `build`, `dist` and `third_party` are skipped; a path named on the command line is still analyzed whatever it is called. Before, a Rust project's `target` directory and a Go project's `vendor` directory were analyzed as if they were the project's own code
+- `--output` is honored for JSON and text reports. `polyscan analyze --format json --output report.json` wrote the report to stdout and ignored the path; it now writes the file, and the default for JSON and text stays stdout (#125)
+- The Go cohesion analysis sees a field behind a chained index. tree-sitter-go parses `t.m[k][k]` as a type instantiation, so a method that touched a field only through a nested map or slice index was not connected to the methods sharing that field (#117)
+- The `package` flag of a JavaScript/TypeScript module survives into its dependency metrics, so package and non-package modules are told apart in the report again (#124)
+- A runtime error no longer prints the command usage after the error message (#121)
 
 ## [0.2.2] - 2026-09-05
 
