@@ -227,6 +227,7 @@ type T struct {
 	Base
 	a, b int
 	cb   func()
+	m    map[int]map[int]int
 }
 
 func (t *T) Fields() {
@@ -234,6 +235,9 @@ func (t *T) Fields() {
 	t.b.c = 2
 	other.x = 3
 	go func() { t.a++ }()
+	t.m[i][j] = t.m[j][i][i]
+	_ = (t.m[i])[j]
+	other.m[i][j] = 3
 }
 
 func (t *T) Calls() {
@@ -259,7 +263,7 @@ func Free() {}
 		calls    []string
 	}{
 		{"Base.Promoted", "Base", false, nil, nil},
-		{"T.Fields", "T", true, []string{"a", "b"}, []string{}},
+		{"T.Fields", "T", true, []string{"a", "b", "m"}, []string{}},
 		{"T.Calls", "T", true, []string{"Base"}, []string{"Fields", "Promoted", "cb"}},
 		{"T.Static", "T", false, nil, nil},
 		{"T.Blank", "T", false, nil, nil},
@@ -293,6 +297,24 @@ func equalStrings(got, want []string) bool {
 		}
 	}
 	return true
+}
+
+func TestMembersIgnoreTypesNamedLikeReceiver(t *testing.T) {
+	functions := analyze(t, `package p
+
+import "context"
+
+type T struct{ a int }
+
+func (context *T) A(ctx context.Context) context.Context {
+	var c context.Context
+	context.a++
+	return c
+}
+`)
+	if got := slices.Sorted(maps.Keys(functions["T.A"].Fields)); !equalStrings(got, []string{"a"}) {
+		t.Errorf("T.A: fields = %v, want [a]", got)
+	}
 }
 
 func TestMembersIgnoreShadowedReceiver(t *testing.T) {
