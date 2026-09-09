@@ -48,10 +48,14 @@ var Language = &engine.Language{
 	// discards a match whose @object is not the method's receiver. A chained
 	// index such as t.m[k][k] is ambiguous with a generic instantiation, and
 	// tree-sitter-go parses it as one, so the receiver and field arrive as a
-	// qualified type.
+	// qualified type; only that expression is matched, since a qualified
+	// type in a signature or declaration names a package, not the receiver.
 	Members: `
 (selector_expression operand: (identifier) @object field: (field_identifier) @field)
-(qualified_type package: (package_identifier) @object name: (type_identifier) @field)
+(type_instantiation_expression type: [
+  (generic_type type: (qualified_type package: (package_identifier) @object name: (type_identifier) @field))
+  (parenthesized_type (generic_type type: (qualified_type package: (package_identifier) @object name: (type_identifier) @field)))
+])
 (call_expression function: (selector_expression operand: (identifier) @object field: (field_identifier) @call))
 `,
 	// A local declaration hides the receiver from its end to the end of

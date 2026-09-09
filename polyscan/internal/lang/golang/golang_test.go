@@ -236,6 +236,7 @@ func (t *T) Fields() {
 	other.x = 3
 	go func() { t.a++ }()
 	t.m[i][j] = t.m[j][i][i]
+	_ = (t.m[i])[j]
 	other.m[i][j] = 3
 }
 
@@ -296,6 +297,24 @@ func equalStrings(got, want []string) bool {
 		}
 	}
 	return true
+}
+
+func TestMembersIgnoreTypesNamedLikeReceiver(t *testing.T) {
+	functions := analyze(t, `package p
+
+import "context"
+
+type T struct{ a int }
+
+func (context *T) A(ctx context.Context) context.Context {
+	var c context.Context
+	context.a++
+	return c
+}
+`)
+	if got := slices.Sorted(maps.Keys(functions["T.A"].Fields)); !equalStrings(got, []string{"a"}) {
+		t.Errorf("T.A: fields = %v, want [a]", got)
+	}
 }
 
 func TestMembersIgnoreShadowedReceiver(t *testing.T) {
