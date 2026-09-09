@@ -392,3 +392,33 @@ func TestExportAbstractness(t *testing.T) {
 		}
 	}
 }
+
+func TestCalculateMetricsPreservesPackageClassification(t *testing.T) {
+	cases := []struct {
+		name       string
+		moduleType domain.ModuleType
+		want       bool
+	}{
+		{"package", domain.ModuleTypePackage, true},
+		{"relative", domain.ModuleTypeRelative, false},
+		{"builtin", domain.ModuleTypeBuiltin, false},
+		{"alias", domain.ModuleTypeAlias, false},
+		{"unspecified", "", false},
+	}
+	graph := domain.NewDependencyGraph()
+	for _, tc := range cases {
+		graph.AddNode(&domain.ModuleNode{ID: tc.name, ModuleType: tc.moduleType})
+	}
+	metrics := NewCouplingMetricsCalculator(nil).CalculateMetrics(graph)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			metric, ok := metrics[tc.name]
+			if !ok {
+				t.Fatal("missing module metrics")
+			}
+			if metric.IsPackage != tc.want {
+				t.Errorf("IsPackage = %v, want %v for module type %q", metric.IsPackage, tc.want, tc.moduleType)
+			}
+		})
+	}
+}

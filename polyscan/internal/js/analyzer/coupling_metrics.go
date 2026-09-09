@@ -89,6 +89,7 @@ func (c *CouplingMetricsCalculator) CalculateMetrics(graph *domain.DependencyGra
 		metrics[nodeID] = &domain.ModuleDependencyMetrics{
 			ModuleName:             node.Name,
 			FilePath:               node.FilePath,
+			IsPackage:              node.ModuleType == domain.ModuleTypePackage,
 			AfferentCoupling:       m.Ca,
 			EfferentCoupling:       m.Ce,
 			Instability:            m.Instability,
